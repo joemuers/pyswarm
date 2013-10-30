@@ -1,3 +1,10 @@
+'''Contains all numerical values for driving the main system.
+Client objects should use the setter/getter methods rather than 
+accessing the variables directly.
+
+TODO - have text file with 'default' values...
+
+A UI would interface primarily with this module...'''
 
 _boidConstant_DEBUG_COLOURS_ = True
 _boidConstant_preferredZoneSize = 10
@@ -37,6 +44,7 @@ _boidConstant_curveGroupVectorMagnitude = 2
 
 ##################################
 def accelerationPerFrameDueToGravity():
+    """Not actively applied - used to calculate if an agent is currently touching the ground or not."""
     return _boidConstant_accnDueToGravity
 
 def gridHalfSize():
@@ -69,50 +77,62 @@ def mainRegionSize(random = False):
 
 ##################################
 def setNearRegionSize(value):
+    """Sets size of region within which other boids are considered to be 'crowding'"""
     global _boidConstant_nearRegionSize
     _boidConstant_nearRegionSize = value
 
-def nearRegionSize(random = False):
+def nearRegionSize():
+    """Gets size of region within which other boids are considered to be 'crowding'"""
     return _boidConstant_nearRegionSize
 
 ##################################
 def setCollisionRegionSize(value):
+    """Sets size of region within which other boids are considered to be 'colliding'"""
     global _boidConstant_collisionRegionSize
     _boidConstant_collisionRegionSize = value
 
 def collisionRegionSize():
+    """Sets size of region within which other boids are considered to be 'colliding'"""
     return _boidConstant_collisionRegionSize
 
 ##################################
 def setMaxVel(value):
+    """Maximum velocity that boids will travel at under normal behaviour."""
     global _boidConstant_maxVel
     _boidConstant_maxVel = value
 
 def maxVel():
+    """Maximum velocity that boids will travel at under normal behaviour."""
     return _boidConstant_maxVel
 
 ##################################
 def setMinVel(value):
+    """Minimum velocity that boids will travel at under normal behaviour."""
     global _boidConstant_minVel
     _boidConstant_minVel = value
     
 def minVel():
+    """Minimum velocity that boids will travel at under normal behaviour."""
     return _boidConstant_minVel
 ##################################
 
 def setMaxAccel(value):
+    """Maximum acceleration that boids will apply under normal behaviour."""
     global _boidConstant_maxAccel
     _boidConstant_maxAccel = value
 
 def maxAccel():
+    """Maximum acceleration that boids will apply under normal behaviour."""
     return _boidConstant_maxAccel
 
 ##################################
 def setPreferredVel(value):
+    """'Cruising speed' that boids will tend towards under normal behaviour."""
     global _boidConstant_preferredVel
     _boidConstant_preferredVel = value
 
 def preferredVel():
+    """'Cruising speed' that boids will tend towards under normal behaviour."""
     return _boidConstant_preferredVel
 
 ##################################
@@ -187,56 +207,72 @@ def priorityGoalThreshold():
 
 ##################################
 def setJumpAcceleration(value):
+    """Acceleration applied to execute a 'jump' event."""
     global _boidConstant_jumpAcceleration
     _boidConstant_jumpAcceleration = value
 
 def jumpAcceleration():
+    """Acceleration applied to execute a 'jump' event."""
     return _boidConstant_jumpAcceleration
 
 ##################################
 def setJumpOnPileUpProbability(value):
+    """Probability that, upon joining a basePyramid, boid will 'jump' instead of just joining at the bottom."""
     global _boidConstant_jumpOnPileUpProbability
     _boidConstant_jumpOnPileUpProbability = value
     
 def jumpOnPileUpProbability():
+    """Probability that, upon joining a basePyramid, boid will 'jump' instead of just joining at the bottom."""
     return _boidConstant_jumpOnPileUpProbability
 
 def setJumpOnPileUpRegionSize(value):
+    """Distance from basePyramid at which boids will 'jump' (if they are to do so)."""
     global _boidConstant_jumpOnPileUpRegionSize
     _boidConstant_jumpOnPileUpRegionSize = value
     
 def jumpOnPileUpRegionSize():
+    """Distance from basePyramid at which boids will 'jump' (if they are to do so)."""
     return _boidConstant_jumpOnPileUpRegionSize
 
 ##################################
 def setPushUpwardsAcclerationHorizontal(value):
+    """Acceleration applied by each boid in the horizontal direction (directed towards
+    the baseLocator of the priority goal) after having joined the basePyramid."""
     global _boidConstant_pushUpwardsAccelerationHorizontal
     _boidConstant_pushUpwardsAccelerationHorizontal = value
     
 def pushUpwardsAccelerationHorizontal():
+    """Acceleration applied by each boid in the horizontal direction (directed towards
+    the baseLocator of the priority goal) after having joined the basePyramid."""
     return _boidConstant_pushUpwardsAccelerationHorizontal
 
 def setPushUpwardsAccelerationVertical(value):
+    """Acceleration applied by each boid in the vertical direction after having joined the basePyramid."""
     global _boidConstant_pushUpwardsAccelerationVertical
     _boidConstant_pushUpwardsAccelerationVertical = value    
         
 def pushUpwardsAccelerationVertical():
+    """Acceleration applied by each boid in the vertical direction after having joined the basePyramid."""
     return _boidConstant_pushUpwardsAccelerationVertical
 
 ##################################
 def setGoalChaseSpeed(value):
+    """Speed at which agents will travel towards the basePyramid (circumstances allowing) when following goal-driven behaviour."""
     global _boidConstant_goalChaseSpeed
     _boidConstant_goalChaseSpeed = value
     
 def goalChaseSpeed():
+    """Speed at which agents will travel towards the basePyramid (circumstances allowing) when following goal-driven behaviour."""
     return _boidConstant_goalChaseSpeed
 
 ##################################
 def setGoalIncubationPeriod(value):
+    """'Goal-infected' agents will wait this many frames before actively following goal-driven behaviour."""
     global _boidConstant_goalIncubationPeriod
     _boidConstant_goalIncubationPeriod = value
     
 def goalIncubationPeriod():
+    """'Goal-infected' agents will wait this many frames before actively following goal-driven behaviour."""
     return _boidConstant_goalIncubationPeriod
 
 ##################################
@@ -259,10 +295,12 @@ def curveEndReachedThreshold():
     return _boidConstant_curveEndReachedThreshold
 
 def setCurveGroupVectorMagnitude(value):
+    """Scalar magnitude of motion vector that will be applied to agent's overall velocity when following a curve."""
     global _boidConstant_curveGroupVectorMagnitude
     _boidConstant_curveGroupVectorMagnitude = value
     
 def curveGroupVectorMagnitude():
+    """Scalar magnitude of motion vector that will be applied to agent's overall velocity when following a curve."""
     return _boidConstant_curveGroupVectorMagnitude
 
 ##################################

@@ -1,30 +1,64 @@
+from boidObject import BoidObject
+
+import random
+
 import boidConstants
 import boidUtil
 import boidVector2 as bv2
 import boidVector3 as bv3
 
 
-import random
-
-
-class BoidGroupTarget(object):
+class BoidGroupTarget(BoidObject):
+    """Represents a goal towards which client agents are drawn.
+    The idea is that the goal is at a section of wall, and you get a
+    'World War Z' style pile-up at the wall, with the agents at the top
+    of the pile-up coming over the wall.
+    
+    Behaviour: affected agents are initially drawn to the base section of 
+    the wall, accelerating to 'goalChase' speed.  
+    Upon reaching the base of the wall, they attempt to scale up it - as 
+    more agents arrive, the collective mass forms a 'World War Z'-style 
+    pyramid shaped pile-up which I've dubbed a 'basePyramid'.
+    Once the basePyramid is of sufficient size, the agents at the top 
+    are able to go over the wall and are considered to have reached their goal.
+    
+    Operation:  the groupTarget is represented by three Maya Locators:
+    - baseLocator: point at the base of the wall towards which agents
+                   are drawn in the initial goal-chase stage.  
+                   The baseLocator also forms the centre point of the basePyramid.
+    - lipLocator: point at the near-side top of the wall towards which agents
+                  in the basePyramid attempt to reach.  Should be directly
+                  above the baseLocator.
+    - finalLocator: point at the far-side top of the wall towards which agents will move
+                    once they have cleared the lipLocator (i.e. reached the top of the wall).
+                    Once agents reach the finalLocator they are considered to have reached
+                    their goal.
+    There is also the concept of 'leaders' whereby if certain agents are designated as leaders, they
+    will be drawn to the baseLocator as normal but all non-leader agents will instead be drawn towards the
+    leader's current position.  Once the leader reaches the basePyramid, other agents will revert 
+    to normal behaviour. This, together with the goal-infection/incubation period algorithm, produces 
+    a nice 'streaming' effect of agents moving towards the goal. 
+    Logic for client agent's behaviour is primarily in this class - client agents must query 
+    the groupTarget on each frame to get their desiredAcceleration.
+    
+    """
     
     def __init__(self, basePos, lipPos, finalPos, bDelegate = None):
         self._delegate = bDelegate
                 
         self._baseVector = boidUtil.boidVectorFromLocator(basePos)
         self._baseLocator = None
-        if(not type(basePos) == bv3.BoidVector3):
+        if(not(type(basePos) == bv3.BoidVector3)):
             self._baseLocator = basePos
             
         self._lipVector = boidUtil.boidVectorFromLocator(lipPos)
         self._lipLocator = None
-        if(not type(lipPos) == bv3.BoidVector3):
+        if(not(type(lipPos) == bv3.BoidVector3)):
             self._lipLocator = lipPos
             
         self._finalVector = boidUtil.boidVectorFromLocator(finalPos)
         self._finalLocator = None
-        if(not type(finalPos) == bv3.BoidVector3):
+        if(not(type(finalPos) == bv3.BoidVector3)):
             self._finalLocator = finalPos
             
         self._baseToFinalDirection = bv3.BoidVector3()
@@ -37,13 +71,17 @@ class BoidGroupTarget(object):
         
         self._pushUpwardsVector = bv2.BoidVector2()
         
-        self._boidDistanceRunningTotal = bv2.BoidVector2()
-        self._boidDistanceAverage = bv2.BoidVector2()
+        # variables in the following block relate to agent's distance
+        # from the baseLocator
+        self._boidDistance_runningTotal = bv2.BoidVector2()
+        self._boidDistance_average = bv2.BoidVector2()
         self._needsAverageDistanceCalc = False
         self._maxBoidDistance = bv2.BoidVector2()
         
-        self._boidPositionRunningTotal = bv3.BoidVector3()
-        self._boidPositionAverage = bv3.BoidVector3()
+        # variables here relate to average position taken from within
+        # the basePyramid.
+        self._boidPosition_runningTotal = bv3.BoidVector3()
+        self._boidPosition_average = bv3.BoidVector3()
         self._needsAveragePositionCalc = False
         
         self.performCollapse = False
@@ -70,6 +108,8 @@ class BoidGroupTarget(object):
 
 #######################
     def attractorPositionForBoid(self, boid):
+        """Returns position (BoidVector3) towards which the boidAgent should be made to move towards."""
+        
         returnValue = None
         numLeaders = len(self._leaders)
 
@@ -99,37 +139,47 @@ class BoidGroupTarget(object):
         
 #######################
     def _getDistanceAverage(self):
+        """Average distance from baseLocator of agents in the basePyramid."""
+        
         if(self._needsAverageDistanceCalc and len(self._boidDistanceLookup) > 0):
-            self._boidDistanceAverage.resetVec(self._boidDistanceRunningTotal)
-            self._boidDistanceAverage.divide(len(self._boidDistanceLookup))
+            self._boidDistance_average.resetVec(self._boidDistance_runningTotal)
+            self._boidDistance_average.divide(len(self._boidDistanceLookup))
             self._needsAverageDistanceCalc = False
-        return self._boidDistanceAverage
+        return self._boidDistance_average
     distanceAverage = property(_getDistanceAverage)
     
     def _getPositionAverage(self):
+        """Average position of agents in the basePyramid."""
+        
         if(self._needsAveragePositionCalc and len(self._boidDistanceLookup) > 0):
-            self._boidPositionAverage.resetVec(self._boidPositionRunningTotal)
-            self._boidPositionAverage.divide(len(self._boidDistanceLookup))
+            self._boidPosition_average.resetVec(self._boidPosition_runningTotal)
+            self._boidPosition_average.divide(len(self._boidDistanceLookup))
             self._needsAveragePositionCalc = False
-        return self._boidPositionAverage
+        return self._boidPosition_average
     positionAverage = property(_getPositionAverage)
 
 #######################    
     def _getMaxHorizontalDistance(self):
+        """Current largest (scalar) horizontal distance of an agent, within the basePyramid, from the baseLocator."""
         return self._maxBoidDistance.u
     maxHorizontalDistance = property(_getMaxHorizontalDistance)
     
     def _getMaxVerticalDistance(self):
+        """Current largest (scalar) vertical distance of an agent, within the basePyramid, from the baseLocator."""
         return self._maxBoidDistance.v
     maxVerticalDistance = property(_getMaxVerticalDistance)
     
 #######################
     def _getPushUpwardsHorizontalMagnitude(self):
+        """Acceleration applied by each boid in the horizontal direction (towards 
+        the baseLocator) after having joined the basePyramid."""
         return boidConstants.pushUpwardsAccelerationHorizontal()
         #return self._pushUpwardsVector.v
     pushUpwardsHorizontalMagnitude = property(_getPushUpwardsHorizontalMagnitude)
     
     def _getPushUpwardsVerticalMagnitude(self):
+        """Acceleration applied by each boid in the vertical direction (towards 
+        the lipLocator) after having joined the basePyramid."""
         return boidConstants.pushUpwardsAccelerationVertical()
         #return self._pushUpwardsVector.u
     pushUpwardsVerticalMagnitude = property(_getPushUpwardsVerticalMagnitude)
@@ -145,9 +195,12 @@ class BoidGroupTarget(object):
             
 #######################        
     def resetAverages(self):
-        self._boidPositionRunningTotal.reset()
+        """Lists of agents must be rebuild on every frame, this method clears the lists
+        and sets up everything for a new frame."""
+        
+        self._boidPosition_runningTotal.reset()
         self._needsAveragePositionCalc = True
-        self._boidDistanceRunningTotal.reset()
+        self._boidDistance_runningTotal.reset()
         self._needsAverageDistanceCalc = True
         self._maxBoidDistance.reset()
         self._boidDistanceLookup.clear()
@@ -163,6 +216,8 @@ class BoidGroupTarget(object):
 
 #######################
     def checkBoidLocation(self, boid):
+        """Checks current location of agent to determine appropriate list it should be put
+        into (which then determines corresponding behaviour)."""
         
         baseToBoidVec = boid.currentPosition - self._baseVector
 
@@ -221,13 +276,16 @@ class BoidGroupTarget(object):
 
 #######################
     def registerBoidAsArrived(self, boid):
+        """Registers boid as having arrived at the basePyramid, behaviour
+        for the agent will now be switched from 'goalChase' to basePyramid 'push-up' behaviour."""
+        
         if(not boid in self._boidDistanceLookup):
             if(boid in self._leaders):
                 self._leaders.remove(boid)
             
             distanceVec = boid.currentPosition - self._baseVector
-            self._boidDistanceRunningTotal.u += distanceVec.magnitude(True)
-            self._boidDistanceRunningTotal.v += distanceVec.y
+            self._boidDistance_runningTotal.u += distanceVec.magnitude(True)
+            self._boidDistance_runningTotal.v += distanceVec.y
             self._needsAverageDistanceCalc = True         
             
             if(distanceVec.magnitude(True) > self._maxBoidDistance.u):
@@ -235,7 +293,7 @@ class BoidGroupTarget(object):
             if(distanceVec.y > self._maxBoidDistance.v):
                 self._maxBoidDistance.v = distanceVec.y
             
-            self._boidPositionRunningTotal.add(boid.currentPosition)
+            self._boidPosition_runningTotal.add(boid.currentPosition)
             self._needsAveragePositionCalc = True   
             
             self._boidDistanceLookup[boid] = distanceVec
@@ -243,13 +301,16 @@ class BoidGroupTarget(object):
 
 #######################            
     def deRegisterBoidAsArrived(self, boid):
+        """Removes agent from all lists, agent's behaviour will no longer be
+        influenced by the BoidGroupTarget."""
+        
         if(boid in self._boidDistanceLookup):            
             distanceVec = boid.currentPosition - self._baseVector
-            self._boidDistanceRunningTotal.u -= distanceVec.magnitude(True)
-            self._boidDistanceRunningTotal.v -= distanceVec.y
+            self._boidDistance_runningTotal.u -= distanceVec.magnitude(True)
+            self._boidDistance_runningTotal.v -= distanceVec.y
             self._needsAverageDistanceCalc = True  
             
-            self._boidPositionRunningTotal.subtract(boid.currentPosition)
+            self._boidPosition_runningTotal.subtract(boid.currentPosition)
             self._needsAveragePositionCalc = True       
             
             del self._boidDistanceLookup[boid]
@@ -262,6 +323,9 @@ class BoidGroupTarget(object):
 
 #######################
     def getDesiredAcceleration(self, boid):
+        """Returns corresponding acceleration for the agent as determined by calculated behaviour.
+        Client agents should call this method on each frame update and modify their own desiredAcceleration accordingly."""
+        
         if(boid in self._overTheWallLookup):
             targetVelocity = bv3.BoidVector3(self._baseToFinalDirection.x, 0, self._baseToFinalDirection.z)
             targetVelocity.normalise(boidConstants.goalChaseSpeed())
@@ -306,6 +370,8 @@ class BoidGroupTarget(object):
 
 #######################
     def getShouldJump(self, boid):
+        """Returns True if agent should jump up onto basePyramid, False otherwise."""
+        
         distanceVec = boid.currentPosition - self._baseVector
         distance = distanceVec.magnitude(True)
         

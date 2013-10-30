@@ -1,8 +1,17 @@
+from boidObject import BoidObject
+
 import random as rand
 import math as mth
 
-class BoidVector2(object):
 
+class BoidVector2(BoidObject):
+    """2D vector with various trig functions.
+    Initial implementation of boid system used surface UV coordinates rather than 3D position, hence 
+    this class.  However still comes in handy...
+    
+    Note that angle inputs/outputs, currently, are in degrees, NOT radians.
+    """
+    
     def __init__(self, u = 0, v = 0):
         if(type(u) == BoidVector2):
             self._u = u.u

@@ -1,11 +1,32 @@
+from boidObject import BoidObject
+
 import boidConstants
 import boidUtil
 import boidVector3 as bv3
 
 
-class BoidGroupPath(object):
+class BoidGroupPath(BoidObject):
+    """Uni-directional curve path along which all client agents will move.
+    
+    Behaviour: affected agents initially pulled in towards the closest point along the curve,
+    after which they are propelled along the curve.  Upon reaching the end of the curve, each 
+    agent will no longer be influenced by the curve.
+    Note that if an agent's initial position is closer to the end point of the curve than any 
+    other point, it will have effectively reached the end straight away and apparent behaviour 
+    will not have been affected.
+    
+    Operation: affected agents must query for the desiredAcceleration on each frame update.
+    """
     
     def __init__(self, curve, bDelegate = None, taperStartMult = 0.5, taperEndMult = 2.0):
+        """Arguments as follows:
+        @param curve pymel.core.nodetypes.NurbsCurve: the curve path
+        @param bDelegate object: *MUST* implement a onGoalReachedForBoid(boid) method, 
+                                 which will be called each time this event occurs.
+        @param taperStartMult Float: multiplier determining curve width at start.
+        @param taperEndMult Float: multiplier determining curve width at end (width along the curve is interpolated start->end)
+        """
+        
         self._curve = curve
         self._startVector = boidUtil.boidVectorFromPymelPoint(curve.getPointAtParam(0.0))
         self._endParam = curve.findParamFromLength(curve.length())
@@ -52,6 +73,9 @@ class BoidGroupPath(object):
  
 ################################          
     def getDesiredAcceleration(self, boid):
+        """Returns corresponding acceleration for the agent as determined by calculated behaviour.
+        Client agents should call this method on each frame update and modify their own desiredAcceleration accordingly."""
+        
         pymelLocationVector = boidUtil.pymelPointFromBoidVector(boid.currentPosition)
         pymelClosestCurvePoint = self._curve.closestPoint(pymelLocationVector, space='world')
         boidCurveClosestPoint = boidUtil.boidVectorFromPymelPoint(pymelClosestCurvePoint)

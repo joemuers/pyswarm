@@ -1,3 +1,4 @@
+from boidObject import BoidObject
 import random
 
 import boidConstants
@@ -6,7 +7,52 @@ import boidVector3 as bv3
 import boidState as bs
 
 
-class BoidAgent(object):
+class BoidAgent(BoidObject):
+    """Represents single boid instance.   
+    Logic concerning boid's behaviour is contained within this class. (Internally,
+    data concerning position, heading, neighbourhood & so on is in the boidState 
+    container).
+    
+    Behaviour: Dependent on situation, in normal circumstances, behaviour governed by relatively
+    straightforward implementation of Reynold's boids rules.  If currently goal-driven, behaviour
+    is determined mainly by the corresponding BoidGroupTarget instance.
+    Behaviour will also be affected if currently following a curve path, or at the scene's mapEdge border.
+    
+    Operation: Agent keeps an internal representation of the corresponding Maya nParticle's position, velocity etc, which
+    must be updated on every frame (with updateCurrentVectors), desired behaviour is then calculated (updateBehaviour)
+    which is output in the form of the 'desiredAcceleration' member variable.
+    When the final value of the desiredAcceleration has been calculated, it can be applied to the corresponding
+    Maya nParticle (commitNewBehaviour).
+    
+    
+    Potentially confusing member variables:
+        - positive/negativeGridBounds - opposing corners of the bounding grid plane over which the
+                                        boid object can move.
+        - desiredAcceleration - as determined by the Reynolds boid rules + some other factors...
+        - needsBehaviourCalculation - True if postion/heading/circumstance has changed since last calculation, False otherwise.
+        - doNotClampAcceleration - the min/max values for speed/acceleration as determined in boidConstants will *NOT*
+        be applied if this flag is set.  Must be re-set on every frame update if needed.
+        
+        
+        - sticknessScale - directly related to Maya's 'stickiness' nParticle attribute,
+                           used when boid is in basePyramid pile-up to aid pyramid's
+                           overall cohesion.
+
+        - priorityGoal - (if not nil) a boidGroupTarget instance that's actively driving the agent's behaviour.
+        - 'goalInfected' - agent has been given a priorityGoal, which will become active when
+                            the goalInfectionCountdown hits zero.
+        - inBasePyramid - agent following priorityGoal has reached base of target wall and is attempting to
+                          climb up the boid-pyramid at the wall.  Note 'hasArrivedAtGoalBase' is set at this point too,
+                          the distinction being that once the boid clears the wall, 'inBasePyramid' will be cleared but
+                          hasArrived will still be set.
+        - curvePath - agent roughly follows this path, if set.
+        
+        
+    TODO, leave in or take out?
+        - 'leader' stuff
+        - jump/jostle/clamber
+        
+    """
 
     def __init__(self, particleId, negativeGridBounds = None, positiveGridBounds = None):
         self.boidState = bs.BoidState(int(particleId))
@@ -14,12 +60,14 @@ class BoidAgent(object):
         self._positiveGridBounds = positiveGridBounds
         
         self._desiredAcceleration = bv3.BoidVector3()
-        self.needsBehaviourCalculation = True
-        self._doNotClampAcceleration = False
+        self._needsBehaviourCalculation = True # True if postion/heading/circumstance has 
+        #                                      # changed since last calculation, False otherwise.
+        self._doNotClampAcceleration = False # the min/max values for speed/acceleration as determined in boidConstants will *NOT*
+        #                                    # be applied if this flag is set.  Must be re-set on every frame update if needed.
         self._stickinessScale = 0.0
         self._stickinessChanged = False
         
-        self._leaderGoals = None
+        self._leaderGoals = None # list of boidVector3's, TODO - not currently in use...
         
         self._priorityGoal = None
         self._isAtPriorityGoal = False
@@ -28,7 +76,7 @@ class BoidAgent(object):
         self._hasArrivedAtGoalBase = False
         self._collapsingGoal = False
         
-        self._curvePath = None
+        self._curvePath = None  # boidGroupPath instance
         self._reachedEndOfCurvePath = False
         
 ##################### 
@@ -120,6 +168,7 @@ class BoidAgent(object):
     isFollowingPriorityGoal = property(_getIsFollowingPriorityGoal)
     
     def _getIsInBasePyramid(self):
+        """True if agent has reached the base of a priority goal and is now attempting to 'pile-up'."""
         return self.boidState.isInBasePyramid and self.isFollowingPriorityGoal
     def _setIsInBasePyramid(self, value):
         self.boidState.isInBasePyramid = value
@@ -141,7 +190,7 @@ class BoidAgent(object):
         return self._reachedEndOfCurvePath
     def _setReachedEndOfCurvePath(self, value):
         if(not value and self._curvePath == None):
-            print("XXX WARNING XXX - ATTEMPT TO SET NONE-EXISTENT CURVE PATH")
+            print("XXX WARNING XXX - ATTEMPT TO SET NON-EXISTENT CURVE PATH")
         else:
             self._reachedEndOfCurvePath = value
             if(value and self._curvePath != None):
@@ -159,6 +208,8 @@ class BoidAgent(object):
 
 ##################### 
     def makeGoalInfected(self, priorityGoal):
+        """Will cause agent's behaviour to be determined by the BoidGroupTarget instance passed in here."""
+        
         self.makeLeader(None)
         if(self._priorityGoal != priorityGoal):
             self._priorityGoal = priorityGoal   
@@ -180,13 +231,17 @@ class BoidAgent(object):
 
 ##################### 
     def makeFollowCurvePath(self, curvePath):
+        """Will make the agents behaviour influenced the the BoidGroupPath instance passed in here."""
+        
         self._curvePath = curvePath
         self._reachedEndOfCurvePath = False
         
 ##################### 
     def updateCurrentVectors(self, position, velocity, decrementInfectionCount = True):
+        """Updates internal state from corresponding vectors."""
+        
         self.boidState.updateCurrentVectors(position, velocity)
-        self.needsBehaviourCalculation = True
+        self._needsBehaviourCalculation = True
         self._isAtPriorityGoal = False
         self.isInBasePyramid = False           
         if(decrementInfectionCount):
@@ -198,8 +253,9 @@ class BoidAgent(object):
 
 ###########################
     def updateBehaviour(self, boidsList, forceUpdate = False):
+        """Calculates desired behaviour and updates desiredAccleration accordingly."""
         
-        if(self.needsBehaviourCalculation or forceUpdate):            
+        if(self._needsBehaviourCalculation or forceUpdate):            
             if(self.isInBasePyramid):
                 self._followPriorityGoal()
             else:            
@@ -235,7 +291,7 @@ class BoidAgent(object):
                 elif(self.isInBasePyramid):
                     self._followPriorityGoal()
                 
-            self.needsBehaviourCalculation = False
+            self._needsBehaviourCalculation = False
         
         #boidBenchmarker.bmStop("update-setBehaviour")
 
@@ -243,6 +299,9 @@ class BoidAgent(object):
 
 ######################
     def _pushAwayFromWallIfNeeded(self, directionToGoal):
+        """Agents in a basePyramid sometimes get pushed to the corners and get
+        stuck there, which is not desirable.  This method corrects that behaviour."""
+        
         if(self._hasArrivedAtGoalBase and not self.isInBasePyramid):
             angle = abs(directionToGoal.angleFrom(self._priorityGoal._baseToFinalDirection))
             if(angle > 82):
@@ -254,6 +313,8 @@ class BoidAgent(object):
 
 ######################
     def _followPriorityGoal(self):
+        """Determines desiredAcceleration if agent is currently following a BoidGroupTarget."""
+        
         if(self.isFollowingPriorityGoal):
             if(self.isInBasePyramid or self.isAtPriorityGoal):
                 self._desiredAcceleration.resetVec(self._priorityGoal.getDesiredAcceleration(self))
@@ -263,11 +324,15 @@ class BoidAgent(object):
                     #for nearbyBoid in self.boidState.collidedList:
                 if(self.isCrowded):
                     for nearbyBoid in self.boidState.crowdedList:
+                        # as the basePyramid grows in size, it's perceived 'boundary' (i.e. the position at which agents are said 
+                        # to have joined the pyramid and can start their 'climbing' behaviour) is not fixed. So to determine it, we
+                        # look at other agents in the immediate vicinity and see if they themselves are in the pyramid.
                         if(nearbyBoid.isInBasePyramid and 
                            (nearbyBoid.currentPosition.distanceFrom(self.currentPosition) < boidConstants.priorityGoalThreshold()) and
                            (nearbyBoid.currentVelocity.magnitude(True) < boidConstants.goalChaseSpeed() or 
                             self.currentVelocity.magnitude(True) < boidConstants.goalChaseSpeed() or ## new line here - might break things...?
                             abs(nearbyBoid.currentVelocity.angleFrom(self.currentVelocity)) > 90)):
+                           
                             self._priorityGoal.registerBoidAsArrived(self)
                             self.isInBasePyramid = True
                             self._desiredAcceleration.resetVec(self._priorityGoal.getDesiredAcceleration(self))

@@ -1,5 +1,8 @@
+from boidObject import BoidObject
+
 import math as mth
 import random as rand
+
 import boidVector2 as bv2
 
 
@@ -7,7 +10,16 @@ def isVector2(otherVector):
     return type(otherVector) == bv2.BoidVector2
 
 
-class BoidVector3(object):
+class BoidVector3(BoidObject):
+    """3D vector with various trig functions.  
+    Most classes in this package now use boidVector3, not 2. Although
+    BoidVector3 has been written to be more or less backwards compatable
+    (i.e. can be used in place of a bv2 and will still behave correctly).
+    As such, note that self.u is interchangeable with self.x, and self.v is interchangeable
+    with self.z.
+    
+    Note also that currently all angles are in degrees, not radians.
+    """
     
     def __init__(self, x = 0, y = 0, z = 0):
         if(type(x) == BoidVector3):
