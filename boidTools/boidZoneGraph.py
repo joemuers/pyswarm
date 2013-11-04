@@ -1,25 +1,25 @@
-from boidObject import BoidObject
+from boidBaseObject import BoidBaseObject
 
 import boidConstants
 import boidUtil
 
 
 
-class _BoidZone(BoidObject):
+class _BoidZone(BoidBaseObject):
     """'Private' class intended for internal within BoidZoneGraph only.
     
     Represents a single zone, with links to immediate neighbours.
     
     Also, each zone contains a 'hitList', basically an optimisation. In successive frame updates,
     Agents will almost always be in the same zone as in the previous frame, or in a neighbouring
-    zone.  As such, when checking if a boid is still within a certain zone or has moved to a different
+    zone.  As such, when checking if an agent is still within a certain zone or has moved to a different
     one, the original zone's hitlist should be checked first rather than iterating sequentially though
     every zone.
     """
 
     def __init__(self, zoneId, xMin, xMax, zMin, zMax):
-        self.zoneId = zoneId
-        self.boidList = []
+        self._zoneId = zoneId
+        self._agentList = []
         self._xMin = xMin
         self._xMax = xMax
         self._zMin = zMin
@@ -34,16 +34,25 @@ class _BoidZone(BoidObject):
 ##########################        
     def __str__(self):
         listStr = ""
-        for boid in self.boidList:
-            listStr += ("\n\t%s" % boid)
+        for agent in self.agentList:
+            listStr += ("\n\t%s" % agent)
         
         return ("<id=%d, xMin=%.4f, xMax=%.4f, zMin=%.4f, zMax=%.4f count=%d\nlist=%s\n >" % 
-                (self.zoneId, self._xMin, self._xMax, self._zMin, self._zMax, len(self.boidList), listStr))
+                (self._zoneId, self._xMin, self._xMax, self._zMin, self._zMax, len(self.agentList), listStr))
 
+########################## 
+    def _getZoneId(self):
+        return self._zoneId
+    zoneId = property(_getZoneId)
+    
+    def _getAgentList(self):
+        return self._agentList
+    agentList = property(_getAgentList)
+    
 ##########################        
     def neighbouringZonesStr(self):
         retStr = ("id=%d, UP=%d, RIGHT=%d, DOWN=%d, LEFT=%d" % 
-                  (self.zoneId,
+                  (self._zoneId,
                   self._neighbouringZoneUp.zoneId if(self._neighbouringZoneUp != None) else -1,
                   self._neighbouringZoneRight.zoneId if(self._neighbouringZoneRight != None) else -1,
                   self._neighbouringZoneDown.zoneId if(self._neighbouringZoneDown != None) else -1,
@@ -101,7 +110,7 @@ class _BoidZone(BoidObject):
 ##########################         
     def _addToUpNeighbour(self, boid):
         if(self._neighbouringZoneUp != None):
-            self._neighbouringZoneUp.boidList.append(boid)
+            self._neighbouringZoneUp.agentList.append(boid)
     
     def _addToUpLeftNeighbour(self, boid):
         if(self._neighbouringZoneUp != None):
@@ -113,15 +122,15 @@ class _BoidZone(BoidObject):
     
     def _addToLeftNeighbour(self, boid):
         if(self._neighbouringZoneLeft != None):
-            self._neighbouringZoneLeft.boidList.append(boid)
+            self._neighbouringZoneLeft.agentList.append(boid)
     
     def _addToRightNeighbour(self, boid):
         if(self._neighbouringZoneRight != None):
-            self._neighbouringZoneRight.boidList.append(boid)
+            self._neighbouringZoneRight.agentList.append(boid)
         
     def _addToDownNeighbour(self, boid):
         if(self._neighbouringZoneDown != None):
-            self._neighbouringZoneDown.boidList.append(boid)
+            self._neighbouringZoneDown.agentList.append(boid)
     
     def _addToDownLeftNeighbour(self, boid):
         if(self._neighbouringZoneDown != None):
@@ -132,44 +141,44 @@ class _BoidZone(BoidObject):
             self._neighbouringZoneDown._addToRightNeighbour(boid)        
 
 ##########################         
-    def updateBoidPosition(self, boid):
+    def updateAgentPosition(self, agent):
         """Returns True if boidAgent is located within this zone, False otherwise.
         
         Will also add the agent to neighbouring zones if the agent fall in the overlap
         region between the two zones."""
         
-        if(self._containsVectorPosition(boid.currentPosition)):
-            self.boidList.append(boid)
+        if(self._containsVectorPosition(agent.currentPosition)):
+            self.agentList.append(agent)
             overlap = boidConstants.mainRegionSize()
-            posX = boid.currentPosition.x
-            posZ = boid.currentPosition.z
+            posX = agent.currentPosition.x
+            posZ = agent.currentPosition.z
             
             
             if(posX < self._xMin + overlap):
-                self._addToLeftNeighbour(boid)
+                self._addToLeftNeighbour(agent)
                 if(posZ < self._zMin + overlap):
-                    self._addToUpNeighbour(boid)
-                    self._addToUpLeftNeighbour(boid)
+                    self._addToUpNeighbour(agent)
+                    self._addToUpLeftNeighbour(agent)
                     return True
                 elif(posZ > self._zMax - overlap):
-                    self._addToDownNeighbour(boid)
-                    self._addToDownLeftNeighbour(boid)
+                    self._addToDownNeighbour(agent)
+                    self._addToDownLeftNeighbour(agent)
                     return True
             elif(posX > self._xMax - overlap):
-                self._addToRightNeighbour(boid)
+                self._addToRightNeighbour(agent)
                 if(posZ < self._zMin + overlap):
-                    self._addToUpNeighbour(boid)
-                    self._addToUpRightNeighbour(boid)
+                    self._addToUpNeighbour(agent)
+                    self._addToUpRightNeighbour(agent)
                     return True
                 elif(posZ > self._zMax - overlap):
-                    self._addToDownNeighbour(boid)
-                    self._addToDownRightNeighbour(boid)
+                    self._addToDownNeighbour(agent)
+                    self._addToDownRightNeighbour(agent)
                     return True     
                 
             if(posZ < self._zMin + overlap):
-                self._addToUpNeighbour(boid)
+                self._addToUpNeighbour(agent)
             elif(posZ > self._zMax - overlap):
-                self._addToDownNeighbour(boid)
+                self._addToDownNeighbour(agent)
                 
             return True
         else:
@@ -180,7 +189,7 @@ class _BoidZone(BoidObject):
 
 
 ##########################################################   
-class BoidZoneGraph(BoidObject):
+class BoidZoneGraph(BoidBaseObject):
     """On each frame update, every agent needs to be checked against every other agent to see 
     if they are neighbouring, crowding, colliding etc.  If this is implemented in a straightforward
     way without any optimisation then the algorithm is of Order (n ^2) - very slow.
@@ -188,9 +197,9 @@ class BoidZoneGraph(BoidObject):
     that region,  which can then be used to prune the queries right down - only agents within the same region
     need to be checked against each other.
     
-    Operation: on each frame update, updateAllBoidPositions should be called, this will update the 
+    Operation: on each frame update, updateAllAgentPositions should be called, this will update the 
     zones with the current agent positions on the grid.  Subsequently, for each agent, a call to
-    regionListForBoid will return a list of other agents which should be checked against for proximity.
+    regionListForAgent will return a list of other agents which should be checked against for proximity.
     
     TODO - bit of a crude implementation at present. Might be worth looking into doing it as a quadtree
     (or octree as option if bringing in height dimension also)...?
@@ -204,11 +213,11 @@ class BoidZoneGraph(BoidObject):
         representing the opposing corners of the grid area which the zones are to cover."""
         
         self._zoneList = []
-        self._boidZoneLookup = {}
+        self._AgentZoneLookup = {}
         self._earlyHitListLookup = {}
         
-        self.lowerBoundsVector = boidUtil.boidVectorFromLocator(negativeIndicesLocator)
-        self.upperBoundsVector = boidUtil.boidVectorFromLocator(positiveIndicesLocator)
+        self._lowerBoundsVector = boidUtil.boidVectorFromLocator(negativeIndicesLocator)
+        self._upperBoundsVector = boidUtil.boidVectorFromLocator(positiveIndicesLocator)
         
         sizeX = self.upperBoundsVector.x - self.lowerBoundsVector.x
         sizeZ = self.upperBoundsVector.z - self.lowerBoundsVector.z
@@ -270,7 +279,16 @@ class BoidZoneGraph(BoidObject):
         for zone in self._zoneList:
             setup += ("%s\n" % zone.neighbouringZonesStr())
             ret += ("%s\n" % zone)
-        return ("%d zones:\n%s\n%s\nlookupCount:%d" % (len(self._zoneList), setup, ret, len(self._boidZoneLookup)))
+        return ("%d zones:\n%s\n%s\nlookupCount:%d" % (len(self._zoneList), setup, ret, len(self._AgentZoneLookup)))
+
+##########################
+    def _getLowerBoundsVector(self):
+        return self._lowerBoundsVector
+    lowerBoundsVector = property(_getLowerBoundsVector)
+    
+    def _getUpperBoundsVector(self):
+        return self._upperBoundsVector
+    upperBoundsVector = property(_getUpperBoundsVector)
 
 ##########################  
     def _getUseEarlyHitListLookup(self):
@@ -287,58 +305,58 @@ class BoidZoneGraph(BoidObject):
 ##########################      
     def resetZones(self):
         for zone in self._zoneList:
-            del zone.boidList[:]       
+            del zone.agentList[:]       
 
 ##########################              
-    def updateBoidPosition(self, boid):
-        """Updates the zones with the position of the given boid.
+    def updateAgentPosition(self, agent):
+        """Updates the zones with the position of the given agent.
         Removing it from a previous zone if necessary, and adding it to a new one if necessary."""
         
         foundZone = False
-        if(self.useEarlyHitListLookup and boid.particleId in self._earlyHitListLookup):
-            hitListLookup = self._earlyHitListLookup[boid.particleId]
+        if(self.useEarlyHitListLookup and agent.particleId in self._earlyHitListLookup):
+            hitListLookup = self._earlyHitListLookup[agent.particleId]
             for zone in hitListLookup:
-                if(zone.updateBoidPosition(boid)):
-                    self._boidZoneLookup[boid.particleId] = zone    
-                    self._earlyHitListLookup[boid.particleId] = zone._earlyHitList
+                if(zone.updateAgentPosition(agent)):
+                    self._AgentZoneLookup[agent.particleId] = zone    
+                    self._earlyHitListLookup[agent.particleId] = zone._earlyHitList
                     foundZone = True
                     break
             if(not foundZone):
-                del self._earlyHitListLookup[boid.particleId]
+                del self._earlyHitListLookup[agent.particleId]
                 
         if(not foundZone):
             for zone in self._zoneList:
-                if(zone.updateBoidPosition(boid)):
-                    self._boidZoneLookup[boid.particleId] = zone
+                if(zone.updateAgentPosition(agent)):
+                    self._AgentZoneLookup[agent.particleId] = zone
                     foundZone = True
                     
                     if(self.useEarlyHitListLookup):
-                        self._earlyHitListLookup[boid.particleId] = zone._earlyHitList
+                        self._earlyHitListLookup[agent.particleId] = zone._earlyHitList
                     break        
                 
         if(not foundZone):
-            print("XXXX WARNING = NOT FOUND ZONE FOR BOID %s" % boid)
+            print("XXXX WARNING = NOT FOUND ZONE FOR BOID AGENT %s" % agent)
 
  
 ##########################   
-    def updateAllBoidPositions(self, boidsList):
+    def updateAllAgentPositions(self, agentsList):
         """Updates all zones with the positions of the boids in the given list."""
         
         self.resetZones()
         
-        for boid in boidsList:
-            self.updateBoidPosition(boid)
+        for agent in agentsList:
+            self.updateAgentPosition(agent)
 
 ##########################              
-    def regionListForBoid(self, boid):
-        """Returns a list of other boids within the same zone (or neighbouring zones within the overlap
-        area) as the boid given."""
+    def regionListForAgent(self, agent):
+        """Returns a list of other agents within the same zone (or neighbouring zones within the overlap
+        area) as the agent given."""
         
-        if(boid.particleId in self._boidZoneLookup):
-            zone = self._boidZoneLookup[boid.particleId]    
-            return zone.boidList
+        if(agent.particleId in self._AgentZoneLookup):
+            zone = self._AgentZoneLookup[agent.particleId]    
+            return zone.agentList
         else:
-            print("WARNING - NO ZONE FOUND FOR BOID #%s" % boid)
+            print("WARNING - NO ZONE FOUND FOR BOID #%s" % agent)
             emptyList = []
             return emptyList
         

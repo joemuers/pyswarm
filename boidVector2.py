@@ -1,10 +1,10 @@
-from boidObject import BoidObject
+from boidBaseObject import BoidBaseObject
 
 import random as rand
 import math as mth
 
 
-class BoidVector2(BoidObject):
+class BoidVector2(BoidBaseObject):
     """2D vector with various trig functions.
     Initial implementation of boid system used surface UV coordinates rather than 3D position, hence 
     this class.  However still comes in handy...
@@ -13,6 +13,12 @@ class BoidVector2(BoidObject):
     """
     
     def __init__(self, u = 0, v = 0):
+        """Note that you can either: 
+        - pass in a vector object as an argument to create a (deep) copy
+        - pass in numerical values for each axis
+        - pass nothing for default values (0,0).
+        """
+        
         if(type(u) == BoidVector2):
             self._u = u.u
             self._v = u.v

@@ -1,5 +1,6 @@
 import pymel.core as pm
 import pymel.core.nodetypes as pmn  # Eclipse doesn't like pm.nodetypes for some reason...
+
 import boidVector3 as bv3
 
 

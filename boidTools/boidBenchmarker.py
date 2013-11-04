@@ -5,6 +5,16 @@ Created on Sep 21, 2009
 This module enable its user to monitor the amount of time spend in between two commands start and stop.
 The module is fairly imprecise if the monitored task is quick as the start and stop commands are fairly slow (2e-07 - 5e-07)
 '''
+
+"""
+Comment from Joseph Muers:
+This class is not used during normal boids operation, it is a separate tool that comes in useful for analysing 
+performance and identifying bottlenecks.
+IMPORTANT - As you can see from the header above, this particular class was authored by tcezard and NOT by me 
+(although I have altered it very slightly).
+"""
+
+
 from time import time
 from math import sqrt
 import logging

@@ -1,4 +1,4 @@
-from boidObject import BoidObject
+from boidBaseObject import BoidBaseObject
 
 import math as mth
 import random as rand
@@ -10,7 +10,7 @@ def isVector2(otherVector):
     return type(otherVector) == bv2.BoidVector2
 
 
-class BoidVector3(BoidObject):
+class BoidVector3(BoidBaseObject):
     """3D vector with various trig functions.  
     Most classes in this package now use boidVector3, not 2. Although
     BoidVector3 has been written to be more or less backwards compatable
@@ -22,6 +22,12 @@ class BoidVector3(BoidObject):
     """
     
     def __init__(self, x = 0, y = 0, z = 0):
+        """Note that you can either: 
+        - pass in a vector object as an argument to create a (deep) copy
+        - pass in numerical values for each axis
+        - pass nothing for default values (0,0,0).
+        """
+        
         if(type(x) == BoidVector3):
             self._x = x.x
             self._y = x.y
@@ -39,6 +45,8 @@ class BoidVector3(BoidObject):
         self._magnitude = -1.0
         self._needs2dMagCalc = True
         self._2dMagnitude = -1.0
+        
+    
 
 ####################### 
     def __str__(self):
@@ -177,6 +185,9 @@ class BoidVector3(BoidObject):
         if(not ignoreVertical and not otherVector._needsMagCalc):
             self._magnitude = otherVector._magnitude
             self._needsMagCalc = False
+        elif(ignoreVertical and not otherVector._needs2dMagCalc):
+            self._2dMagnitude = otherVector._2dMagnitude
+            self._needs2dMagCalc = False
 
 ####################### 
     def invert(self):

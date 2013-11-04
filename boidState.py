@@ -1,10 +1,10 @@
-from boidObject import BoidObject
+from boidBaseObject import BoidBaseObject
 
 import boidConstants
 import boidVector3 as bv3
 
 
-class BoidState(BoidObject):
+class BoidState(BoidBaseObject):
     """Internal to BoidAgent, i.e. each BoidAgent instance "has" a boidState member.  
     Essentially just a data container with information on the corresponding agent, regarding:
         - current position
@@ -28,13 +28,16 @@ class BoidState(BoidObject):
         
         self._isTouchingGround = False
         
-        self.nearbyList = []        # 
-        self.crowdedList = []       #
-        self.collisionList = []     # lists of boidAgent instances
+        self._nearbyList = []        # 
+        self._crowdedList = []       #
+        self._collisionList = []     # lists of boidAgent instances
         self._avPosition = bv3.BoidVector3()
         self._avVelocity = bv3.BoidVector3()
         self._avCrowdedPos = bv3.BoidVector3()
-        self._avCollisionDirection = bv3.BoidVector3()        
+        self._avCollisionDirection = bv3.BoidVector3()     
+        self._needsListsRebuild = True 
+        
+        self._behaviourSpecificState = None  # data 'blob' for client objects, not used internally
         
 ###################        
     def __str__(self):
@@ -53,8 +56,10 @@ class BoidState(BoidObject):
         for collidedBoid in self.collisionList:
             collisionList += ("%d," % collidedBoid.particleId)
         
-        return ("id=%d, avP=%s, avV=%s, avCP=%s, nr=%s, cr=%s, col=%s" % 
-                (self._particleId, self._avPosition, self._avVelocity, self._avCrowdedPos, nearList, crowdList, collisionList))       
+        return ("id=%d, avP=%s, avV=%s, avCP=%s, nr=%s, cr=%s, col=%s, bhvr=%s" % 
+                (self._particleId, self._avPosition, self._avVelocity, 
+                 self._avCrowdedPos, nearList, crowdList, collisionList,
+                 self._behaviourSpecificState))       
     
 #####################
     def getParticleId(self):
@@ -104,7 +109,25 @@ class BoidState(BoidObject):
     
     def _getAvCollisionDirection(self):
         return self._avCollisionDirection
-    avCollisionDirection = property(_getAvCollisionDirection)    
+    avCollisionDirection = property(_getAvCollisionDirection)   
+    
+    def _getNearbyList(self):
+        return self._nearbyList
+    nearbyList = property(_getNearbyList)
+    
+    def _getCrowdedList(self):
+        return self._crowdedList
+    crowdedList = property(_getCrowdedList)
+    
+    def _getCollisionList(self):
+        return self._collisionList
+    collisionList = property(_getCollisionList)
+    
+    def _getBehaviourSpecificState(self):
+        return self._behaviourSpecificState 
+    def _setBehaviourSpecificState(self, value):
+        self._behaviourSpecificState = value
+    behaviourSpecificState = property(_getBehaviourSpecificState, _setBehaviourSpecificState)
     
 #####################           
     def updateCurrentVectors(self, position, velocity):
@@ -118,6 +141,8 @@ class BoidState(BoidObject):
             self._isTouchingGround = False
         else:
             self._isTouchingGround = True
+        
+        self._resetLists()
 
 #################################       
     def withinRadiusOfPoint(self, otherPosition, radius):
@@ -140,7 +165,7 @@ class BoidState(BoidObject):
         self._isTouchingGround = False
 
 ##############################        
-    def resetLists(self):
+    def _resetLists(self):
         """Resets lists of nearby, crowded and collided agents."""
         
         del self.nearbyList[:]
@@ -151,8 +176,10 @@ class BoidState(BoidObject):
         del self.collisionList[:]
         self._avCollisionDirection.reset()  
         
+        self._needsListsRebuild = True
+        
 ##############################
-    def buildNearbyList(self, otherBoids, neighbourhoodSize, crowdedRegionSize, collisionRegionSize):
+    def buildNearbyList(self, otherBoids, neighbourhoodSize, crowdedRegionSize, collisionRegionSize, forceUpdate = False):
         """Builds up nearby, crowded and collided lists.
         @param otherBoids List: list of other agents, all of which will be checked for proximity.
         @param neighbourhoodSize Float: distance below which other agents considered to be "nearby".
@@ -160,50 +187,55 @@ class BoidState(BoidObject):
         @param collisionRegionSize Float: ditto with "collided".
         """
         
-        self.resetLists()
-        visibleAreaAngle = 180 - (boidConstants.blindRegionAngle() / 2)
+        if(forceUpdate):
+            self._resetLists()
         
-        for otherBoid in otherBoids:
-            otherBoidState = otherBoid.boidState
+        if(self._needsListsRebuild):
+            visibleAreaAngle = 180 - (boidConstants.blindRegionAngle() / 2)
             
-            if(otherBoidState.particleId != self._particleId and
-               otherBoidState.isTouchingGround and
-               self.withinRadiusOfPoint(otherBoidState.position, neighbourhoodSize) and
-               abs(self.angleToLocation(otherBoidState.position)) < visibleAreaAngle):
+            for otherBoid in otherBoids:
+                otherBoidState = otherBoid.boidState
                 
-                #otherBoid is "nearby" if we're here
-                self.nearbyList.append(otherBoid)
-                self._avVelocity.add(otherBoidState.velocity)
-                self._avPosition.add(otherBoidState.position)
-
-                if(self.withinRadiusOfPoint(otherBoidState.position, crowdedRegionSize)):
-                    #"crowded" if we're here
-                    self.crowdedList.append(otherBoid)
-                    self._avCrowdedPos.add(otherBoidState.position)
+                if(otherBoidState.particleId != self._particleId and
+                   otherBoidState.isTouchingGround and
+                   self.withinRadiusOfPoint(otherBoidState.position, neighbourhoodSize) and
+                   abs(self.angleToLocation(otherBoidState.position)) < visibleAreaAngle):
                     
-                    if(self.withinRadiusOfPoint(otherBoidState.position, collisionRegionSize)):
-                        directionOfCollisionVec = otherBoidState.position - self._position
-                        if(abs(self._velocity.angleFrom(directionOfCollisionVec)) < 90):
-                            #"collided" if we're here
-                            self._isCollided = True
-                            self.collisionList.append(otherBoid)
-                            self._avCollisionDirection.add(otherBoidState.position)
-        
-        numNeighbours = len(self.nearbyList)
-        if(numNeighbours > 0):
-            self._avVelocity.add(self._velocity)
-            self._avVelocity.divide(numNeighbours + 1)
-            self._avPosition.add(self._position)
-            self._avPosition.divide(numNeighbours + 1)
-        else:
-            self._avVelocity.resetVec(self._velocity)
-            self._avPosition.resetVec(self._position)
-
-        crowdedSize = len(self.crowdedList)
-        if(crowdedSize > 0):
-            self._avCrowdedPos.divide(crowdedSize)
-        else:
-            self._avCrowdedPos.resetVec(self._position)
+                    #otherBoid is "nearby" if we're here
+                    self.nearbyList.append(otherBoid)
+                    self._avVelocity.add(otherBoidState.velocity)
+                    self._avPosition.add(otherBoidState.position)
+    
+                    if(self.withinRadiusOfPoint(otherBoidState.position, crowdedRegionSize)):
+                        #"crowded" if we're here
+                        self.crowdedList.append(otherBoid)
+                        self._avCrowdedPos.add(otherBoidState.position)
+                        
+                        if(self.withinRadiusOfPoint(otherBoidState.position, collisionRegionSize)):
+                            directionOfCollisionVec = otherBoidState.position - self._position
+                            if(abs(self._velocity.angleFrom(directionOfCollisionVec)) < 90):
+                                #"collided" if we're here
+                                self._isCollided = True
+                                self.collisionList.append(otherBoid)
+                                self._avCollisionDirection.add(otherBoidState.position)
             
-        if(len(self.collisionList) > 0):
-            self._avCollisionDirection.divide(len(self.collisionList))
+            numNeighbours = len(self.nearbyList)
+            if(numNeighbours > 0):
+                self._avVelocity.add(self._velocity)
+                self._avVelocity.divide(numNeighbours + 1)
+                self._avPosition.add(self._position)
+                self._avPosition.divide(numNeighbours + 1)
+            else:
+                self._avVelocity.resetVec(self._velocity)
+                self._avPosition.resetVec(self._position)
+    
+            crowdedSize = len(self.crowdedList)
+            if(crowdedSize > 0):
+                self._avCrowdedPos.divide(crowdedSize)
+            else:
+                self._avCrowdedPos.resetVec(self._position)
+                
+            if(len(self.collisionList) > 0):
+                self._avCollisionDirection.divide(len(self.collisionList))
+        
+        self._needsListsRebuild = False
