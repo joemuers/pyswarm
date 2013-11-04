@@ -1,22 +1,2 @@
+*.pyc
 
-boidAgent.pyc
-
-boidBenchmarker.pyc
-
-boidConstants.pyc
-
-boidGroupPath.pyc
-
-boidGroupTarget.pyc
-
-boidState.pyc
-
-boidZoneGraph.pyc
-
-boidVector3.pyc
-
-boidVector2.pyc
-
-boidUtil.pyc
-
-boidSwarm.pyc
