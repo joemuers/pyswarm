@@ -9,6 +9,7 @@ import boidAgent as ba
 import boidBehaviour.boidBehaviourNormal as bbN
 import boidBehaviour.boidBehaviourGoalDriven as bbG
 import boidBehaviour.boidBehaviourFollowPath as bbF
+
 from boidBehaviour.boidBehaviourBaseObject import BoidBehaviourDelegate
 from boidBehaviour.boidBehaviourGoalDriven import agentBehaviourIsGoalDriven,\
 agentIsInBasePyramid, agentIsChasingGoal
@@ -349,5 +350,37 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
         agent._desiredAcceleration.reset()
         agent._jump()
         agent.commitNewBehaviour(self._particleShapeNode.name())
+        
 
+#############################        
+    def closestAgentToPoint(self, x, y, z, ignoreVertical = False):
+        """Helper method intended for use in Maya's Script Editor."""
+        
+        target = bv3.BoidVector3(x, y, z)
+        closestAgent = None
+        closestDistance = None
+        
+        
+        for agent in self._boidsAgentsList:
+                if(closestAgent == None):
+                    closestAgent = agent
+                    closestDistance = agent.currentPosition - target
+                else:
+                    candidateDistance = agent.currentPosition - target
+                    if(candidateDistance.magnitude(ignoreVertical) < closestDistance.magnitude(ignoreVertical)):
+                        closestAgent = agent
+                        closestDistance = candidateDistance
+        
+        return closestAgent
+    
+    def closestAgentToLocator(self, locator, ignoreVertical = False):
+        """Helper method intended for use in Maya's Script Editor."""
+        
+        target = boidUtil.boidVectorFromLocator(locator)
+        return self.closestAgentToPoint(target.x, target.y, target.z, ignoreVertical)
+    
+    
+                    
+                
+### END OF CLASS 
 ################################################################################

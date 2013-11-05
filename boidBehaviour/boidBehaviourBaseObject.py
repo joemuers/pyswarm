@@ -1,4 +1,4 @@
-from boidBaseObject import BoidBaseObject
+import boidBaseObject as bbo
 
 import boidVector.boidVector3 as bv3
 
@@ -13,7 +13,7 @@ class BoidBehaviourDelegate(object):
 
 ##########################
 
-class BoidBehaviourBaseObject(BoidBaseObject):
+class BoidBehaviourBaseObject(bbo.BoidBaseObject):
     
     def __init__(self, delegate = None):
         if(delegate != None and type(delegate) != BoidBehaviourDelegate):
