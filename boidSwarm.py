@@ -1,9 +1,9 @@
 from boidBaseObject import BoidBaseObject
 
-import boidConstants
+import boidAttributes
 from boidTools import boidUtil
 
-import boidVector3 as bv3
+import boidVector.boidVector3 as bv3
 import boidTools.boidZoneGraph as bzg
 import boidAgent as ba
 import boidBehaviour.boidBehaviourNormal as bbN
@@ -231,7 +231,7 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
             boidUtil.setParticleColour(self.particleShapeName, agent.particleId, 0, 0, 0)
             
     def setDebugColour(self, agent):
-        if(boidConstants.useDebugColours()):
+        if(boidAttributes.useDebugColours()):
             particleId = agent.particleId
             
             if(agentIsInBasePyramid(agent)):

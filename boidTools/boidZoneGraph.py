@@ -1,6 +1,6 @@
 from boidBaseObject import BoidBaseObject
 
-import boidConstants
+import boidAttributes
 import boidUtil
 
 
@@ -149,7 +149,7 @@ class _BoidZone(BoidBaseObject):
         
         if(self._containsVectorPosition(agent.currentPosition)):
             self.agentList.append(agent)
-            overlap = boidConstants.mainRegionSize()
+            overlap = boidAttributes.mainRegionSize()
             posX = agent.currentPosition.x
             posZ = agent.currentPosition.z
             
@@ -207,7 +207,7 @@ class BoidZoneGraph(BoidBaseObject):
     
     def __init__(self, negativeIndicesLocator, positiveIndicesLocator):
         """Constructs a zone system over the specified area with a zone resolution as 
-        determined by boidConstants.preferredZoneSize.
+        determined by boidAttributes.preferredZoneSize.
         
         Negative and positive indicesLocator arguments must be Pymel Locator objects
         representing the opposing corners of the grid area which the zones are to cover."""
@@ -222,17 +222,17 @@ class BoidZoneGraph(BoidBaseObject):
         sizeX = self.upperBoundsVector.x - self.lowerBoundsVector.x
         sizeZ = self.upperBoundsVector.z - self.lowerBoundsVector.z
 
-        resolutionX = int(sizeX / boidConstants.preferredZoneSize())
-        resolutionZ = int(sizeZ / boidConstants.preferredZoneSize())
+        resolutionX = int(sizeX / boidAttributes.preferredZoneSize())
+        resolutionZ = int(sizeZ / boidAttributes.preferredZoneSize())
         
         stepSizeX = sizeX / float(resolutionX)
         stepSizeZ = sizeZ / float(resolutionZ)
         
-        while((stepSizeX / 2) < boidConstants.mainRegionSize() and resolutionX > 1):
+        while((stepSizeX / 2) < boidAttributes.mainRegionSize() and resolutionX > 1):
             print ("WARNING - ZONE X-RESOLUTION TOO HIGH, REDUCING...")
             resolutionX -= 1
             stepSizeX = sizeX / resolutionX
-        while((stepSizeZ / 2) < boidConstants.mainRegionSize() and resolutionZ > 1):
+        while((stepSizeZ / 2) < boidAttributes.mainRegionSize() and resolutionZ > 1):
             print ("WARNING - ZONE Z-RESOLUTION TOO HIGH, REDUCING...")
             resolutionZ -= 1
             stepSizeX = sizeZ / resolutionZ        

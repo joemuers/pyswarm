@@ -1,16 +1,16 @@
 from boidBehaviourBaseObject import BoidBehaviourBaseObject
 
-import boidConstants
+import boidAttributes
 from boidTools import boidUtil
 
-import boidVector3 as bv3
+import boidVector.boidVector3 as bv3
 
 
 
 _pathBehaviourID = "PATH"
 
 def agentBehaviourIsFollowPath(agent):
-    return (agent.boidState.behaviourSpecificState != None and agent.boidState.behaviourSpecificState.__str__() == _pathBehaviourID)
+    return (agent.state.behaviourSpecificState != None and agent.state.behaviourSpecificState.__str__() == _pathBehaviourID)
 
 
 class BoidBehaviourFollowPath(BoidBehaviourBaseObject):
@@ -114,21 +114,21 @@ class BoidBehaviourFollowPath(BoidBehaviourBaseObject):
             pymelClosestCurvePoint = self._curve.closestPoint(pymelLocationVector, space='world')
             boidCurveClosestPoint = boidUtil.boidVectorFromPymelPoint(pymelClosestCurvePoint)
             
-            if(boidCurveClosestPoint.distanceFrom(self._endVector) < boidConstants.curveEndReachedThreshold()):
+            if(boidCurveClosestPoint.distanceFrom(self._endVector) < boidAttributes.curveEndReachedThreshold()):
                 self.endCurveBehaviourForAgent(agent)
             else:
                 self._currentlyFollowingList.add(agent)
                 
                 currentParamValue = self._curve.getParamAtPoint(pymelClosestCurvePoint, space='world')
                 lengthAlongCurve = currentParamValue / self._endParam
-                fromStartWidth = (1 - lengthAlongCurve) * boidConstants.curveDevianceThreshold() * self._taperStart
-                fromEndWidth = lengthAlongCurve * boidConstants.curveDevianceThreshold() * self._taperEnd
+                fromStartWidth = (1 - lengthAlongCurve) * boidAttributes.curveDevianceThreshold() * self._taperStart
+                fromEndWidth = lengthAlongCurve * boidAttributes.curveDevianceThreshold() * self._taperEnd
                 finalWidth = fromStartWidth + fromEndWidth
                 
                 nearStart = False
                 if(boidCurveClosestPoint.distanceFrom(agent.currentPosition) > finalWidth):
                     desiredAcceleration += (boidCurveClosestPoint - agent.currentPosition)
-                    desiredAcceleration.normalise(boidConstants.maxAccel())
+                    desiredAcceleration.normalise(boidAttributes.maxAccel())
                     nearStart = True
                 
                 if(currentParamValue > 0 or nearStart):
@@ -137,15 +137,15 @@ class BoidBehaviourFollowPath(BoidBehaviourBaseObject):
                     boidTangentVector = boidUtil.boidVectorFromPymelVector(tangent)
                     
                     desiredAcceleration += boidTangentVector
-                    desiredAcceleration.normalise(boidConstants.curveGroupVectorMagnitude())
+                    desiredAcceleration.normalise(boidAttributes.curveGroupVectorMagnitude())
 
         #TODO - implement 'normal' boidBehaviour also???     
          
          
             self.clampDesiredAccelerationIfNecessary(agent, 
                                                      desiredAcceleration, 
-                                                     boidConstants.maxAccel(), 
-                                                     boidConstants.maxVel())
+                                                     boidAttributes.maxAccel(), 
+                                                     boidAttributes.maxVel())
             if(self.curveBehaviourInfluence < 1.0):
                 normalDesiredAcceleration = self._normalBehaviour.getDesiredAccelerationForAgent(agent, nearbyAgents)
                 normalBehaviourInfluence = 1 - self.curveBehaviourInfluence

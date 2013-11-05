@@ -1,11 +1,11 @@
 from boidBaseObject import BoidBaseObject
 
-import boidConstants
-import boidVector3 as bv3
+import boidAttributes
+import boidVector.boidVector3 as bv3
 
 
-class BoidState(BoidBaseObject):
-    """Internal to BoidAgent, i.e. each BoidAgent instance "has" a boidState member.  
+class BoidAgentState(BoidBaseObject):
+    """Internal to BoidAgent, i.e. each BoidAgent instance "has" a boidAgentState member.  
     Essentially just a data container with information on the corresponding agent, regarding:
         - current position
         - current heading/acceleration
@@ -47,14 +47,14 @@ class BoidState(BoidBaseObject):
 ################### 
     def metaStr(self):
         nearList = ""
-        for nearbyBoid in self.nearbyList:
-            nearList += ("%d," % nearbyBoid.particleId)
+        for nearbyAgent in self.nearbyList:
+            nearList += ("%d," % nearbyAgent.particleId)
         crowdList = ""
-        for crowdingBoid in self.crowdedList:
-            crowdList += ("%d," % crowdingBoid.particleId)
+        for crowdingAgent in self.crowdedList:
+            crowdList += ("%d," % crowdingAgent.particleId)
         collisionList = ""
-        for collidedBoid in self.collisionList:
-            collisionList += ("%d," % collidedBoid.particleId)
+        for collidingAgent in self.collisionList:
+            collisionList += ("%d," % collidingAgent.particleId)
         
         return ("id=%d, avP=%s, avV=%s, avCP=%s, nr=%s, cr=%s, col=%s, bhvr=%s" % 
                 (self._particleId, self._avPosition, self._avVelocity, 
@@ -137,7 +137,7 @@ class BoidState(BoidBaseObject):
         self._acceleration = velocity - self._velocity
         self._velocity.resetVec(velocity)
         
-        if(self._acceleration.y < boidConstants.accelerationPerFrameDueToGravity()):
+        if(self._acceleration.y < boidAttributes.accelerationPerFrameDueToGravity()):
             self._isTouchingGround = False
         else:
             self._isTouchingGround = True
@@ -179,9 +179,9 @@ class BoidState(BoidBaseObject):
         self._needsListsRebuild = True
         
 ##############################
-    def buildNearbyList(self, otherBoids, neighbourhoodSize, crowdedRegionSize, collisionRegionSize, forceUpdate = False):
+    def buildNearbyList(self, otherAgents, neighbourhoodSize, crowdedRegionSize, collisionRegionSize, forceUpdate = False):
         """Builds up nearby, crowded and collided lists.
-        @param otherBoids List: list of other agents, all of which will be checked for proximity.
+        @param otherAgents List: list of other agents, all of which will be checked for proximity.
         @param neighbourhoodSize Float: distance below which other agents considered to be "nearby".
         @param crowdedRegionSize Float: ditto with "crowded".
         @param collisionRegionSize Float: ditto with "collided".
@@ -191,33 +191,33 @@ class BoidState(BoidBaseObject):
             self._resetLists()
         
         if(self._needsListsRebuild):
-            visibleAreaAngle = 180 - (boidConstants.blindRegionAngle() / 2)
+            visibleAreaAngle = 180 - (boidAttributes.blindRegionAngle() / 2)
             
-            for otherBoid in otherBoids:
-                otherBoidState = otherBoid.boidState
+            for otherAgent in otherAgents:
+                otherAgentState = otherAgent.state
                 
-                if(otherBoidState.particleId != self._particleId and
-                   otherBoidState.isTouchingGround and
-                   self.withinRadiusOfPoint(otherBoidState.position, neighbourhoodSize) and
-                   abs(self.angleToLocation(otherBoidState.position)) < visibleAreaAngle):
+                if(otherAgentState.particleId != self._particleId and
+                   otherAgentState.isTouchingGround and
+                   self.withinRadiusOfPoint(otherAgentState.position, neighbourhoodSize) and
+                   abs(self.angleToLocation(otherAgentState.position)) < visibleAreaAngle):
                     
                     #otherBoid is "nearby" if we're here
-                    self.nearbyList.append(otherBoid)
-                    self._avVelocity.add(otherBoidState.velocity)
-                    self._avPosition.add(otherBoidState.position)
+                    self.nearbyList.append(otherAgent)
+                    self._avVelocity.add(otherAgentState.velocity)
+                    self._avPosition.add(otherAgentState.position)
     
-                    if(self.withinRadiusOfPoint(otherBoidState.position, crowdedRegionSize)):
+                    if(self.withinRadiusOfPoint(otherAgentState.position, crowdedRegionSize)):
                         #"crowded" if we're here
-                        self.crowdedList.append(otherBoid)
-                        self._avCrowdedPos.add(otherBoidState.position)
+                        self.crowdedList.append(otherAgent)
+                        self._avCrowdedPos.add(otherAgentState.position)
                         
-                        if(self.withinRadiusOfPoint(otherBoidState.position, collisionRegionSize)):
-                            directionOfCollisionVec = otherBoidState.position - self._position
+                        if(self.withinRadiusOfPoint(otherAgentState.position, collisionRegionSize)):
+                            directionOfCollisionVec = otherAgentState.position - self._position
                             if(abs(self._velocity.angleFrom(directionOfCollisionVec)) < 90):
                                 #"collided" if we're here
                                 self._isCollided = True
-                                self.collisionList.append(otherBoid)
-                                self._avCollisionDirection.add(otherBoidState.position)
+                                self.collisionList.append(otherAgent)
+                                self._avCollisionDirection.add(otherAgentState.position)
             
             numNeighbours = len(self.nearbyList)
             if(numNeighbours > 0):

@@ -1,16 +1,16 @@
 from boidBaseObject import BoidBaseObject
 
-import boidConstants
+import boidAttributes
 from boidTools import boidUtil
 
-import boidVector3 as bv3
-import boidState as bs
+import boidVector.boidVector3 as bv3
+import boidAgentState as bas
 
 
 class BoidAgent(BoidBaseObject):
     """Represents single boid instance.   
     Logic concerning agent's behaviour is contained within this class. (Internally,
-    data concerning position, heading, neighbourhood & so on is in the boidState 
+    data concerning position, heading, neighbourhood & so on is in the boidAgentState 
     container).
     
     Behaviour: Dependent on situation, in normal circumstances, behaviour governed by relatively
@@ -54,7 +54,7 @@ class BoidAgent(BoidBaseObject):
     """
 
     def __init__(self, particleId, startingBehaviour, negativeGridBounds = None, positiveGridBounds = None):
-        self._boidState = bs.BoidState(int(particleId))
+        self._state = bas.BoidAgentState(int(particleId))
         
         self._currentBehaviour = startingBehaviour
         self._pendingBehaviour = None
@@ -74,7 +74,7 @@ class BoidAgent(BoidBaseObject):
 
 ##################### 
     def __str__(self):
-        return "<%s, stck=%.2f>" % (self.boidState, self.stickinessScale)
+        return "<%s, stck=%.2f>" % (self.state, self.stickinessScale)
     
     def __eq__(self, other):
         return (self.particleId == other.particleId) if(other != None) else False
@@ -93,31 +93,31 @@ class BoidAgent(BoidBaseObject):
 
 #####################
     def metaStr(self):          
-        return ("<%s, desiredAccel=%s>" % (self.boidState.metaStr(), self._desiredAcceleration))
+        return ("<%s, desiredAccel=%s>" % (self.state.metaStr(), self._desiredAcceleration))
 
 #####################
     def _getParticleId(self):
-        return self.boidState.particleId
+        return self.state.particleId
     particleId = property(_getParticleId)
     
-    def _getBoidState(self):
-        return self._boidState
-    boidState = property(_getBoidState)
+    def _getState(self):
+        return self._state
+    state = property(_getState)
     
     def _getCurrentBehaviour(self):
         return self._currentBehaviour
     currentBehaviour = property(_getCurrentBehaviour)
 
     def _getCurrentPosition(self):
-        return self.boidState.position
+        return self.state.position
     currentPosition = property(_getCurrentPosition)
     
     def _getCurrentVelocity(self):
-        return self.boidState.velocity
+        return self.state.velocity
     currentVelocity = property(_getCurrentVelocity)
     
     def _getCurrentAcceleration(self):
-        return self.boidState.acceleration
+        return self.state.acceleration
     currentAcceleration = property(_getCurrentAcceleration)
     
     def _getStickinessScale(self):
@@ -129,19 +129,19 @@ class BoidAgent(BoidBaseObject):
     stickinessScale = property(_getStickinessScale, _setStickinessScale) 
     
     def _getHasNeighbours(self):
-        return self.boidState.hasNeighbours
+        return self.state.hasNeighbours
     hasNeighbours = property(_getHasNeighbours)
     
     def _getIsCrowded(self):
-        return self.boidState.isCrowded
+        return self.state.isCrowded
     isCrowded = property(_getIsCrowded)
     
     def _getIsCollided(self):
-        return self.boidState.isCollided
+        return self.state.isCollided
     isCollided = property(_getIsCollided)
     
     def _getIsTouchingGround(self):
-        return self.boidState.isTouchingGround
+        return self.state.isTouchingGround
     isTouchingGround = property(_getIsTouchingGround)
     
     def _getHasPendingBehaviour(self):
@@ -155,7 +155,7 @@ class BoidAgent(BoidBaseObject):
         
         if(incubationPeriod == 0):
             self._currentBehaviour = behaviour
-            self.boidState.behaviourSpecificState = behaviour.createBehaviourSpecificStateObject()
+            self.state.behaviourSpecificState = behaviour.createBehaviourSpecificStateObject()
         else:
             self._pendingBehaviour = behaviour
             self._pendingBehavoirCountdown = incubationPeriod
@@ -174,7 +174,7 @@ class BoidAgent(BoidBaseObject):
     def updateCurrentVectors(self, position, velocity):
         """Updates internal state from corresponding vectors."""
         
-        self.boidState.updateCurrentVectors(position, velocity)
+        self.state.updateCurrentVectors(position, velocity)
         self._needsBehaviourUpdate = True         
         self._needsBehaviourCommit = False
            
@@ -196,9 +196,9 @@ class BoidAgent(BoidBaseObject):
 ##############################
     def _jump(self):
         if(self.isTouchingGround):
-            self._desiredAcceleration.y += boidConstants.jumpAcceleration()
+            self._desiredAcceleration.y += boidAttributes.jumpAcceleration()
 #             self._doNotClampAcceleration = True
-            self.boidState.notifyJump()
+            self.state.notifyJump()
             self._needsBehaviourCommit = True
             return True
         else:

@@ -2,16 +2,16 @@ from boidBehaviourBaseObject import BoidBehaviourBaseObject
 
 import random
 
-import boidConstants
+import boidAttributes
 
-import boidVector3 as bv3
+import boidVector.boidVector3 as bv3
 
 
 _normalBehaviourID = "NORMAL"
 
 
 def agentBehaviourIsNormal(agent):
-    return (agent.boidState.behaviourSpecificState != None and agent.boidState.behaviourSpecificState.__str__() == _normalBehaviourID)
+    return (agent.state.behaviourSpecificState != None and agent.state.behaviourSpecificState.__str__() == _normalBehaviourID)
 
 
 #######################################
@@ -36,23 +36,23 @@ class BoidBehaviourNormal(BoidBehaviourBaseObject):
         desiredAcceleration = bv3.BoidVector3()
         
         if(agent.isTouchingGround):
-            agent.boidState.buildNearbyList(nearbyAgentsList,
-                                           boidConstants.mainRegionSize(),
-                                           boidConstants.nearRegionSize(),
-                                           boidConstants.collisionRegionSize())
+            agent.state.buildNearbyList(nearbyAgentsList,
+                                           boidAttributes.mainRegionSize(),
+                                           boidAttributes.nearRegionSize(),
+                                           boidAttributes.collisionRegionSize())
             
             
             if(self._avoidMapEdgeBehaviour(agent, desiredAcceleration)):
                 self.clampDesiredAccelerationIfNecessary(agent, 
                                                      desiredAcceleration, 
-                                                     boidConstants.maxAccel(), 
-                                                     boidConstants.maxVel())
+                                                     boidAttributes.maxAccel(), 
+                                                     boidAttributes.maxVel())
                 return desiredAcceleration
             elif(self._avoidNearbyAgentsBehaviour(agent, desiredAcceleration)):
                 self.clampDesiredAccelerationIfNecessary(agent, 
                                                      desiredAcceleration, 
-                                                     boidConstants.maxAccel(), 
-                                                     boidConstants.maxVel())
+                                                     boidAttributes.maxAccel(), 
+                                                     boidAttributes.maxVel())
                 return desiredAcceleration
             elif(self._matchSwarmHeadingBehaviour(agent, desiredAcceleration)):
                 self._matchSwarmPositionBehaviour(agent, desiredAcceleration)   # - TODO check if we want this or not???
@@ -63,8 +63,8 @@ class BoidBehaviourNormal(BoidBehaviourBaseObject):
             self._kickstartAgentMovementIfNecessary(agent, desiredAcceleration)
             self.clampDesiredAccelerationIfNecessary(agent, 
                                                      desiredAcceleration, 
-                                                     boidConstants.maxAccel(), 
-                                                     boidConstants.maxVel())
+                                                     boidAttributes.maxAccel(), 
+                                                     boidAttributes.maxVel())
             
         return desiredAcceleration
         
@@ -72,18 +72,18 @@ class BoidBehaviourNormal(BoidBehaviourBaseObject):
     def _avoidMapEdgeBehaviour(self, agent, desiredAcceleration):
         madeChange = False
         if(self._negativeGridBounds != None and self._positiveGridBounds != None):
-            if(agent.currentPosition.x < self._negativeGridBounds.u and agent.currentVelocity.x < boidConstants.maxVel()):
-                desiredAcceleration.x = boidConstants.maxAccel() 
+            if(agent.currentPosition.x < self._negativeGridBounds.u and agent.currentVelocity.x < boidAttributes.maxVel()):
+                desiredAcceleration.x = boidAttributes.maxAccel() 
                 madeChange = True
-            elif(self._positiveGridBounds.u < agent.currentPosition.x and -(boidConstants.maxVel() ) < agent.currentVelocity.x):
-                desiredAcceleration.x = -(boidConstants.maxAccel() )
+            elif(self._positiveGridBounds.u < agent.currentPosition.x and -(boidAttributes.maxVel() ) < agent.currentVelocity.x):
+                desiredAcceleration.x = -(boidAttributes.maxAccel() )
                 madeChange = True
             
-            if(agent.currentPosition.z < self._negativeGridBounds.v and agent.currentVelocity.z < boidConstants.maxVel()):
-                desiredAcceleration.z = boidConstants.maxAccel() 
+            if(agent.currentPosition.z < self._negativeGridBounds.v and agent.currentVelocity.z < boidAttributes.maxVel()):
+                desiredAcceleration.z = boidAttributes.maxAccel() 
                 madeChange = True
-            elif(self._positiveGridBounds.v < agent.currentPosition.z and -(boidConstants.maxVel() ) < agent.currentVelocity.z):
-                desiredAcceleration.z = -(boidConstants.maxAccel() )
+            elif(self._positiveGridBounds.v < agent.currentPosition.z and -(boidAttributes.maxVel() ) < agent.currentVelocity.z):
+                desiredAcceleration.z = -(boidAttributes.maxAccel() )
                 madeChange = True
         
         return madeChange
@@ -95,16 +95,16 @@ class BoidBehaviourNormal(BoidBehaviourBaseObject):
             stopVector = bv3.BoidVector3(agent.currentVelocity)
             stopVector.invert()
             
-            desiredAcceleration.resetVec(agent.boidState.avCollisionDirection)
+            desiredAcceleration.resetVec(agent.state.avCollisionDirection)
             desiredAcceleration.invert()
-            desiredAcceleration.normalise(boidConstants.maxAccel())
+            desiredAcceleration.normalise(boidAttributes.maxAccel())
             desiredAcceleration.add(stopVector)
             #  self._desiredAcceleration.y = 0
             
             return True
         
         elif(agent.isCrowded):   # note that we move AWAY from the avPos here
-            differenceVector = agent.currentPosition - agent.boidState.avCrowdedPosition
+            differenceVector = agent.currentPosition - agent.state.avCrowdedPosition
             desiredAcceleration.resetVec(differenceVector)
 
             return True
@@ -116,12 +116,12 @@ class BoidBehaviourNormal(BoidBehaviourBaseObject):
     def _matchSwarmHeadingBehaviour(self, agent, desiredAcceleration):
         # just change the heading here, *not* the speed...
         if(agent.hasNeighbours):
-            desiredRotationAngle = agent.currentVelocity.angleFrom(agent.boidState.avVelocity)
+            desiredRotationAngle = agent.currentVelocity.angleFrom(agent.state.avVelocity)
             angleMag = abs(desiredRotationAngle)
             
-            if(angleMag > boidConstants.avDirectionThreshold()):
-                if(angleMag > boidConstants.maxTurnrate()):
-                    desiredRotationAngle = boidConstants.maxTurnrate() if(desiredRotationAngle > 0) else -(boidConstants.maxTurnrate())
+            if(angleMag > boidAttributes.avDirectionThreshold()):
+                if(angleMag > boidAttributes.maxTurnrate()):
+                    desiredRotationAngle = boidAttributes.maxTurnrate() if(desiredRotationAngle > 0) else -(boidAttributes.maxTurnrate())
                 
                 desiredDirection = bv3.BoidVector3(agent.currentVelocity)
                 desiredDirection.rotateInHorizontal(desiredRotationAngle)
@@ -134,10 +134,10 @@ class BoidBehaviourNormal(BoidBehaviourBaseObject):
 #############################
     def _matchSwarmPositionBehaviour(self, agent, desiredAcceleration):
         if(agent.hasNeighbours):
-            distanceFromSwarmAvrg = agent.currentPosition.distanceFrom(agent.boidState.avPosition)
+            distanceFromSwarmAvrg = agent.currentPosition.distanceFrom(agent.state.avPosition)
             
-            if(boidConstants.avPositionThreshold() < distanceFromSwarmAvrg):
-                differenceVector = agent.boidState.avPosition - agent.currentPosition
+            if(boidAttributes.avPositionThreshold() < distanceFromSwarmAvrg):
+                differenceVector = agent.state.avPosition - agent.currentPosition
                 desiredAcceleration.resetVec(differenceVector)
                 
                 return True
@@ -149,11 +149,11 @@ class BoidBehaviourNormal(BoidBehaviourBaseObject):
         ## TODO - change this algorithm??
         if(not agent.hasNeighbours):
             if(agent.currentVelocity.isNull()):
-                desiredAcceleration.reset(boidConstants.maxAccel(), 0, 0)
+                desiredAcceleration.reset(boidAttributes.maxAccel(), 0, 0)
                 rotation = random.uniform(-179, 179)
                 desiredAcceleration.rotateInHorizontal(rotation)
             else:
-                desiredRotationAngle = random.uniform(-boidConstants.searchModeMaxTurnrate(), boidConstants.searchModeMaxTurnrate())
+                desiredRotationAngle = random.uniform(-boidAttributes.searchModeMaxTurnrate(), boidAttributes.searchModeMaxTurnrate())
                 desiredDirection = bv3.BoidVector3(agent.currentVelocity)
                 desiredDirection.rotateInHorizontal(desiredRotationAngle)
                 desiredAcceleration.resetVec(agent.currentVelocity - desiredDirection)         
@@ -166,17 +166,17 @@ class BoidBehaviourNormal(BoidBehaviourBaseObject):
     def _matchPreferredVelocityIfNecessary(self, agent, desiredAcceleration):
         """Will increase desiredAcceleration if agent is travelling/accelerating below the preferred minimum values."""
         
-        if(agent.currentVelocity.magnitude() < boidConstants.preferredVel() and 
-           desiredAcceleration.magnitude() < boidConstants.maxAccel()):
+        if(agent.currentVelocity.magnitude() < boidAttributes.preferredVel() and 
+           desiredAcceleration.magnitude() < boidAttributes.maxAccel()):
             if(desiredAcceleration.isNull()):
                 desiredAcceleration.resetVec(agent.currentVelocity)
-                desiredAcceleration.normalise(boidConstants.maxAccel())
+                desiredAcceleration.normalise(boidAttributes.maxAccel())
                 
                 return True
             else:
                 magAccel = desiredAcceleration.magnitude()
-                if(magAccel < boidConstants.maxAccel()):
-                    desiredAcceleration *= (boidConstants.maxAccel() / magAccel)
+                if(magAccel < boidAttributes.maxAccel()):
+                    desiredAcceleration *= (boidAttributes.maxAccel() / magAccel)
                     
                     return True
         
@@ -189,10 +189,10 @@ class BoidBehaviourNormal(BoidBehaviourBaseObject):
         
         magAccel = desiredAcceleration.magnitude()
         
-        if(magAccel < boidConstants.minVel() and 
-           agent.currentVelocity.magnitude() < boidConstants.minVel() and 
+        if(magAccel < boidAttributes.minVel() and 
+           agent.currentVelocity.magnitude() < boidAttributes.minVel() and 
            agent.hasNeighbours and not agent.isCollided and not agent.isCrowded):
-            desiredAcceleration.reset(boidConstants.maxAccel(), 0, 0)
+            desiredAcceleration.reset(boidAttributes.maxAccel(), 0, 0)
             desiredHeading = random.uniform(-179, 179)
             desiredAcceleration.rotateInHorizontal(desiredHeading)
             

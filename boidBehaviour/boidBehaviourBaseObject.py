@@ -1,6 +1,6 @@
 from boidBaseObject import BoidBaseObject
 
-import boidVector3 as bv3
+import boidVector.boidVector3 as bv3
 
 
 
