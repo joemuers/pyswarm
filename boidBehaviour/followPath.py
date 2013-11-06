@@ -1,9 +1,9 @@
-from boidBehaviourBaseObject import BoidBehaviourBaseObject
+from behaviourBaseObject import BehaviourBaseObject
 
 import boidAttributes
-from boidTools import boidUtil
+from boidTools import util
 
-import boidVector.boidVector3 as bv3
+import boidVector.vector3 as bv3
 
 
 
@@ -13,7 +13,7 @@ def agentBehaviourIsFollowPath(agent):
     return (agent.state.behaviourSpecificState != None and agent.state.behaviourSpecificState.__str__() == _pathBehaviourID)
 
 
-class BoidBehaviourFollowPath(BoidBehaviourBaseObject):
+class FollowPath(BehaviourBaseObject):
     """Uni-directional curve path along which all client agents will move.
     
     Behaviour: affected agents initially pulled in towards the closest point along the curve,
@@ -35,13 +35,13 @@ class BoidBehaviourFollowPath(BoidBehaviourBaseObject):
         @param taperEndMult Float: multiplier determining curve width at end (width along the curve is interpolated start->end)
         """
         
-        super(BoidBehaviourFollowPath, self).__init__(bDelegate)
+        super(FollowPath, self).__init__(bDelegate)
         
         self._curve = curve
-        self._startVector = boidUtil.boidVectorFromPymelPoint(curve.getPointAtParam(0.0))
+        self._startVector = util.boidVectorFromPymelPoint(curve.getPointAtParam(0.0))
         self._endParam = curve.findParamFromLength(curve.length())
         endPoint = curve.getPointAtParam(self._endParam)
-        self._endVector = boidUtil.boidVectorFromPymelPoint(endPoint)
+        self._endVector = util.boidVectorFromPymelPoint(endPoint)
         
         self._taperStart = taperStartMult
         self._taperEnd = taperEndMult
@@ -97,22 +97,22 @@ class BoidBehaviourFollowPath(BoidBehaviourBaseObject):
     def onFrameUpdate(self):  # overridden BoidBehaviourBaseObject method
         """Re-checks curve points from Maya in case the have moved..."""
         
-        self._startVector = boidUtil.boidVectorFromPymelPoint(self._curve.getPointAtParam(0.0, space='world'))
+        self._startVector = util.boidVectorFromPymelPoint(self._curve.getPointAtParam(0.0, space='world'))
         self._endParam = self._curve.findParamFromLength(self._curve.length())
         endPoint = self._curve.getPointAtParam(self._endParam, space='world')
-        self._endVector = boidUtil.boidVectorFromPymelPoint(endPoint)        
+        self._endVector = util.boidVectorFromPymelPoint(endPoint)        
  
 ################################          
     def getDesiredAccelerationForAgent(self, agent, nearbyAgents):  # overridden BoidBehaviourBaseObject method
         """Returns corresponding acceleration for the agent as determined by calculated behaviour.
         Client agents should call this method on each frame update and modify their own desiredAcceleration accordingly."""
         
-        desiredAcceleration = bv3.BoidVector3()
+        desiredAcceleration = bv3.Vector3()
         
         if(agent.isTouchingGround):  
-            pymelLocationVector = boidUtil.pymelPointFromBoidVector(agent.currentPosition)
+            pymelLocationVector = util.pymelPointFromBoidVector(agent.currentPosition)
             pymelClosestCurvePoint = self._curve.closestPoint(pymelLocationVector, space='world')
-            boidCurveClosestPoint = boidUtil.boidVectorFromPymelPoint(pymelClosestCurvePoint)
+            boidCurveClosestPoint = util.boidVectorFromPymelPoint(pymelClosestCurvePoint)
             
             if(boidCurveClosestPoint.distanceFrom(self._endVector) < boidAttributes.curveEndReachedThreshold()):
                 self.endCurveBehaviourForAgent(agent)
@@ -134,7 +134,7 @@ class BoidBehaviourFollowPath(BoidBehaviourBaseObject):
                 if(currentParamValue > 0 or nearStart):
                     curveParam = self._curve.getParamAtPoint(pymelClosestCurvePoint, space='world')
                     tangent = self._curve.tangent(curveParam, space='world')
-                    boidTangentVector = boidUtil.boidVectorFromPymelVector(tangent)
+                    boidTangentVector = util.boidVectorFromPymelVector(tangent)
                     
                     desiredAcceleration += boidTangentVector
                     desiredAcceleration.normalise(boidAttributes.curveGroupVectorMagnitude())

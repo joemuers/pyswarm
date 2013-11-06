@@ -1,12 +1,12 @@
-from boidBehaviourBaseObject import BoidBehaviourBaseObject
+from behaviourBaseObject import BehaviourBaseObject
 
 import random
 
 import boidAttributes
-from boidTools import boidUtil
+from boidTools import util
 
-import boidVector.boidVector2 as bv2
-import boidVector.boidVector3 as bv3
+import boidVector.vector2 as bv2
+import boidVector.vector3 as bv3
 from boidBaseObject import BoidBaseObject
 
 
@@ -54,7 +54,7 @@ def agentIsInBasePyramid(agent):
 
 #######################
 
-class BoidBehaviourGoalDriven(BoidBehaviourBaseObject):
+class GoalDriven(BehaviourBaseObject):
     """Represents a goal towards which client agents are drawn.
     The idea is that the goal is at a section of wall, and you get a
     'World War Z' style pile-up at the wall, with the agents at the top
@@ -94,26 +94,26 @@ class BoidBehaviourGoalDriven(BoidBehaviourBaseObject):
     
     def __init__(self, basePos, lipPos, finalPos, normalBehaviourInstance, useInfectionSpread, bDelegate = None):
         """basePos, lipPos and finalPos must be Pymel Locator instances.
-        normalBehaviourInstance = BoidBehaviourNormal instance."""
+        normalBehaviourInstance = BoidBehaviourClassicBoid instance."""
         
-        super(BoidBehaviourGoalDriven, self).__init__(bDelegate)
+        super(GoalDriven, self).__init__(bDelegate)
         
-        self._baseVector = boidUtil.boidVectorFromLocator(basePos)
+        self._baseVector = util.boidVectorFromLocator(basePos)
         self._baseLocator = None
-        if(not(type(basePos) == bv3.BoidVector3)):
+        if(not(type(basePos) == bv3.Vector3)):
             self._baseLocator = basePos
             
-        self._lipVector = boidUtil.boidVectorFromLocator(lipPos)
+        self._lipVector = util.boidVectorFromLocator(lipPos)
         self._lipLocator = None
-        if(not(type(lipPos) == bv3.BoidVector3)):
+        if(not(type(lipPos) == bv3.Vector3)):
             self._lipLocator = lipPos
             
-        self._finalVector = boidUtil.boidVectorFromLocator(finalPos)
+        self._finalVector = util.boidVectorFromLocator(finalPos)
         self._finalLocator = None
-        if(not(type(finalPos) == bv3.BoidVector3)):
+        if(not(type(finalPos) == bv3.Vector3)):
             self._finalLocator = finalPos
         
-        self._baseToFinalDirection = bv3.BoidVector3() # direction vector from baseLocator to finalLocator
+        self._baseToFinalDirection = bv3.Vector3() # direction vector from baseLocator to finalLocator
         
         self._leaders = []
         self._basePyramidDistanceLookup = {}
@@ -125,15 +125,15 @@ class BoidBehaviourGoalDriven(BoidBehaviourBaseObject):
         
         # variables in the following block relate to agent's distance
         # from the baseLocator when in the basePyramid
-        self._agentDistance_runningTotal = bv2.BoidVector2()
-        self._agentDistance_average = bv2.BoidVector2()
+        self._agentDistance_runningTotal = bv2.Vector2()
+        self._agentDistance_average = bv2.Vector2()
         self._needsAverageDistanceCalc = False
-        self._maxAgentDistance = bv2.BoidVector2()
+        self._maxAgentDistance = bv2.Vector2()
         
         # variables here relate to average position taken from within
         # the basePyramid.
-        self._agentPosition_runningTotal = bv3.BoidVector3()
-        self._agentPosition_average = bv3.BoidVector3()
+        self._agentPosition_runningTotal = bv3.Vector3()
+        self._agentPosition_average = bv3.Vector3()
         self._needsAveragePositionCalc = False
         
         self._performCollapse = False
@@ -207,11 +207,11 @@ class BoidBehaviourGoalDriven(BoidBehaviourBaseObject):
         
         # now, re-check Maya objects in case they've moved within the scene...
         if(self._baseLocator != None):
-            self._baseVector = boidUtil.boidVectorFromLocator(self._baseLocator)
+            self._baseVector = util.boidVectorFromLocator(self._baseLocator)
         if(self._lipLocator != None):
-            self._lipVector = boidUtil.boidVectorFromLocator(self._lipLocator)        
+            self._lipVector = util.boidVectorFromLocator(self._lipLocator)        
         if(self._finalLocator != None):
-            self._finalLocator = boidUtil.boidVectorFromLocator(self._finalLocator)   
+            self._finalLocator = util.boidVectorFromLocator(self._finalLocator)   
         self._baseToFinalDirection = self._finalVector - self._baseVector
 
 #######################
@@ -264,7 +264,7 @@ class BoidBehaviourGoalDriven(BoidBehaviourBaseObject):
         """Returns corresponding acceleration for the agent as determined by calculated behaviour.
         Client agents should call this method on each frame update and modify their own desiredAcceleration accordingly."""
         
-        desiredAcceleration = bv3.BoidVector3()
+        desiredAcceleration = bv3.Vector3()
         agent.stickinessScale = 0 # reset on each frame, as may have been set on previous iteration
 
         if(agent.isTouchingGround):
@@ -297,7 +297,7 @@ class BoidBehaviourGoalDriven(BoidBehaviourBaseObject):
         if(self._goalStatusForAgent(agent) == _BoidGoalDrivenState.overWallLip or 
            self._goalStatusForAgent(agent) == _BoidGoalDrivenState.reachedFinalGoal):
             
-            targetVelocity = bv3.BoidVector3(self._baseToFinalDirection.x, 0, self._baseToFinalDirection.z)
+            targetVelocity = bv3.Vector3(self._baseToFinalDirection.x, 0, self._baseToFinalDirection.z)
             targetVelocity.normalise(boidAttributes.goalChaseSpeed())
             desiredAcceleration.resetVec(targetVelocity - agent.currentVelocity)
             if(desiredAcceleration.magnitude() > boidAttributes.maxAccel()):
@@ -522,7 +522,7 @@ class BoidBehaviourGoalDriven(BoidBehaviourBaseObject):
         
 #######################
     def _goalChaseAttractorPositionForAgent(self, agent):
-        """Returns position (BoidVector3) towards which the boidAgent should be made to move
+        """Returns position (Vector3) towards which the boidAgent should be made to move
         towards (when following goalChase behaviour)."""
         
         returnValue = None

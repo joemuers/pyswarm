@@ -1,6 +1,6 @@
 import boidBaseObject as bbo
 
-import boidVector.boidVector3 as bv3
+import boidVector.vector3 as bv3
 
 
 
@@ -13,7 +13,7 @@ class BoidBehaviourDelegate(object):
 
 ##########################
 
-class BoidBehaviourBaseObject(bbo.BoidBaseObject):
+class BehaviourBaseObject(bbo.BoidBaseObject):
     
     def __init__(self, delegate = None):
         if(delegate != None and type(delegate) != BoidBehaviourDelegate):
@@ -34,7 +34,7 @@ class BoidBehaviourBaseObject(bbo.BoidBaseObject):
     
     def getDesiredAccelerationForAgent(self, agent, nearbyAgentsList):
         """Must be implemented by subclasses to calculate behaviour as appropriate.
-        Should return a BoidVector3."""
+        Should return a Vector3."""
         raise NotImplementedError
     
     def createBehaviourSpecificStateObject(self):
@@ -57,13 +57,13 @@ class BoidBehaviourBaseObject(bbo.BoidBaseObject):
             madeChanges = True
         
         # restrict velocity to <= max value
-        desiredVelocity = bv3.BoidVector3(agent.currentVelocity)
+        desiredVelocity = bv3.Vector3(agent.currentVelocity)
         desiredVelocity.add(desiredAcceleration)
         magVel = desiredVelocity.magnitude()
 
         if(maxVelocity < magVel): 
             desiredVelocity *= (maxVelocity / magVel)
-            desiredAcceleration = desiredVelocity - agent.currentVelocity
+            desiredAcceleration.resetVec(desiredVelocity - agent.currentVelocity)
             madeChanges = True
             
         return madeChanges

@@ -1,7 +1,7 @@
 from boidBaseObject import BoidBaseObject
 
 import boidAttributes
-import boidUtil
+import util
 
 
 
@@ -189,7 +189,7 @@ class _BoidZone(BoidBaseObject):
 
 
 ##########################################################   
-class BoidZoneGraph(BoidBaseObject):
+class ZoneGraph(BoidBaseObject):
     """On each frame update, every agent needs to be checked against every other agent to see 
     if they are neighbouring, crowding, colliding etc.  If this is implemented in a straightforward
     way without any optimisation then the algorithm is of Order (n ^2) - very slow.
@@ -216,8 +216,8 @@ class BoidZoneGraph(BoidBaseObject):
         self._AgentZoneLookup = {}
         self._earlyHitListLookup = {}
         
-        self._lowerBoundsVector = boidUtil.boidVectorFromLocator(negativeIndicesLocator)
-        self._upperBoundsVector = boidUtil.boidVectorFromLocator(positiveIndicesLocator)
+        self._lowerBoundsVector = util.boidVectorFromLocator(negativeIndicesLocator)
+        self._upperBoundsVector = util.boidVectorFromLocator(positiveIndicesLocator)
         
         sizeX = self.upperBoundsVector.x - self.lowerBoundsVector.x
         sizeZ = self.upperBoundsVector.z - self.lowerBoundsVector.z

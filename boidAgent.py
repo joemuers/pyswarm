@@ -1,9 +1,9 @@
 from boidBaseObject import BoidBaseObject
 
 import boidAttributes
-from boidTools import boidUtil
+from boidTools import util
 
-import boidVector.boidVector3 as bv3
+import boidVector.vector3 as bv3
 import boidAgentState as bas
 
 
@@ -15,7 +15,7 @@ class BoidAgent(BoidBaseObject):
     
     Behaviour: Dependent on situation, in normal circumstances, behaviour governed by relatively
     straightforward implementation of Reynold's boids rules.  If currently goal-driven, behaviour
-    is determined mainly by the corresponding BoidGroupTarget instance.
+    is determined mainly by the corresponding boidBehaviour.goalDriven instance.
     Behaviour will also be affected if currently following a curve path, or at the scene's mapEdge border.
     
     Operation: Agent keeps an internal representation of the corresponding Maya nParticle's position, velocity etc, which
@@ -36,15 +36,6 @@ class BoidAgent(BoidBaseObject):
         - sticknessScale - directly related to Maya's 'stickiness' nParticle attribute.
                            Used primarily when agent is in basePyramid pile-up, to aid pyramid's
                            overall cohesion.
-
-        - priorityGoal - (if not nil) a boidGroupTarget instance that's actively driving the agent's behaviour.
-        - 'goalInfected' - agent has been given a priorityGoal, which will become active when
-                            the goalInfectionCountdown hits zero.
-        - inBasePyramid - agent following priorityGoal has reached base of target wall and is attempting to
-                          climb up the boid-pyramid at the wall.  Note 'hasArrivedAtGoalBase' is set at this point too,
-                          the distinction being that once the boid clears the wall, 'inBasePyramid' will be cleared but
-                          hasArrived will still be set.
-        - curvePath - agent roughly follows this path, if set.
         
         
     TODO, leave in or take out?
@@ -63,7 +54,7 @@ class BoidAgent(BoidBaseObject):
         self._negativeGridBounds = negativeGridBounds
         self._positiveGridBounds = positiveGridBounds
         
-        self._desiredAcceleration = bv3.BoidVector3()
+        self._desiredAcceleration = bv3.Vector3()
         self._needsBehaviourUpdate = True # True if postion/heading/circumstance has 
         #                                 # changed since last calculation, False otherwise.
         self._needsBehaviourCommit = False  # True if behaviour has been updated since last commit, False otherwise.
@@ -215,12 +206,12 @@ class BoidAgent(BoidBaseObject):
         """Updates agent's corresponding Maya nParticle object with updated current internal state."""
         
         if(self._needsBehaviourCommit):
-            desiredVelocity = bv3.BoidVector3(self.currentVelocity)
+            desiredVelocity = bv3.Vector3(self.currentVelocity)
             desiredVelocity.add(self._desiredAcceleration)
-            boidUtil.setParticleVelocity(particleShapeName, self.particleId, desiredVelocity)
+            util.setParticleVelocity(particleShapeName, self.particleId, desiredVelocity)
             
             if(self._stickinessChanged):
-                boidUtil.setStickinessScale(particleShapeName, self.particleId, self.stickinessScale)
+                util.setStickinessScale(particleShapeName, self.particleId, self.stickinessScale)
                 self._stickinessChanged = False
             
             self._needsBehaviourCommit = False

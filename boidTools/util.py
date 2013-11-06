@@ -1,7 +1,7 @@
 import pymel.core as pm
 import pymel.core.nodetypes as pmn  # Eclipse doesn't like pm.nodetypes for some reason...
 
-import boidVector.boidVector3 as bv3
+import boidVector.vector3 as bv3
 
 
 ######################################
@@ -13,7 +13,7 @@ def boidVectorFromLocator(locator):
     if(type(locator) == pmn.Locator):
         coOrdsString = locator.getPosition()
         coOrds = coOrdsString.split()
-        return bv3.BoidVector3(float(coOrds[0]), float(coOrds[1]), float(coOrds[2]))     
+        return bv3.Vector3(float(coOrds[0]), float(coOrds[1]), float(coOrds[2]))     
     else:
         return locator
     
@@ -21,10 +21,10 @@ def pymelPointFromBoidVector(boidVector):
     return pm.datatypes.Point(boidVector.x, boidVector.y, boidVector.z)
 
 def boidVectorFromPymelPoint(point):
-    return bv3.BoidVector3(point.x, point.y, point.z)
+    return bv3.Vector3(point.x, point.y, point.z)
 
 def boidVectorFromPymelVector(pymelVector):
-    return bv3.BoidVector3(pymelVector.x, pymelVector.y, pymelVector.z)
+    return bv3.Vector3(pymelVector.x, pymelVector.y, pymelVector.z)
 
 def pymelVectorFromBoidVector(boidVector):
     return pm.datatypes.Vector(boidVector.x, boidVector.y, boidVector.z)

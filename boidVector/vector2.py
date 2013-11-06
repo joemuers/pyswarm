@@ -4,7 +4,7 @@ import random as rand
 import math as mth
 
 
-class BoidVector2(BoidBaseObject):
+class Vector2(BoidBaseObject):
     """2D vector with various trig functions.
     Initial implementation of boid system used surface UV coordinates rather than 3D position, hence 
     this class.  However still comes in handy...
@@ -19,7 +19,7 @@ class BoidVector2(BoidBaseObject):
         - pass nothing for default values (0,0).
         """
         
-        if(type(u) == BoidVector2):
+        if(type(u) == Vector2):
             self._u = u.u
             self._v = u.v
         else:
@@ -35,10 +35,10 @@ class BoidVector2(BoidBaseObject):
 
 ##################### 
     def __add__(self, other):
-        return BoidVector2(self.u + other.u, self.v + other.v)
+        return Vector2(self.u + other.u, self.v + other.v)
 
     def __sub__(self, other):
-        return BoidVector2(self.u - other.u, self.v - other.v)
+        return Vector2(self.u - other.u, self.v - other.v)
    
     def __imul__(self, value):
         self.u *= value
@@ -83,7 +83,7 @@ class BoidVector2(BoidBaseObject):
     def resetVec(self, otherVector):
         self.u = otherVector.u
         self.v = otherVector.v
-        if(not otherVector._needsMagCalc and type(otherVector == BoidVector2)):
+        if(not otherVector._needsMagCalc and type(otherVector == Vector2)):
             self._magnitude = otherVector._magnitude
             self._needsMagCalc = False
 
@@ -94,7 +94,7 @@ class BoidVector2(BoidBaseObject):
     
 ##################### 
     def invertedVector(self):
-        return BoidVector2(-(self.u), -(self.v))
+        return Vector2(-(self.u), -(self.v))
 
 ####################### 
     def magnitude(self):
@@ -116,13 +116,13 @@ class BoidVector2(BoidBaseObject):
 
 #######################            
     def normalisedVector(self, scaleFactor = 1.0):
-        retVal = BoidVector2(self.u, self.v)
+        retVal = Vector2(self.u, self.v)
         retVal.normalise(scaleFactor)
         return retVal
 
 #######################
     def degreeHeading(self):
-        zeroDegrees = BoidVector2(0, 1)
+        zeroDegrees = Vector2(0, 1)
         return zeroDegrees.angleFrom(self)
 
 ####################### 

@@ -1,7 +1,7 @@
 from boidBaseObject import BoidBaseObject
 
 import boidAttributes
-import boidVector.boidVector3 as bv3
+import boidVector.vector3 as bv3
 
 
 class BoidAgentState(BoidBaseObject):
@@ -22,19 +22,19 @@ class BoidAgentState(BoidBaseObject):
     
     def __init__(self, particleId):
         self._particleId = particleId
-        self._position = bv3.BoidVector3()
-        self._velocity = bv3.BoidVector3()
-        self._acceleration = bv3.BoidVector3()
+        self._position = bv3.Vector3()
+        self._velocity = bv3.Vector3()
+        self._acceleration = bv3.Vector3()
         
         self._isTouchingGround = False
         
         self._nearbyList = []        # 
         self._crowdedList = []       #
         self._collisionList = []     # lists of boidAgent instances
-        self._avPosition = bv3.BoidVector3()
-        self._avVelocity = bv3.BoidVector3()
-        self._avCrowdedPos = bv3.BoidVector3()
-        self._avCollisionDirection = bv3.BoidVector3()     
+        self._avPosition = bv3.Vector3()
+        self._avVelocity = bv3.Vector3()
+        self._avCrowdedPos = bv3.Vector3()
+        self._avCollisionDirection = bv3.Vector3()     
         self._needsListsRebuild = True 
         
         self._behaviourSpecificState = None  # data 'blob' for client objects, not used internally

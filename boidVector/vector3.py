@@ -3,17 +3,17 @@ from boidBaseObject import BoidBaseObject
 import math as mth
 import random as rand
 
-import boidVector2 as bv2
+import vector2 as bv2
 
 
 def isVector2(otherVector):
-    return type(otherVector) == bv2.BoidVector2
+    return type(otherVector) == bv2.Vector2
 
 
-class BoidVector3(BoidBaseObject):
+class Vector3(BoidBaseObject):
     """3D vector with various trig functions.  
-    Most classes in this package now use boidVector3, not 2. Although
-    BoidVector3 has been written to be more or less backwards compatable
+    Most classes in this package now use vector3, not 2. Although
+    Vector3 has been written to be more or less backwards compatable
     (i.e. can be used in place of a bv2 and will still behave correctly).
     As such, note that self.u is interchangeable with self.x, and self.v is interchangeable
     with self.z.
@@ -28,7 +28,7 @@ class BoidVector3(BoidBaseObject):
         - pass nothing for default values (0,0,0).
         """
         
-        if(type(x) == BoidVector3):
+        if(type(x) == Vector3):
             self._x = x.x
             self._y = x.y
             self._z = x.z
@@ -55,15 +55,15 @@ class BoidVector3(BoidBaseObject):
 ##################### 
     def __add__(self, other):
         if(isVector2(other)):
-            return BoidVector3(self.x + other.u, self.y, self.z + other.v)
+            return Vector3(self.x + other.u, self.y, self.z + other.v)
         else:
-            return BoidVector3(self.x + other.x, self.y + other.y, self.z + other.z)
+            return Vector3(self.x + other.x, self.y + other.y, self.z + other.z)
 
     def __sub__(self, other):
         if(isVector2(other)):
-            return BoidVector3(self.x - other.u, self.y, self.z - other.v)
+            return Vector3(self.x - other.u, self.y, self.z - other.v)
         else:
-            return BoidVector3(self.x - other.x, self.y - other.y, self.z - other.z)
+            return Vector3(self.x - other.x, self.y - other.y, self.z - other.z)
 
     def __imul__(self, value):
         magToo = not self._needsMagCalc
@@ -93,7 +93,7 @@ class BoidVector3(BoidBaseObject):
             self._needs2dMagCalc = True
             self._x = value
     x = property(_get_x, _set_x)
-    u = property(_get_x, _set_x) # for compatability with BoidVector2
+    u = property(_get_x, _set_x) # for compatability with Vector2
     
     def _get_y(self):
         return self._y
@@ -111,7 +111,7 @@ class BoidVector3(BoidBaseObject):
             self._needs2dMagCalc = True
             self._z = value
     z = property(_get_z, _set_z)
-    v = property(_get_z, _set_z) # for compatability with BoidVector2
+    v = property(_get_z, _set_z) # for compatability with Vector2
     
 #######################
     def add(self, otherVector, ignoreVertical = False):
@@ -148,7 +148,7 @@ class BoidVector3(BoidBaseObject):
 
 #######################
     def horizontalVector(self):
-        return bv2.BoidVector2(self.x, self.z)
+        return bv2.Vector2(self.x, self.z)
     
 #######################
     def degreeHeadingHorizontal(self):
@@ -197,7 +197,7 @@ class BoidVector3(BoidBaseObject):
         
 ##################### 
     def invertedVector(self):
-        ret = BoidVector3(-(self.x), -(self.y), -(self.z))
+        ret = Vector3(-(self.x), -(self.y), -(self.z))
         if(not self._needsMagCalc):
             ret._magnitude = self._magnitude
             ret._needsMagCalc = False
@@ -236,7 +236,7 @@ class BoidVector3(BoidBaseObject):
  
 #######################            
     def normalisedVector(self, scaleFactor = 1.0):
-        retVal = BoidVector3(self.x, self.y, self.z)
+        retVal = Vector3(self.x, self.y, self.z)
         if(not self._needsMagCalc):
             retVal._magnitude = self._magnitude
             retVal._needsMagCalc = False
