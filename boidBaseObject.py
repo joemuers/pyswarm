@@ -8,5 +8,7 @@ class BoidBaseObject(object):
     __str__ method but giving info on the more 'meta' attributes.  Purely for logging/debugging.
     """
     
-    def metaStr(self):
-        return self.__str__()
+    def _getMetaStr(self):
+        """Override to provide a seperate output for self.metaStr property"""
+        return "(Meta string not implemented)"
+    metaStr = property(lambda obj:obj._getMetaStr())

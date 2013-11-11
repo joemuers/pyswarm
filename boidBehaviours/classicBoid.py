@@ -4,14 +4,15 @@ import random
 
 import boidAttributes
 
-import boidVector.vector3 as bv3
+import boidVectors.vector3 as bv3
 
 
-_classicBehaviourID = "CLASSIC"
+_CLASSIC_BEHAVIOUR_ID = "CLASSIC"
 
 
-def agentBehaviourIsClassicBoid(agent):
-    return (agent.state.behaviourSpecificState != None and agent.state.behaviourSpecificState.__str__() == _classicBehaviourID)
+def AgentBehaviourIsClassicBoid(agent):
+    return (agent.state.behaviourSpecificState is not None and 
+            agent.state.behaviourSpecificState.__str__() == _CLASSIC_BEHAVIOUR_ID)
 
 
 #######################################
@@ -27,11 +28,11 @@ class ClassicBoid(BehaviourBaseObject):
 
 ######################       
     def __str__(self):
-        return ("CLASSIC - %s" % super(ClassicBoid, self).__str__())
+        return ("%s - %s" % (_CLASSIC_BEHAVIOUR_ID, super(ClassicBoid, self).__str__()))
 
 ######################
     def createBehaviourSpecificStateObject(self):
-        return _classicBehaviourID  # just give something to identify the behaviour itself
+        return _CLASSIC_BEHAVIOUR_ID  # just give something to identify the behaviour itself
         
 ######################         
     def getDesiredAccelerationForAgent(self, agent, nearbyAgentsList):
@@ -39,11 +40,10 @@ class ClassicBoid(BehaviourBaseObject):
         self._doNotClampAcceleration = False
         
         if(agent.isTouchingGround):
-            agent.state.buildNearbyList(nearbyAgentsList,
+            agent.state.buildNearbyList(agent, nearbyAgentsList,
                                         boidAttributes.mainRegionSize(),
                                         boidAttributes.nearRegionSize(),
                                         boidAttributes.collisionRegionSize())
-            
             
             if(self._avoidMapEdgeBehaviour(agent, desiredAcceleration)):
                 self.clampDesiredAccelerationIfNecessary(agent, 
@@ -61,7 +61,7 @@ class ClassicBoid(BehaviourBaseObject):
                 self._matchSwarmPositionBehaviour(agent, desiredAcceleration)   # - TODO check if we want this or not???
             elif(not self._matchSwarmPositionBehaviour(agent, desiredAcceleration) and not agent.hasNeighbours):
                 self._searchForSwarmBehaviour(agent, desiredAcceleration)
-            
+             
             self._matchPreferredVelocityIfNecessary(agent, desiredAcceleration)
             self._kickstartAgentMovementIfNecessary(agent, desiredAcceleration)
             self.clampDesiredAccelerationIfNecessary(agent, 
@@ -74,7 +74,7 @@ class ClassicBoid(BehaviourBaseObject):
 ######################         
     def _avoidMapEdgeBehaviour(self, agent, desiredAcceleration):
         madeChange = False
-        if(self._negativeGridBounds != None and self._positiveGridBounds != None):
+        if(self._negativeGridBounds is not None and self._positiveGridBounds is not None):
             if(agent.currentPosition.x < self._negativeGridBounds.u and agent.currentVelocity.x < boidAttributes.maxVel()):
                 desiredAcceleration.x = boidAttributes.maxAccel() 
                 madeChange = True

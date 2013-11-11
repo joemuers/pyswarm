@@ -12,14 +12,13 @@ class Vector2(BoidBaseObject):
     Note that angle inputs/outputs, currently, are in degrees, NOT radians.
     """
     
-    def __init__(self, u = 0, v = 0):
+    def __init__(self, u=0, v=0):
         """Note that you can either: 
         - pass in a vector object as an argument to create a (deep) copy
         - pass in numerical values for each axis
         - pass nothing for default values (0,0).
         """
-        
-        if(type(u) == Vector2):
+        if(hasattr(u, "u")): # check if first argument is a Vector2/3 instance or not
             self._u = u.u
             self._v = u.v
         else:
@@ -83,7 +82,7 @@ class Vector2(BoidBaseObject):
     def resetVec(self, otherVector):
         self.u = otherVector.u
         self.v = otherVector.v
-        if(not otherVector._needsMagCalc and type(otherVector == Vector2)):
+        if(not otherVector._needsMagCalc and isinstance(otherVector, Vector2)):
             self._magnitude = otherVector._magnitude
             self._needsMagCalc = False
 
@@ -93,14 +92,14 @@ class Vector2(BoidBaseObject):
         self._v = -(self._v) #
     
 ##################### 
-    def invertedVector(self):
+    def inverseVector(self):
         return Vector2(-(self.u), -(self.v))
 
 ####################### 
-    def magnitude(self):
+    def magnitude(self, dummy=False): # dummy- so magnitude can be called interchangeably for Vector2/3. Very hacky, I know...
         if(self._needsMagCalc):
             self._magnitude = mth.sqrt((self._u **2) + (self._v **2))
-            self._needsMagCalc = False
+            self._needsMagCalc = False and dummy # pseudo usage stops Eclipse complaining about unused argument
         return self._magnitude
 
 ####################### 
@@ -114,7 +113,7 @@ class Vector2(BoidBaseObject):
             self.u *= multiple
             self.v *= multiple
 
-#######################            
+#######################
     def normalisedVector(self, scaleFactor = 1.0):
         retVal = Vector2(self.u, self.v)
         retVal.normalise(scaleFactor)

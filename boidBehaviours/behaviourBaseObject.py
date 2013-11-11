@@ -1,6 +1,6 @@
 import boidBaseObject as bbo
 
-import boidVector.vector3 as bv3
+import boidVectors.vector3 as bv3
 
 
 
@@ -15,17 +15,17 @@ class BoidBehaviourDelegate(object):
 
 class BehaviourBaseObject(bbo.BoidBaseObject):
     
-    def __init__(self, delegate = None):
-        if(delegate != None and type(delegate) != BoidBehaviourDelegate):
+    def __init__(self, delegate=None):
+        if(delegate is not None and not isinstance(delegate, BoidBehaviourDelegate)): 
             raise TypeError
         else:
             self._delegate = delegate
     
     def _notifyDelegateBehaviourEndedForAgent(self, agent):
         """Should be called by subclasses to notify the delegate (if one exists)
-        when an agent has finished the prescribed behaviour pattern."""
-        
-        if(self._delegate != None):
+        when an agent has finished the prescribed behaviour pattern.
+        """
+        if(self._delegate is not None):
             self._delegate.onBehaviourEndedForAgent(agent, self)
             
     def onFrameUpdate(self):
@@ -34,20 +34,22 @@ class BehaviourBaseObject(bbo.BoidBaseObject):
     
     def getDesiredAccelerationForAgent(self, agent, nearbyAgentsList):
         """Must be implemented by subclasses to calculate behaviour as appropriate.
-        Should return a Vector3."""
+        Should return a Vector3.
+        """
         raise NotImplementedError
     
     def createBehaviourSpecificStateObject(self):
         """This object will be set to an agent state's 'behaviourSpecificState' property when
         a behaviour is first assigned to the agent.
         Subclasses should implement this method and return an appropriate data container object
-        if their operation requires the agent objects to carry bespoke information."""
+        if their operation requires the agent objects to carry bespoke information.
+        """
         return None
     
     def clampDesiredAccelerationIfNecessary(self, agent, desiredAcceleration, maxAcceleration, maxVelocity):
         """Reduces desired acceleration, if necessary, such that resulting
-        speed/acceleration stay below the maximum values."""
-        
+        speed/acceleration stay below the maximum values.
+        """
         madeChanges = False
         
         # restrict acceleration to <= max value

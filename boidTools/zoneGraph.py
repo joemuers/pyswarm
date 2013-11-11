@@ -1,287 +1,186 @@
 from boidBaseObject import BoidBaseObject
 
+import itertools
+
 import boidAttributes
-import util
+from boidTools import util
 
 
+#############################
 
-class _BoidZone(BoidBaseObject):
-    """'Private' class intended for internal within BoidZoneGraph only.
-    
-    Represents a single zone, with links to immediate neighbours.
-    
-    Also, each zone contains a 'hitList', basically an optimisation. In successive frame updates,
-    Agents will almost always be in the same zone as in the previous frame, or in a neighbouring
-    zone.  As such, when checking if an agent is still within a certain zone or has moved to a different
-    one, the original zone's hitlist should be checked first rather than iterating sequentially though
-    every zone.
-    """
-
-    def __init__(self, zoneId, xMin, xMax, zMin, zMax):
-        self._zoneId = zoneId
-        self._agentList = []
-        self._xMin = xMin
-        self._xMax = xMax
-        self._zMin = zMin
-        self._zMax = zMax
-        self._neighbouringZoneUp = None
-        self._neighbouringZoneDown = None
-        self._neighbouringZoneLeft = None
-        self._neighbouringZoneRight = None
-        
-        self._earlyHitList = []
-
-##########################        
-    def __str__(self):
-        listStr = ""
-        for agent in self.agentList:
-            listStr += ("\n\t%s" % agent)
-        
-        return ("<id=%d, xMin=%.4f, xMax=%.4f, zMin=%.4f, zMax=%.4f count=%d\nlist=%s\n >" % 
-                (self._zoneId, self._xMin, self._xMax, self._zMin, self._zMax, len(self.agentList), listStr))
-
-########################## 
-    def _getZoneId(self):
-        return self._zoneId
-    zoneId = property(_getZoneId)
-    
-    def _getAgentList(self):
-        return self._agentList
-    agentList = property(_getAgentList)
-    
-##########################        
-    def neighbouringZonesStr(self):
-        retStr = ("id=%d, UP=%d, RIGHT=%d, DOWN=%d, LEFT=%d" % 
-                  (self._zoneId,
-                  self._neighbouringZoneUp.zoneId if(self._neighbouringZoneUp != None) else -1,
-                  self._neighbouringZoneRight.zoneId if(self._neighbouringZoneRight != None) else -1,
-                  self._neighbouringZoneDown.zoneId if(self._neighbouringZoneDown != None) else -1,
-                  self._neighbouringZoneLeft.zoneId if(self._neighbouringZoneLeft != None) else -1))
-        return retStr
-    
-##########################            
-    def buildHitList(self):
-        """Constructs hitlist of neighbouring zones.
-        Should only be called once, when zone system is being constructed."""
-        
-        del self._earlyHitList[:]
-        
-        self._earlyHitList.append(self)
-        if(self._neighbouringZoneUp != None):
-            self._earlyHitList.append(self._neighbouringZoneUp)
-            if(self._neighbouringZoneUp._neighbouringZoneLeft != None):
-                self._earlyHitList.append(self._neighbouringZoneUp._neighbouringZoneLeft)
-            if(self._neighbouringZoneUp._neighbouringZoneRight != None):
-                self._earlyHitList.append(self._neighbouringZoneUp._neighbouringZoneRight)
-        if(self._neighbouringZoneLeft != None):
-            self._earlyHitList.append(self._neighbouringZoneLeft)
-            if(self._neighbouringZoneLeft._neighbouringZoneDown != None):
-                self._earlyHitList.append(self._neighbouringZoneLeft._neighbouringZoneDown)
-        if(self._neighbouringZoneDown != None):
-            self._earlyHitList.append(self._neighbouringZoneDown)
-            if(self._neighbouringZoneDown._neighbouringZoneRight != None):
-                self._earlyHitList.append(self._neighbouringZoneDown._neighbouringZoneRight)
-        if(self._neighbouringZoneRight != None):
-            self._earlyHitList.append(self._neighbouringZoneRight)
-            
-##########################         
-    def _containsVectorPosition(self, vector):
-        """Returns True if vector is within the zone, False otherwise."""
-        
-        if(self._xMin <= vector.u and vector.u <= self._xMax):
-            if(self._zMin <= vector.v and vector.v <= self._zMax):
-                return True
-            elif((self._neighbouringZoneUp == None and vector.v <= self._zMin) or
-                 (self._neighbouringZoneDown == None and self._zMax <= vector.v)):
-                return True
-        elif(self._zMin <= vector.v and vector.v <= self._zMax):
-            if((self._neighbouringZoneLeft == None and vector.u <= self._xMin) or
-               (self._neighbouringZoneRight == None and self._xMax <= vector.u)):
-                return True
-        elif((self._neighbouringZoneLeft == None and vector.u <= self._xMin) and 
-             ((self._neighbouringZoneUp == None and vector.v <= self._zMin) or (self._neighbouringZoneDown == None and self._zMax <= vector.v))):
-            return True
-        elif((self._neighbouringZoneRight == None and self._xMax <= vector.u) and 
-             ((self._neighbouringZoneUp == None and vector.v <= self._zMin) or (self._neighbouringZoneDown == None and self._zMax <= vector.v))):
-            return True
-            
-        return False
-
-##########################         
-    def _addToUpNeighbour(self, boid):
-        if(self._neighbouringZoneUp != None):
-            self._neighbouringZoneUp.agentList.append(boid)
-    
-    def _addToUpLeftNeighbour(self, boid):
-        if(self._neighbouringZoneUp != None):
-            self._neighbouringZoneUp._addToLeftNeighbour(boid)
-            
-    def _addToUpRightNeighbour(self, boid):
-        if(self._neighbouringZoneUp != None):
-            self._neighbouringZoneUp._addToRightNeighbour(boid)     
-    
-    def _addToLeftNeighbour(self, boid):
-        if(self._neighbouringZoneLeft != None):
-            self._neighbouringZoneLeft.agentList.append(boid)
-    
-    def _addToRightNeighbour(self, boid):
-        if(self._neighbouringZoneRight != None):
-            self._neighbouringZoneRight.agentList.append(boid)
-        
-    def _addToDownNeighbour(self, boid):
-        if(self._neighbouringZoneDown != None):
-            self._neighbouringZoneDown.agentList.append(boid)
-    
-    def _addToDownLeftNeighbour(self, boid):
-        if(self._neighbouringZoneDown != None):
-            self._neighbouringZoneDown._addToLeftNeighbour(boid)
-            
-    def _addToDownRightNeighbour(self, boid):
-        if(self._neighbouringZoneDown != None):
-            self._neighbouringZoneDown._addToRightNeighbour(boid)        
-
-##########################         
-    def updateAgentPosition(self, agent):
-        """Returns True if boidAgent is located within this zone, False otherwise.
-        
-        Will also add the agent to neighbouring zones if the agent fall in the overlap
-        region between the two zones."""
-        
-        if(self._containsVectorPosition(agent.currentPosition)):
-            self.agentList.append(agent)
-            overlap = boidAttributes.mainRegionSize()
-            posX = agent.currentPosition.x
-            posZ = agent.currentPosition.z
-            
-            
-            if(posX < self._xMin + overlap):
-                self._addToLeftNeighbour(agent)
-                if(posZ < self._zMin + overlap):
-                    self._addToUpNeighbour(agent)
-                    self._addToUpLeftNeighbour(agent)
-                    return True
-                elif(posZ > self._zMax - overlap):
-                    self._addToDownNeighbour(agent)
-                    self._addToDownLeftNeighbour(agent)
-                    return True
-            elif(posX > self._xMax - overlap):
-                self._addToRightNeighbour(agent)
-                if(posZ < self._zMin + overlap):
-                    self._addToUpNeighbour(agent)
-                    self._addToUpRightNeighbour(agent)
-                    return True
-                elif(posZ > self._zMax - overlap):
-                    self._addToDownNeighbour(agent)
-                    self._addToDownRightNeighbour(agent)
-                    return True     
-                
-            if(posZ < self._zMin + overlap):
-                self._addToUpNeighbour(agent)
-            elif(posZ > self._zMax - overlap):
-                self._addToDownNeighbour(agent)
-                
-            return True
-        else:
-            return False
-
-# END OF CLASS _BoidZone
-##########################################################   
-
-
-##########################################################   
 class ZoneGraph(BoidBaseObject):
-    """On each frame update, every agent needs to be checked against every other agent to see 
-    if they are neighbouring, crowding, colliding etc.  If this is implemented in a straightforward
-    way without any optimisation then the algorithm is of Order (n ^2) - very slow.
-    Zones help by dividing the grid up into regions, each of which contain a list of agents within
-    that region,  which can then be used to prune the queries right down - only agents within the same region
-    need to be checked against each other.
+    '''
+    classdocs
+    '''
     
-    Operation: on each frame update, updateAllAgentPositions should be called, this will update the 
-    zones with the current agent positions on the grid.  Subsequently, for each agent, a call to
-    regionListForAgent will return a list of other agents which should be checked against for proximity.
-    
-    TODO - bit of a crude implementation at present. Might be worth looking into doing it as a quadtree
-    (or octree as option if bringing in height dimension also)...?
-    """
-    
-    def __init__(self, negativeIndicesLocator, positiveIndicesLocator):
-        """Constructs a zone system over the specified area with a zone resolution as 
-        determined by boidAttributes.preferredZoneSize.
+    #############################
+    class _Zone(BoidBaseObject):
         
-        Negative and positive indicesLocator arguments must be Pymel Locator objects
-        representing the opposing corners of the grid area which the zones are to cover."""
-        
-        self._zoneList = []
-        self._AgentZoneLookup = {}
-        self._earlyHitListLookup = {}
-        
-        self._lowerBoundsVector = util.boidVectorFromLocator(negativeIndicesLocator)
-        self._upperBoundsVector = util.boidVectorFromLocator(positiveIndicesLocator)
-        
-        sizeX = self.upperBoundsVector.x - self.lowerBoundsVector.x
-        sizeZ = self.upperBoundsVector.z - self.lowerBoundsVector.z
-
-        resolutionX = int(sizeX / boidAttributes.preferredZoneSize())
-        resolutionZ = int(sizeZ / boidAttributes.preferredZoneSize())
-        
-        stepSizeX = sizeX / float(resolutionX)
-        stepSizeZ = sizeZ / float(resolutionZ)
-        
-        while((stepSizeX / 2) < boidAttributes.mainRegionSize() and resolutionX > 1):
-            print ("WARNING - ZONE X-RESOLUTION TOO HIGH, REDUCING...")
-            resolutionX -= 1
-            stepSizeX = sizeX / resolutionX
-        while((stepSizeZ / 2) < boidAttributes.mainRegionSize() and resolutionZ > 1):
-            print ("WARNING - ZONE Z-RESOLUTION TOO HIGH, REDUCING...")
-            resolutionZ -= 1
-            stepSizeX = sizeZ / resolutionZ        
-        
-        xMinBase = self.lowerBoundsVector.x
-        xMaxBase = xMinBase + stepSizeX 
-        zMin = self.lowerBoundsVector.z
-        zMax = zMin + stepSizeZ
-        zoneId = 0
-        
-        for i in range(0, resolutionZ):
-            xMin = xMinBase
-            xMax = xMaxBase
+        def __init__(self, xMin, xMax, zMin, zMax):
+            self.regionalSetsList = [set()]
+            self.regionIterable = ZoneGraph._ZoneRegionIteratable(self.regionalSetsList)
             
-            for j in range(0, resolutionX):
-                newZone = _BoidZone(zoneId, xMin, xMax, zMin, zMax)
-                self._zoneList.append(newZone)
+            self._xMin = xMin
+            self._xMax = xMax
+            self._zMin = zMin
+            self._zMax = zMax
+        
+        ################    
+        def __str__(self):
+            return ("<xMin=%.2f, xMax=%.2f, zMin=%.2f, zMax=%.2f>" %
+                    (self._xMin, self._xMax, self._zMin, self._zMax))    
+            
+        ################
+        def _getMetaStr(self):
+            agentStringsList = [("\n\t%s" % agent) for agent in self.agentSet]
+            return ("<xMin=%.2f, xMax=%.2f, zMin=%.2f, zMax=%.2f, count=%d\nagents=%s \n>" %
+                    (self._xMin, self._xMax, self._zMin, self._zMax, len(self.agentSet), "".join(agentStringsList)))    
+            
+        ################    
+        def _getAgentSet(self):
+            return self.regionalSetsList[0]
+        agentSet = property(_getAgentSet)
+        
+        ################    
+        def setNeighbouringZones(self, neighboursList):
+            del self.regionalSetsList[1:]
+            
+            for zone in neighboursList:
+                self.regionalSetsList.append(zone.agentSet)
+        
+        ################        
+        def addNeighbouringZone(self, neighbour):
+            if(neighbour not in self.regionalSetsList):
+                self.regionalSetsList.append(neighbour.agentSet)
+        
+        ################
+        def addNewAgent(self, agent):
+            self.agentSet.add(agent)
+        
+        ################
+        def removeAgent(self, agent):
+            self.agentSet.remove(agent)
+    
+    # END OF NESTED CLASS _Zone
+    ##############################
+    
+    class _ZoneRegionIteratable(object):
+        def __init__(self, regionList):
+            self._regionList = regionList
+    
+        def __iter__(self):
+            return itertools.chain.from_iterable(self._regionList)
 
-                if(j > 0):
-                    idxA = (i*resolutionX) + j-1
-                    neighbourLeft = self._zoneList[idxA]
-                    neighbourLeft._neighbouringZoneRight = newZone
-                    newZone._neighbouringZoneLeft = neighbourLeft
-                if(i > 0):
-                    idxB = ((i-1)*resolutionX) + j
-                    neighbourUp = self._zoneList[idxB]
-                    neighbourUp._neighbouringZoneDown = newZone
-                    newZone._neighbouringZoneUp = neighbourUp
+    # END OF NESTED CLASS _ZoneRegionIterable
+    #############################
+    
+    
+    def __init__(self, cornerOneLocator, cornerTwoLocator):
+        self._currentFrameIteration = 0
+        
+        self._lowerBoundsVector = util.BoidVector3FromPymelLocator(cornerOneLocator)
+        self._upperBoundsVector = util.BoidVector3FromPymelLocator(cornerTwoLocator)
+        if(self._upperBoundsVector.x < self._lowerBoundsVector.x):
+            self._lowerBoundsVector.x, self._upperBoundsVector.x = self._upperBoundsVector.x, self._lowerBoundsVector.x
+        # 2D only at present => not bothered about y direction
+        if(self._upperBoundsVector.z < self._lowerBoundsVector.z):
+            self._lowerBoundsVector.z, self._upperBoundsVector.z = self._upperBoundsVector.z, self._lowerBoundsVector.z
+        
+        zoneSize = boidAttributes.mainRegionSize()
+        sizeX = self._upperBoundsVector.x - self._lowerBoundsVector.x
+        sizeZ = self._upperBoundsVector.z - self._lowerBoundsVector.z
+        resolutionX = int((sizeX / zoneSize) + 1)
+        resolutionZ = int((sizeZ / zoneSize) + 1)
+        overspillX = ((resolutionX * zoneSize) - sizeX) / 2
+        overspillZ = ((resolutionZ * zoneSize) - sizeZ) / 2
+        
+        self._zoneSize = zoneSize
+        self._xZoneOrigin = self._lowerBoundsVector.x - overspillX
+        self._zZoneOrigin = self._lowerBoundsVector.z - overspillZ
+        self._resolutionX = resolutionX
+        self._resolutionZ = resolutionZ
+        
+        self._zoneMap = []
+        self._previousKeyLookup = {}
+        self._useSpatialHashing = True
+        
+        if(resolutionX == 1 and resolutionZ == 1):
+            self._useSpatialHashing = False
+            self._zoneMap = []
+            print("WARNING - grid too small or agent neighbourhood region too large.  Agent lookups will NOT be optimised.")
+        else:
+            zMinBase = self._zZoneOrigin
+            zMaxBase = zMinBase + zoneSize
+            xMin = self._xZoneOrigin
+            xMax = xMin + zoneSize
+            
+            for xIndex in range(resolutionX): # enclosing iteration == x-axis
+                zMin = zMinBase
+                zMax = zMaxBase
+                currentRowZ = []
+                previousRowZ = self._zoneMap[xIndex-1] if(xIndex > 0) else None
                 
-                xMin += stepSizeX
-                xMax += stepSizeX
-                zoneId += 1
+                for zIndex in range(resolutionZ):  # nested iteration == z-axis
+                    newZone = ZoneGraph._Zone(xMin, xMax, zMin, zMax)
+                    if(previousRowZ is not None):
+                        if(zIndex > 0): 
+                            self._makeZonesNeighbours(newZone, previousRowZ[zIndex-1])
+                            
+                        self._makeZonesNeighbours(newZone, previousRowZ[zIndex])
+
+                        if(zIndex < resolutionZ-1): 
+                            self._makeZonesNeighbours(newZone, previousRowZ[zIndex+1])
+                    if(zIndex > 0):
+                        self._makeZonesNeighbours(newZone, currentRowZ[zIndex-1])
+                    
+                    zMin += zoneSize
+                    zMax += zoneSize
+                    
+                    currentRowZ.append(newZone)
                 
-            zMin += stepSizeZ
-            zMax += stepSizeZ
+                self._zoneMap.append(currentRowZ)
+                xMin += zoneSize
+                xMax += zoneSize
+                        
+            print("Created new ZoneGraph - res= %dx%d (zone size=%.2f)\nX=%.2f to %2f,Z=%.2f to %.2f" %
+                (self._resolutionX, self._resolutionZ, self._zoneSize, 
+                 self._xZoneOrigin, xMax - zoneSize, self._zZoneOrigin, zMax - zoneSize))
+            
+    def _makeZonesNeighbours(self, zoneA, zoneB):
+        zoneA.addNeighbouringZone(zoneB)
+        zoneB.addNeighbouringZone(zoneA)
+        
+#         margin = 0
+#         import boidVectors.vector3 as bv3
+#         vecA = bv3.Vector3(zoneA._xMin + margin, 0, zoneA._zMin + margin)
+#         vecB = bv3.Vector3(zoneB._xMin + margin, 0, zoneB._zMin + margin)
+#         
+#         print("zone%s:%s NOW NEIGHBOURS zone%s:%s" % 
+#               (self._spatialKeyFromVector(vecA), zoneA, self._spatialKeyFromVector(vecB), zoneB))
 
-        print("Created new zone graph, resolution = %dx%d (zone size=%.2fx%.2f)\nX=%.2f to %2f,Z=%.2f to %.2f" % 
-              (resolutionX, resolutionZ, stepSizeX, stepSizeZ, xMinBase, xMax - stepSizeX, self.lowerBoundsVector.z, zMax - stepSizeZ))        
-
-##########################             
+########################################            
     def __str__(self):
-        setup = ""
-        ret = ""
-        for zone in self._zoneList:
-            setup += ("%s\n" % zone.neighbouringZonesStr())
-            ret += ("%s\n" % zone)
-        return ("%d zones:\n%s\n%s\nlookupCount:%d" % (len(self._zoneList), setup, ret, len(self._AgentZoneLookup)))
+        if(self._useSpatialHashing):
+            zoneStringsList = []
+            for xIndex, zArray in enumerate(self._zoneMap):
+                for zIndex, zone in enumerate(zArray):
+                    zoneStringsList.append("(%d,%d)=%s\n" % (xIndex, zIndex, zone))
+            return "".join(zoneStringsList)
+        else:
+            return "UNOPTIMISED... Agents list: ".join([(("%s, " % agent) for agent in self._zoneMap)])
+        
+########################################
+    def _getMetaStr(self):
+        if(self._useSpatialHashing):
+            zoneStringsList = []
+            for xIndex, zArray in enumerate(self._zoneMap):
+                for zIndex, zone in enumerate(zArray):
+                    zoneStringsList.append("(%d,%d)=%s\n" % (xIndex, zIndex, zone.metaStr))
+            return "".join(zoneStringsList)
+        else:
+            return "UNOPTIMISED... Agents list: ".join([(("%s, " % agent) for agent in self._zoneMap)])
 
-##########################
+########################################
     def _getLowerBoundsVector(self):
         return self._lowerBoundsVector
     lowerBoundsVector = property(_getLowerBoundsVector)
@@ -290,75 +189,77 @@ class ZoneGraph(BoidBaseObject):
         return self._upperBoundsVector
     upperBoundsVector = property(_getUpperBoundsVector)
 
-##########################  
-    def _getUseEarlyHitListLookup(self):
-        """True if we can use the hitList lookup (see _BoidZone class, above), False otherwise."""
-        return self._earlyHitListLookup == None
-    def _setUseEarlyHitListLookup(self, value):
-        if(value):
-            self._earlyHitListLookup = {}
-        else:
-            self._earlyHitListLookup = None
-    useEarlyHitListLookup = property(_getUseEarlyHitListLookup, _setUseEarlyHitListLookup)
-    
-
-##########################      
-    def resetZones(self):
-        for zone in self._zoneList:
-            del zone.agentList[:]       
-
-##########################              
+########################################       
     def updateAgentPosition(self, agent):
-        """Updates the zones with the position of the given agent.
-        Removing it from a previous zone if necessary, and adding it to a new one if necessary."""
-        
-        foundZone = False
-        if(self.useEarlyHitListLookup and agent.particleId in self._earlyHitListLookup):
-            hitListLookup = self._earlyHitListLookup[agent.particleId]
-            for zone in hitListLookup:
-                if(zone.updateAgentPosition(agent)):
-                    self._AgentZoneLookup[agent.particleId] = zone    
-                    self._earlyHitListLookup[agent.particleId] = zone._earlyHitList
-                    foundZone = True
-                    break
-            if(not foundZone):
-                del self._earlyHitListLookup[agent.particleId]
+        if(self._useSpatialHashing):
+            spatialKey = self._spatialKeyFromVector(agent.currentPosition)
+            previousSpatialKey = self._previousKeyLookup.get(agent.particleId)
+            
+            if(spatialKey != previousSpatialKey):
+                agentZone = self._zoneForSpatialKey(spatialKey)
+                agentZone.addNewAgent(agent)
                 
-        if(not foundZone):
-            for zone in self._zoneList:
-                if(zone.updateAgentPosition(agent)):
-                    self._AgentZoneLookup[agent.particleId] = zone
-                    foundZone = True
-                    
-                    if(self.useEarlyHitListLookup):
-                        self._earlyHitListLookup[agent.particleId] = zone._earlyHitList
-                    break        
-                
-        if(not foundZone):
-            print("XXXX WARNING = NOT FOUND ZONE FOR BOID AGENT %s" % agent)
+                if(previousSpatialKey is not None):
+                    previousZone = self._zoneForSpatialKey(previousSpatialKey)
+                    previousZone.removeAgent(agent)
 
- 
-##########################   
+                self._previousKeyLookup[agent.particleId] = spatialKey
+            
+########################################                
     def updateAllAgentPositions(self, agentsList):
-        """Updates all zones with the positions of the boids in the given list."""
-        
-        self.resetZones()
-        
-        for agent in agentsList:
-            self.updateAgentPosition(agent)
+        if(self._useSpatialHashing):
+            for agent in agentsList:
+                self.updateAgentPosition(agent)
+                
+########################################                
+    def nearbyAgentsIterableForAgent(self, agent):
+        if(self._useSpatialHashing):
+            spatialKey = self._spatialKeyFromVector(agent.currentPosition)
+            currentZone = self._zoneForSpatialKey(spatialKey)
 
-##########################              
-    def regionListForAgent(self, agent):
-        """Returns a list of other agents within the same zone (or neighbouring zones within the overlap
-        area) as the agent given."""
-        
-        if(agent.particleId in self._AgentZoneLookup):
-            zone = self._AgentZoneLookup[agent.particleId]    
-            return zone.agentList
+            return currentZone.regionIterable
         else:
-            print("WARNING - NO ZONE FOUND FOR BOID #%s" % agent)
-            emptyList = []
-            return emptyList
+            return self._zoneMap
+
+########################################                
+    def removeAgent(self, agent):
+        if(self._useSpatialHashing):
+            spatialKey = self._previousKeyLookup.get(agent.particleId)
+            zone = self._zoneForSpatialKey(spatialKey)
+            zone.removeAgent(agent)
+        else:
+            self._zoneMap.remove(agent)
+
+########################################        
+    def _zoneForSpatialKey(self, key):
+        xRow = self._zoneMap[key[0]]
+        return xRow[key[1]]
+                
+########################################            
+    def _spatialKeyFromVector(self, vector):
+        return self._spatialKeyFromCoords(vector.x, vector.z)
+
+########################################        
+    def _spatialKeyFromCoords(self, xCoord, zCoord):
+        roundingErrorCorrection = 0.00000001
         
+        xNormalised = (xCoord - self._xZoneOrigin) / self._zoneSize
+        xNormalised = int(xNormalised + roundingErrorCorrection)
+        if(xNormalised < 0):    
+            xNormalised = 0
+        elif(xNormalised >= self._resolutionX):    
+            xNormalised = self._resolutionX - 1
         
-##########################################################   
+        zNormalised = (zCoord - self._zZoneOrigin) / self._zoneSize
+        zNormalised = int(zNormalised + roundingErrorCorrection)
+        if(zNormalised < 0):    
+            zNormalised = 0
+        elif(zNormalised >= self._resolutionZ):    
+            zNormalised = self._resolutionZ -1
+
+        key = (xNormalised, zNormalised)
+        
+        return key
+                       
+## END OF CLASS - ZoneGraph
+############################################

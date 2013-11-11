@@ -6,8 +6,8 @@ import random as rand
 import vector2 as bv2
 
 
-def isVector2(otherVector):
-    return type(otherVector) == bv2.Vector2
+def IsVector2(otherVector):
+    return type(otherVector) is bv2.Vector2
 
 
 class Vector3(BoidBaseObject):
@@ -21,18 +21,17 @@ class Vector3(BoidBaseObject):
     Note also that currently all angles are in degrees, not radians.
     """
     
-    def __init__(self, x = 0, y = 0, z = 0):
+    def __init__(self, x=0, y=0, z=0):
         """Note that you can either: 
         - pass in a vector object as an argument to create a (deep) copy
         - pass in numerical values for each axis
         - pass nothing for default values (0,0,0).
         """
-        
-        if(type(x) == Vector3):
+        if(type(x) is Vector3):
             self._x = x.x
             self._y = x.y
             self._z = x.z
-        elif(isVector2(x)):
+        elif(IsVector2(x)):
             self._x = x.x
             self._y = 0
             self._z = x.z
@@ -54,13 +53,13 @@ class Vector3(BoidBaseObject):
 
 ##################### 
     def __add__(self, other):
-        if(isVector2(other)):
+        if(IsVector2(other)):
             return Vector3(self.x + other.u, self.y, self.z + other.v)
         else:
             return Vector3(self.x + other.x, self.y + other.y, self.z + other.z)
 
     def __sub__(self, other):
-        if(isVector2(other)):
+        if(IsVector2(other)):
             return Vector3(self.x - other.u, self.y, self.z - other.v)
         else:
             return Vector3(self.x - other.x, self.y - other.y, self.z - other.z)
@@ -114,36 +113,30 @@ class Vector3(BoidBaseObject):
     v = property(_get_z, _set_z) # for compatability with Vector2
     
 #######################
-    def add(self, otherVector, ignoreVertical = False):
-        if(isVector2(otherVector)):
-            self.x += otherVector.u
-            self.z += otherVector.v
-        else:
-            self.x += otherVector.x
-            if(not ignoreVertical):
-                self.y += otherVector.y
-            self.z += otherVector.z
+    def add(self, otherVector, ignoreVertical=False):
+        self.x += otherVector.u
+        self.z += otherVector.v
+        if(not ignoreVertical): # and not IsVector2(otherVector):
+            self.y += otherVector.y
 
 #######################
-    def subtract(self, otherVector, ignoreVertical = False):
-        if(isVector2(otherVector)):
-            self.x -= otherVector.u
-            self.z -= otherVector.v
-        else:
-            self.x -= otherVector.x
-            if(not ignoreVertical):
-                self.y -= otherVector.y
-            self.z -= otherVector.z
+    def subtract(self, otherVector, ignoreVertical=False):
+        self.x -= otherVector.u
+        self.z -= otherVector.v
+        if(not ignoreVertical): # and not IsVector2(otherVector):
+            self.y -= otherVector.y
 
 #######################                 
-    def divide(self, scalarVal, ignoreVertical = False):
+    def divide(self, scalarVal, ignoreVertical=False):
         magToo = not ignoreVertical and not self._needsMagCalc
-        self.x /= scalarVal
-        if(not ignoreVertical):
-            self.y /= scalarVal
-        self.z /= scalarVal
+        scalarMult = 1.0 / scalarVal
+        
+        self.u *= scalarMult
+        if(not ignoreVertical): # and not IsVector2(otherVector):
+            self.y *= scalarMult
+        self.v *= scalarMult
         if(magToo):
-            self._magnitude /= scalarVal  
+            self._magnitude *= scalarMult 
             self._needsMagCalc = False
 
 #######################
@@ -167,19 +160,19 @@ class Vector3(BoidBaseObject):
 
 #######################     
     def isNull(self):
-        return (self.x == 0 and self.y == 0 and self.z == 0)
+        return (self.x == 0 and self.z == 0 and self.y == 0)
 
 #######################         
-    def reset(self, x = 0, y = 0, z = 0):
+    def reset(self, x=0, y=0, z=0):
         self.x = float(x)
         self.y = float(y)
         self.z = float(z)
 
 ####################### 
-    def resetVec(self, otherVector, ignoreVertical = False):
+    def resetVec(self, otherVector, ignoreVertical=False):
         self.x = otherVector.u
         if(not ignoreVertical):
-            self.y = 0 if isVector2(otherVector) else otherVector.y
+            self.y = 0 if IsVector2(otherVector) else otherVector.y
         self.z = otherVector.v
         
         if(not ignoreVertical and not otherVector._needsMagCalc):
@@ -196,7 +189,7 @@ class Vector3(BoidBaseObject):
         self._z = -(self._z) #
         
 ##################### 
-    def invertedVector(self):
+    def inverseVector(self):
         ret = Vector3(-(self.x), -(self.y), -(self.z))
         if(not self._needsMagCalc):
             ret._magnitude = self._magnitude
@@ -204,7 +197,7 @@ class Vector3(BoidBaseObject):
         return ret
 
 ####################### 
-    def magnitude(self, ignoreVertical = False):
+    def magnitude(self, ignoreVertical=False):
         if(not ignoreVertical):
             if(self._needsMagCalc):
                 self._magnitude = mth.sqrt((self.x **2) + (self.y **2) + (self.z ** 2))
@@ -217,14 +210,14 @@ class Vector3(BoidBaseObject):
             return self._2dMagnitude  
 
 ####################### 
-    def dot(self, otherVector):
-        if(isVector2(otherVector)):
+    def dot(self, otherVector, ignoreVertical = False):
+        if(ignoreVertical or IsVector2(otherVector)):
             return (self.x * otherVector.u) + (self.z * otherVector.v)
         else:
             return (self.x * otherVector.x) + (self.y * otherVector.y) + (self.z * otherVector.z)
 
 #######################
-    def normalise(self, scaleFactor = 1.0):
+    def normalise(self, scaleFactor=1.0):
         if(not self.isNull()):
             multiple = scaleFactor / self.magnitude()
             self.x *= multiple
@@ -235,43 +228,54 @@ class Vector3(BoidBaseObject):
             self._needsMagCalc = False
  
 #######################            
-    def normalisedVector(self, scaleFactor = 1.0):
+    def normalisedVector(self, scaleFactor=1.0):
         retVal = Vector3(self.x, self.y, self.z)
         if(not self._needsMagCalc):
             retVal._magnitude = self._magnitude
             retVal._needsMagCalc = False
-            
-        retVal.normalise(scaleFactor)
+        else:
+            retVal.normalise(scaleFactor)
         return retVal
 
 ####################### 
-    def angleFrom(self, otherVector, ignoreVertical = True):
+    def angleFrom(self, otherVector, ignoreVertical=True):
         """angle between direction vectors in DEGREES (negative for anti-clockwise)."""
         if(self.isNull() or otherVector.isNull()):
             return 0
-        else:    
-            if(isVector2(otherVector)):
-                return self.horizontalVector().angleFrom(otherVector)
-            elif(ignoreVertical):
-                return self.horizontalVector().angleFrom(otherVector.horizontalVector())
+        elif(ignoreVertical or IsVector2(otherVector)):
+            temp = self.dot(otherVector, True) / (self.magnitude(True) * otherVector.magnitude(True))
+            if(temp < -1): #this shouldn't be happening, but it does (rounding errors?) so...
+                temp = -1
+            elif(temp > 1):
+                temp = 1
+
+            angle = mth.degrees(mth.acos(temp))
+            if(0 < angle and angle < 180):
+                cross = (self.u * otherVector.v) - (self.v * otherVector.u)
+                if(cross > 0):  # anti-clockwise
+                    return -angle
+                else: # clockwise
+                    return angle
             else:
-                return self.angleFrom3DVector(otherVector)
+                return angle
+        else:
+            return self.angleFrom3DVector(otherVector)
 
 ####################### 
     def angleFrom3DVector(self, otherVector):
         vector1 = self.normalisedVector()
         vector2 = otherVector.normalisedVector()
         
-        if(vector1 == vector2): # This could definitely be optmised if necessary
+        if(vector1 == vector2): # This whole bit could definitely be optimised if necessary
             return 0
-        elif(vector1 == vector2.invertedVector()):
+        elif(vector1 == vector2.inverseVector()):
             return 180
         else:
             return mth.degrees(mth.acos(vector1.dot(vector2)))
 
 #######################     
-    def distanceFrom(self, otherVector, ignoreVertical = True):
-        if(isVector2(otherVector) or ignoreVertical):
+    def distanceFrom(self, otherVector, ignoreVertical=True):
+        if(ignoreVertical or IsVector2(otherVector)):
             tempU = (self.x - otherVector.u) ** 2
             tempV = (self.z - otherVector.v) ** 2
             return mth.sqrt(tempU + tempV)
@@ -283,7 +287,7 @@ class Vector3(BoidBaseObject):
  
 #######################       
     def isAbove(self, otherVector):
-        if(isVector2(otherVector)):
+        if(IsVector2(otherVector)):
             return self._y > 0
         else:
             return self._y > otherVector.y
@@ -300,7 +304,7 @@ class Vector3(BoidBaseObject):
         self.z = (xTemp * sinTheta) + (self.z * cosTheta)
 
 ####################### 
-    def moveTowards(self, toVector, byAmount, ignoreVertical = True):
+    def moveTowards(self, toVector, byAmount, ignoreVertical=True):
         diffVec = toVector - self
         if(ignoreVertical):
             diffVec = diffVec.horizontalVector()
@@ -317,7 +321,7 @@ class Vector3(BoidBaseObject):
             self.z += diffVec.v
 
 #######################                 
-    def jitter(self, maxAmount, ignoreVertical = True):
+    def jitter(self, maxAmount, ignoreVertical=True):
         self.x += rand.uniform(-maxAmount, maxAmount)
         if(not ignoreVertical):
             self.y += rand.uniform(-maxAmount, maxAmount)

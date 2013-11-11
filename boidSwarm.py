@@ -3,16 +3,14 @@ from boidBaseObject import BoidBaseObject
 import boidAttributes
 from boidTools import util
 
-import boidVector.vector3 as bv3
+import boidVectors.vector3 as bv3
 import boidTools.zoneGraph as bzg
 import boidAgent as ba
-import boidBehaviour.classicBoid as bbc
-import boidBehaviour.goalDriven as bbg
-import boidBehaviour.followPath as bbf
+import boidBehaviours.classicBoid as bbc
+import boidBehaviours.goalDriven as bbg
+import boidBehaviours.followPath as bbf
 
-from boidBehaviour.behaviourBaseObject import BoidBehaviourDelegate
-from boidBehaviour.goalDriven import agentBehaviourIsGoalDriven,\
-agentIsInBasePyramid, agentIsChasingGoal
+from boidBehaviours.behaviourBaseObject import BoidBehaviourDelegate
 
 
 
@@ -22,47 +20,48 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
     also manages interaction with the actual Pymel objects within Maya.
     """
     
-    def __init__(self, particleShapeNode, negativeIndicesCornerLocator, positiveIndicesCornerLocator):
+    def __init__(self, particleShapeNode, cornerLocatorA, cornerLocatorB):
         self._particleShapeNode = particleShapeNode
         self._particleIdsOrdering = []
         self._boidAgentList = {}
-        self._zoneGraph = bzg.ZoneGraph(negativeIndicesCornerLocator, positiveIndicesCornerLocator)        
+        self._zoneGraph = bzg.ZoneGraph(cornerLocatorA, cornerLocatorB)        
         
         self._normalBehaviour = bbc.ClassicBoid(self._zoneGraph.lowerBoundsVector, self._zoneGraph.upperBoundsVector)
         self._priorityGoalBehaviour = None   # 
-        self._secondaryGoalBehaviour = None  # boidBehaviourGoalDriven instances
-        self._curvePathBehaviour = None  # boidBehaviourFollowPath instance
+        self._secondaryGoalBehaviour = None  # boidBehavioursGoalDriven instances
+        self._curvePathBehaviour = None  # boidBehavioursFollowPath instance
         
         self._buildParticleList()
 
 #############################
     def __str__(self):
-        length = len(self._boidAgentList)
-        if(length > 0):
-            ret = "nodeName=%s, %d particles:" % (self._particleShapeNode.name(), length)
-            for boid in sorted(self._boidAgentList.itervalues()):
-                ret += "\n\t" + boid.__str__()
-            return ret
+        if(self._boidAgentList):
+            returnStrings = ["nodeName=%s, %d particles:" % (self.particleShapeName, len(self._boidAgentList))]
+            returnStrings.extend([("\n\t%s" % agent) for agent in self.agentListSorted])
+            
+            return ''.join(returnStrings)
         else:
-            return "empty"
+            return ("nodeName=%s, currently empty" % self.particleShapeName)
 
 
 #############################
-    def metaStr(self):
-        ret = ""
-        for agent in sorted(self._boidAgentList.itervalues()):
-            ret += '\t' + agent.metaStr() + '\n'
-        return ret
+    def _getMetaStr(self):
+        return ''.join([("\t%s\n" % agent.metaStr) for agent in self.agentListSorted])
 
 #############################    
-    def zoneStr(self):
+    def _getZoneStr(self):
         return self._zoneGraph.__str__()
+    zoneStr = property(_getZoneStr)
+    
+    def _getZoneMetaStr(self):
+        return self._zoneGraph.metaStr
+    zoneMetaStr = property(_getZoneMetaStr)
 
 #############################    
-    def _getAgentList(self):
+    def _getAgentListSorted(self):
         """Returns sorted list of boid agents, not too efficient - mainly for debug/console use."""
         return sorted(self._boidAgentList.values())
-    agentList = property(_getAgentList)
+    agentListSorted = property(_getAgentListSorted)
     
     def agent(self, particleId):
         return self._boidAgentList[particleId]
@@ -73,21 +72,20 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
     particleShapeName = property(_getParticleShapeName)
     
 #############################
-    def _buildParticleList(self, fullRebuild = True):
+    def _buildParticleList(self, fullRebuild=True):
         """Builds/rebuilds the list of boidAgents based on the current state
-        of the corresponding nParticleShapeNode."""
-        
+        of the corresponding nParticleShapeNode.
+        """
         lowerBounds = self._zoneGraph.lowerBoundsVector
         upperBounds = self._zoneGraph.upperBoundsVector
-        
         
         if(fullRebuild):
             self._boidAgentList.clear()
             
             if(self._particleShapeNode.getCount() > 0):
                 #particle IDs are NOT guaranteed to come in numerical order => have to use this list as reference
-                self._particleIdsOrdering = util.getParticleIdsList(self.particleShapeName)             
-                if(self._particleIdsOrdering  != None):
+                self._particleIdsOrdering = util.ParticleIdsListForParticleShape(self.particleShapeName)             
+                if(self._particleIdsOrdering is not None):
                     for ptclId in self._particleIdsOrdering:
                         newAgent = ba.BoidAgent(int(ptclId), self._normalBehaviour, lowerBounds, upperBounds)
                         self._boidAgentList[newAgent.particleId] = newAgent
@@ -96,12 +94,11 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
             
             if(numParticles > len(self._boidAgentList)):
                 # add newly created particles to the list of agents
-                self._particleIdsOrdering = util.getParticleIdsList(self.particleShapeName)
+                self._particleIdsOrdering = util.ParticleIdsListForParticleShape(self.particleShapeName)
                 
                 sortedIdsList = sorted(self._particleIdsOrdering)
                 keysList = sorted(self._boidAgentList.keys())
-                numKeys = len(keysList)
-                lastKey = keysList[numKeys-1] if numKeys > 0 else -1
+                lastKey = keysList[-1] if keysList else -1
                 newAgentsList = []
                 
                 for ptclId in reversed(sortedIdsList):
@@ -116,7 +113,7 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
                 
             elif(numParticles < len(self._boidAgentList)):
                 # remove recently deleted particles from the list of agents
-                self._particleIdsOrdering = util.getParticleIdsList(self.particleShapeName)
+                self._particleIdsOrdering = util.ParticleIdsListForParticleShape(self.particleShapeName)
                 particleSet = set(self._particleIdsOrdering)
                 boidAgentSet = set(self._boidAgentList.keys())
                 
@@ -130,54 +127,61 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
     def _killSingleParticle(self, particleId):
         """IMPORTANT - WILL NOT TAKE EFEECT UNTIL AFTER NEXT FRAME UPDATE"""
         if(particleId in self._boidAgentList):
-            util.killParticle(self.particleShapeName, particleId)
+            util.KillParticle(self.particleShapeName, particleId)
         
 
 #############################            
     def _getSingleParticleInfo(self, particleId):            
-        position =  util.getSingleParticlePosition(self.particleShapeName, particleId) 
-        velocity =  util.getSingleParticleVelocity(self.particleShapeName, particleId) 
+        position =  util.GetSingleParticlePosition(self.particleShapeName, particleId) 
+        velocity =  util.GetSingleParticleVelocity(self.particleShapeName, particleId) 
         agent = self._boidAgentList[particleId]
         
         agent.updateCurrentVectors(bv3.Vector3(position[0], position[1], position[2]), 
                                    bv3.Vector3(velocity[0], velocity[1], velocity[2]))
-        if(agentBehaviourIsGoalDriven(agent)):
+        if(bbg.AgentBehaviourIsGoalDriven(agent)):
             agent._currentBehaviour.checkAgentLocation(agent)
         self._zoneGraph.updateAgentPosition(agent)
  
 #############################
     def setStickiness(self, particleId, value):
         self._boidAgentList[particleId].stickinessScale = value
-        util.setStickinessScale(self.particleShapeName, particleId, value) # do this right now - otherwise will wait until next frame update
+        util.SetSingleParticleStickinessScale(self.particleShapeName, particleId, value) # do this right now - otherwise will wait until next frame update
 
 #############################
     def fullUpdate(self):       
         """Performs one full iteration of updating all boidAgent behaviour.
-        Should be called from Maya once per frame update."""
+        Should be called from Maya once per frame update.
+        """
+        
+#         print "\nSTART FRAME"
         
         self._resetHelperObjects()
+#         print "reset done"
         self._getAllParticlesInfo()
-        self._calculateBoidsBehaviour()
+#         print "get info done"
+        self._calculateAgentsBehaviour()
+#         print "calculate done"
         self._updateAllParticles()
+#         print "update done...\n"
 
 #############################
     def _resetHelperObjects(self):
-        self._zoneGraph.resetZones()
+#         self._zoneGraph.resetZones()
         
-        if(self._priorityGoalBehaviour != None):
+        if(self._priorityGoalBehaviour is not None):
             self._priorityGoalBehaviour.resetAverages()
             
-        if(self._secondaryGoalBehaviour != None):
+        if(self._secondaryGoalBehaviour is not None):
             self._secondaryGoalBehaviour.resetAverages()
             
-        if(self._curvePathBehaviour != None):
+        if(self._curvePathBehaviour is not None):
             self._curvePathBehaviour.recheckCurvePoints()
 
 #############################
-    def _getAllParticlesInfo(self, queryExtraInfo = False):
+    def _getAllParticlesInfo(self, queryExtraInfo=False):
         """Updates all boidAgent instances with position, velocity and derived
-        information from their corresponding Maya-side particle instances."""
-        
+        information from their corresponding Maya-side particle instances.
+        """
         numParticles = self._particleShapeNode.getCount()
         if(numParticles == 0):
             self._buildParticleList(True)
@@ -188,12 +192,12 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
             #self._buildParticleList(True)
         
         if(numParticles > 0):
-            positions = util.getParticlePositionsList(self.particleShapeName)
-            velocities = util.getParticleVelocitiesList(self.particleShapeName)
+            positions = util.ParticlePositionsListForParticleShape(self.particleShapeName)
+            velocities = util.ParticleVelocitiesListForParticleShape(self.particleShapeName)
             
             if(len(positions) < numParticles * 3):
                 #repeated call here because of shitty Maya bug whereby sometimes only get first item in request for goalsU...
-                positions = util.getParticlePositionsList(self.particleShapeName) 
+                positions = util.ParticlePositionsListForParticleShape(self.particleShapeName) 
     
             for i in range(0, numParticles):
                 j = i * 3
@@ -202,7 +206,7 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
                 
                 agent.updateCurrentVectors(bv3.Vector3(positions[j], positions[j+1], positions[j+2]),
                                            bv3.Vector3(velocities[j], velocities[j+1], velocities[j+2]))
-                if(agentBehaviourIsGoalDriven(agent)):
+                if(bbg.AgentBehaviourIsGoalDriven(agent)):
                     agent._currentBehaviour.checkAgentLocation(agent)
                 self._zoneGraph.updateAgentPosition(agent)
                 
@@ -211,25 +215,25 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
 
 #############################
     def _queryExtraInfo(self):
-        stickinessScales = util.getStickinessScalesList(self.particleShapeName)
-        for i in range(0, len(stickinessScales)):
-            particleId = self._particleIdsOrdering[i]
-            self._boidAgentList[particleId]._stickinessScale = stickinessScales[i]
+        stickinessScales = util.StickinessScalesListForParticleShape(self.particleShapeName)
+        for index, stickiness in enumerate(stickinessScales):
+            particleId = self._particleIdsOrdering[index]
+            self._boidAgentList[particleId]._stickinessScale = stickiness
 
 #############################
-    def _calculateBoidsBehaviour(self):     
+    def _calculateAgentsBehaviour(self):     
         """Iterates through all agents & calculates desired behaviour based on boids rules."""
-           
         for agent in self._boidAgentList.itervalues():
-            regionList = self._zoneGraph.regionListForAgent(agent)
-            agent.updateBehaviour(regionList)
+            regionGenerator = self._zoneGraph.nearbyAgentsIterableForAgent(agent)
+#             regionList = self._zoneGraph.regionListForAgent(agent)
+            agent.calculateDesiredBehaviour(regionGenerator)
 
 #############################
     def _updateAllParticles(self):
         """Iterates though all agents & executes previously calculated behaviour.
         Note that this must be done subsequently to the calculations and on a separate iteration
-        because it would otherwise affect the actual calculations."""
-        
+        because it would otherwise affect the actual calculations.
+        """
         for agent in self._boidAgentList.itervalues():
             self.setDebugColour(agent)
             agent.commitNewBehaviour(self._particleShapeNode.name())
@@ -237,29 +241,29 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
 #############################            
     def _paintBlack(self):
         for agent in self._boidAgentList.itervalues:
-            util.setParticleColour(self.particleShapeName, agent.particleId, 0, 0, 0)
+            util.SetParticleColour(self.particleShapeName, agent.particleId, 0, 0, 0)
             
     def setDebugColour(self, agent):
         if(boidAttributes.useDebugColours()):
             particleId = agent.particleId
             
-            if(agentIsInBasePyramid(agent)):
+            if(bbg.AgentIsInBasePyramid(agent)):
                 stickiness = agent.stickinessScale / 2
-                util.setParticleColour(self.particleShapeName, particleId, stickiness, stickiness, stickiness)
+                util.SetParticleColour(self.particleShapeName, particleId, stickiness, stickiness, stickiness)
             elif(not agent.isTouchingGround):
-                util.setParticleColour(self.particleShapeName, particleId, 0.2, 0.2, 0.2)
+                util.SetParticleColour(self.particleShapeName, particleId, 0.2, 0.2, 0.2)
             elif(agent.isCollided):
-                util.setParticleColour(self.particleShapeName, particleId, 1, 0, 0)
-            elif(agentIsChasingGoal(agent)):
-                util.setParticleColour(self.particleShapeName, particleId, 1, 1, 0)
+                util.SetParticleColour(self.particleShapeName, particleId, 1, 0, 0)
+            elif(bbg.AgentIsChasingGoal(agent)):
+                util.SetParticleColour(self.particleShapeName, particleId, 1, 1, 0)
             elif(agent.isCrowded):
-                util.setParticleColour(self.particleShapeName, particleId, 0.65, 0, 0)
-            elif(agentBehaviourIsGoalDriven(agent) and agent.currentBehaviour.agentIsLeader(agent)):
-                util.setParticleColour(self.particleShapeName, particleId, 1, 1, 1)
+                util.SetParticleColour(self.particleShapeName, particleId, 0.65, 0, 0)
+            elif(bbg.AgentBehaviourIsGoalDriven(agent) and agent.currentBehaviour.agentIsLeader(agent)):
+                util.SetParticleColour(self.particleShapeName, particleId, 1, 1, 1)
             elif(agent.hasNeighbours):
-                util.setParticleColour(self.particleShapeName, particleId, 0, 0.8, 0)
+                util.SetParticleColour(self.particleShapeName, particleId, 0, 0.8, 0)
             else:
-                util.setParticleColour(self.particleShapeName, particleId, 0, 0, 1)        
+                util.SetParticleColour(self.particleShapeName, particleId, 0, 0, 1)        
 
 #############################
     def _updateSingleParticle(self, particleId):
@@ -285,10 +289,10 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
                                                       self._normalBehaviour, useInfectionSpread, self)
         print("Made new secondary target - %s" % self._secondaryGoalBehaviour)
 
-    def makeAgentGoalDriven(self, particleId,  makeLeader = True):
+    def makeAgentGoalDriven(self, particleId, makeLeader=True):
         """Causes agent with corresponding particleId to follow the current priorityGoal."""
         
-        if(self._priorityGoalBehaviour == None):
+        if(self._priorityGoalBehaviour is None):
             print("XXXXX WARNING - NO GOAL EXISTS XXXX")
             
         agent = self._boidAgentList[particleId]
@@ -297,14 +301,14 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
             self._priorityGoalBehaviour.makeLeader(agent)
     
     def makeAllAgentsGoalDriven(self):
-        if(self._priorityGoalBehaviour == None):
+        if(self._priorityGoalBehaviour is None):
             print("XXXXX WARNING - NO GOAL EXISTS XXXX")        
 
         for agent in self._boidAgentList.itervalues():
             agent.setNewBehaviour(self._priorityGoalBehaviour)
             
-    def makeAgentSecondaryGoalDriven(self, particleId, makeLeader = False):
-        if(self._secondaryGoalBehaviour != None):
+    def makeAgentSecondaryGoalDriven(self, particleId, makeLeader=False):
+        if(self._secondaryGoalBehaviour is not None):
             agent = self._boidAgentList[particleId]
             agent.setNewBehaviour(self._secondaryGoalBehaviour)    
             self._secondaryGoalBehaviour.checkAgentLocation(agent)
@@ -317,7 +321,7 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
             
     def collapseGoal(self):
         """Will 'collapse' the basePyramid at the wall base of a priority goal."""
-        if(self._priorityGoalBehaviour != None):
+        if(self._priorityGoalBehaviour is not None):
             self._priorityGoalBehaviour.performCollapse = True
             print("COLLAPSING GOAL...")
         return
@@ -331,20 +335,20 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
     
     def onNewBoidsCreated(self, newBoidsList):
         #TODO - use this? or delete??
-#         if(self._curvePathBehaviour != None):
+#         if(self._curvePathBehaviour is not None):
 #             for newBoid in newBoidsList:
 #                 newBoid.makeFollowCurvePath(self._curvePathBehaviour)
         print("newBoids: %s" % newBoidsList)
         return
         
     def makeSingleAgentFollowPath(self, particleIndex):
-        if(self._curvePathBehaviour == None):
+        if(self._curvePathBehaviour is None):
             print("XXX WARNING - NO CURVE PATH EXISTS XXX")
             
         self._boidAgentList[particleIndex].setNewBehaviour(self._curvePathBehaviour)
             
     def makeAllAgentsFollowPath(self):
-        if(self._curvePathBehaviour == None):
+        if(self._curvePathBehaviour is None):
             print("XXX WARNING - NO CURVE PATH EXISTS XXX")        
             
         for agent in self._boidAgentList.itervalues():
@@ -361,16 +365,14 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
         
 
 #############################        
-    def closestAgentToPoint(self, x, y, z, ignoreVertical = False):
+    def closestAgentToPoint(self, x, y, z, ignoreVertical=False):
         """Helper method intended for use in Maya's Script Editor."""
-        
         target = bv3.Vector3(x, y, z)
         closestAgent = None
         closestDistance = None
         
-        
         for agent in self._boidAgentList.itervalues():
-            if(closestAgent == None):
+            if(closestAgent is None):
                 closestAgent = agent
                 closestDistance = agent.currentPosition - target
             else:
@@ -381,10 +383,9 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
         
         return closestAgent
     
-    def closestAgentToLocator(self, locator, ignoreVertical = False):
+    def closestAgentToLocator(self, locator, ignoreVertical=False):
         """Helper method intended for use in Maya's Script Editor."""
-        
-        target = util.boidVectorFromLocator(locator)
+        target = util.BoidVector3FromPymelLocator(locator)
         return self.closestAgentToPoint(target.x, target.y, target.z, ignoreVertical)
     
     
