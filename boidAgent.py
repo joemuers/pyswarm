@@ -47,7 +47,7 @@ class BoidAgent(BoidBaseObject):
     def __init__(self, particleId, startingBehaviour, negativeGridBounds=None, positiveGridBounds=None):
         self.state = bas.BoidAgentState(int(particleId))
         
-        self._currentBehaviour = startingBehaviour
+        self.setNewBehaviour(startingBehaviour)
         self._pendingBehaviour = None
         self._pendingBehavoirCountdown = -1
         
@@ -151,10 +151,9 @@ class BoidAgent(BoidBaseObject):
         if(self._pendingBehavoirCountdown > 0):
             self._pendingBehavoirCountdown -= 1
             
-        if(self._pendingBehavoirCountdown == 0):
-            self.setNewBehaviour(self._pendingBehaviour)
-            self._pendingBehaviour = None
-            self._pendingBehavoirCountdown = -1
+            if(self._pendingBehavoirCountdown == 0):
+                self.setNewBehaviour(self._pendingBehaviour)
+                self._pendingBehaviour = None
         
 ##################### 
     def updateCurrentVectors(self, position, velocity):

@@ -269,10 +269,10 @@ class GoalDriven(BehaviourBaseObject):
             elif(self._inBasePyramidBehaviour(agent, desiredAcceleration)):
                 return desiredAcceleration
             else:
-                agent.state.buildNearbyList(agent, nearbyAgentsList,
-                                            boidAttributes.mainRegionSize(),
-                                            boidAttributes.nearRegionSize(),
-                                            boidAttributes.collisionRegionSize())
+                agent.state.updateRegionalStatsIfNecessary(agent, nearbyAgentsList,
+                                                       boidAttributes.mainRegionSize(),
+                                                       boidAttributes.nearRegionSize(),
+                                                       boidAttributes.collisionRegionSize())
                 
                 if(self._atBasePyramidBorderBehaviour(agent, desiredAcceleration)):
                     return desiredAcceleration

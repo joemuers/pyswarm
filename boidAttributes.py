@@ -18,6 +18,8 @@ _boidAttribute_mainRegionSizeRandom = 0.0
 _boidAttribute_nearRegionSize = 1
 _boidAttribute_nearRegionRandom = 0.0
 
+_boidAttribute_listRebuildFrequency = 5
+
 _boidAttribute_collisionRegionSize = 0.2
 _boidAttribute_maxVel = 5
 _boidAttribute_minVel = 0.5
@@ -61,6 +63,14 @@ def setUseDebugColours(value):
 def useDebugColours():
     return _boidAttribute_DEBUG_COLOURS_
 
+##################################
+def listRebuildFrequency():
+    """Number of frames skipped between each refresh of agent-to-agent spatial relationships."""
+    _boidAttribute_listRebuildFrequency
+    return _boidAttribute_listRebuildFrequency
+
+def setListRebuildFrequency(value):
+    _boidAttribute_listRebuildFrequency = int(value)
 
 ##################################
 def setMainRegionSize(value):
@@ -307,11 +317,11 @@ def curveGroupVectorMagnitude():
 ##################################
 
 def printValues():
-    print("mainR=%.4f, nearR=%.4f, collR=%.4f maxVl=%.4f, minVl=%.4f, maxAc=%.4f, prefV=%.4f, \n\
+    print("listIntvl=%d, mainR=%.4f, nearR=%.4f, collR=%.4f maxVl=%.4f, minVl=%.4f, maxAc=%.4f, prefV=%.4f, \n\
 maxTn=%d, avDir=%d\navPos=%.4f, blindRgn=%d, searchModeTn=%d, leaderWaypt=%.4f\n\
 prtyGl=%.4f, jump=%.4f, jmpProb=%.2f, jmpRgn=%.2f, pushHztl=%.4f, pushVtcl=%.4f, goalSpd=%.4f, goalInbtn=%d\n\
 crvDevThsld=%.4f, crvEndThrsld=%.4f, curveGrpMag=%.4f" %
-          (mainRegionSize(), nearRegionSize(), collisionRegionSize(), maxVel(), minVel(), maxAccel(), preferredVel(),
+          (listRebuildFrequency(), mainRegionSize(), nearRegionSize(), collisionRegionSize(), maxVel(), minVel(), maxAccel(), preferredVel(),
           maxTurnrate(), avDirectionThreshold(), avPositionThreshold(), blindRegionAngle(),
           searchModeMaxTurnrate(), leaderWaypointThreshold(), priorityGoalThreshold(), jumpAcceleration(), jumpOnPileUpProbability(), jumpOnPileUpRegionSize(),
           pushUpwardsAccelerationHorizontal(), pushUpwardsAccelerationVertical(), goalChaseSpeed(), goalIncubationPeriod(),

@@ -40,10 +40,10 @@ class ClassicBoid(BehaviourBaseObject):
         self._doNotClampAcceleration = False
         
         if(agent.isTouchingGround):
-            agent.state.buildNearbyList(agent, nearbyAgentsList,
-                                        boidAttributes.mainRegionSize(),
-                                        boidAttributes.nearRegionSize(),
-                                        boidAttributes.collisionRegionSize())
+            agent.state.updateRegionalStatsIfNecessary(agent, nearbyAgentsList,
+                                                   boidAttributes.mainRegionSize(),
+                                                   boidAttributes.nearRegionSize(),
+                                                   boidAttributes.collisionRegionSize())
             
             if(self._avoidMapEdgeBehaviour(agent, desiredAcceleration)):
                 self.clampDesiredAccelerationIfNecessary(agent, 

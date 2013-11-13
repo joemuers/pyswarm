@@ -159,8 +159,8 @@ class Vector3(BoidBaseObject):
             return 90 if self.y > 0 else -90
 
 #######################     
-    def isNull(self):
-        return (self.x == 0 and self.z == 0 and self.y == 0)
+    def isNull(self, ignoreVertical=False):
+        return (self.x == 0 and self.z == 0 and (ignoreVertical or self.y == 0))
 
 #######################         
     def reset(self, x=0, y=0, z=0):
@@ -240,11 +240,11 @@ class Vector3(BoidBaseObject):
 ####################### 
     def angleFrom(self, otherVector, ignoreVertical=True):
         """angle between direction vectors in DEGREES (negative for anti-clockwise)."""
-        if(self.isNull() or otherVector.isNull()):
+        if(self.isNull(ignoreVertical) or otherVector.isNull(ignoreVertical)):
             return 0
         elif(ignoreVertical or IsVector2(otherVector)):
             temp = self.dot(otherVector, True) / (self.magnitude(True) * otherVector.magnitude(True))
-            if(temp < -1): #this shouldn't be happening, but it does (rounding errors?) so...
+            if(temp < -1): #this shouldn't be happening, but it does (rounding errors??) so...
                 temp = -1
             elif(temp > 1):
                 temp = 1

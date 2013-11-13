@@ -52,6 +52,8 @@ class ZoneGraph(BoidBaseObject):
         def addNeighbouringZone(self, neighbour):
             if(neighbour not in self.regionalSetsList):
                 self.regionalSetsList.append(neighbour.agentSet)
+            else:
+                raise ValueError
         
         ################
         def addNewAgent(self, agent):

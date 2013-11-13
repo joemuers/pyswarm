@@ -57,7 +57,7 @@ class FollowPath(BehaviourBaseObject):
         
 #############################
     def _getMetaStr(self):
-        agentStringsList = [].append(("\n\t%s" % agent) for agent in self._currentlyFollowingList)
+        agentStringsList = [("\n\t%s" % agent) for agent in self._currentlyFollowingList]
         
         return ("<crv=%s, strt=%s, end=%s (prm=%.2f), following:%s>" % 
                 (self._curve, self._startVector, self._endVector, self._endParam, ''.join(agentStringsList)))
