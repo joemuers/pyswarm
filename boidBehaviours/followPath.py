@@ -111,7 +111,7 @@ class FollowPath(BehaviourBaseObject):
             pymelClosestCurvePoint = self._curve.closestPoint(pymelLocationVector, space='world')
             boidCurveClosestPoint = util.BoidVector3FromPymelPoint(pymelClosestCurvePoint)
             
-            if(boidCurveClosestPoint.distanceFrom(self._endVector) < boidAttributes.curveEndReachedThreshold()):
+            if(boidCurveClosestPoint.distanceFrom(self._endVector) < boidAttributes.curveEndReachedDistanceThreshold()):
                 self.endCurveBehaviourForAgent(agent)
             else:
                 self._currentlyFollowingList.add(agent)

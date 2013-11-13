@@ -235,7 +235,7 @@ class GoalDriven(BehaviourBaseObject):
                 self._atTheLipLookup.add(agent)
                 
                 return True
-            elif(baseToAgentVec.magnitude() < boidAttributes.priorityGoalThreshold()):
+            elif(baseToAgentVec.magnitude() < boidAttributes.goalTargetDistanceThreshold()):
                 # agent is close enough to be considered as being at the basePyramid
                 self._registerAgentAtBasePyramid(agent)
                 
@@ -246,7 +246,7 @@ class GoalDriven(BehaviourBaseObject):
                     self._deRegisterAgentFromBasePyramid(agent, GoalDriven._BoidGoalDrivenState.goalChase)
                 
                 behaviourStatus = agent.state.behaviourSpecificState
-                if(behaviourStatus.didArriveBasePyramid and baseToAgentVec.magnitude() > (boidAttributes.priorityGoalThreshold() * 4)):
+                if(behaviourStatus.didArriveBasePyramid and baseToAgentVec.magnitude() > (boidAttributes.goalTargetDistanceThreshold() * 4)):
                     # if miles away, may as well just start over afresh
                     behaviourStatus.didArriveBasePyramid = False
                 
@@ -347,7 +347,7 @@ class GoalDriven(BehaviourBaseObject):
                 # to have joined the pyramid and can start their 'climbing' behaviour) is not fixed. So to determine it, we
                 # look at other agents in the immediate vicinity and see if they themselves are in the pyramid.
                 if(self._goalStatusForAgent(nearbyAgent) == GoalDriven._BoidGoalDrivenState.inBasePyramid and 
-                   (nearbyAgent.currentPosition.distanceFrom(self.currentPosition) < boidAttributes.priorityGoalThreshold()) and
+                   (nearbyAgent.currentPosition.distanceFrom(self.currentPosition) < boidAttributes.goalTargetDistanceThreshold()) and
                    (nearbyAgent.currentVelocity.magnitude(True) < boidAttributes.goalChaseSpeed() or 
                     agent.currentVelocity.magnitude(True) < boidAttributes.goalChaseSpeed() or 
                     abs(nearbyAgent.currentVelocity.angleFrom(agent.currentVelocity)) > 90) ):
@@ -552,9 +552,9 @@ class GoalDriven(BehaviourBaseObject):
         distanceVec = agent.currentPosition - self._baseVector
         distance = distanceVec.magnitude(True)
         
-        if(distance > boidAttributes.priorityGoalThreshold() and
-           distance < boidAttributes.priorityGoalThreshold() + boidAttributes.jumpOnPileUpRegionSize() and 
-           random.uniform(0, 1.0) < boidAttributes.jumpOnPileUpProbability()):
+        if(distance > boidAttributes.goalTargetDistanceThreshold() and
+           distance < boidAttributes.goalTargetDistanceThreshold() + boidAttributes.jumpOnPyramidDistanceThreshold() and 
+           random.uniform(0, 1.0) < boidAttributes.jumpOnPyramidProbability()):
             return True
         else:
             return False

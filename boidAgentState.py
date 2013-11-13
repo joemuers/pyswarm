@@ -142,11 +142,11 @@ class BoidAgentState(BoidBaseObject):
     def withinCrudeRadiusOfPoint(self, otherPosition, radius):
         if(abs(self._position.x - otherPosition.x) > radius):   # Crude check intended to cut down 
             return False                                        # on the number of calls to vector3.distanceFrom
-        elif(abs(self._position.y - otherPosition.y) > radius): # in the 'Precise' check
+        elif(abs(self._position.z - otherPosition.z) > radius): # in the 'Precise' check
             return False                                        # (which involves a relatively
-        elif(abs(self._position.z - otherPosition.z) > radius): # expensive squareRoot operation).
-            return False                                        # i.e. Can be used effectively as a kind 
-        else:                                                   # of "Prune & Sweep".
+        elif(abs(self._position.y - otherPosition.y) > radius): # expensive squareRoot operation).
+            return False                                        # i.e. Essentially used as a kind 
+        else:                                                   # of "Prune & Sweep".                                              
             return True
 
 #################################       
