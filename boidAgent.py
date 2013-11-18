@@ -44,15 +44,12 @@ class BoidAgent(BoidBaseObject):
         
     """
 
-    def __init__(self, particleId, startingBehaviour, negativeGridBounds=None, positiveGridBounds=None):
+    def __init__(self, particleId, startingBehaviour):
         self.state = bas.BoidAgentState(int(particleId))
         
         self.setNewBehaviour(startingBehaviour)
         self._pendingBehaviour = None
         self._pendingBehavoirCountdown = -1
-        
-        self._negativeGridBounds = negativeGridBounds
-        self._positiveGridBounds = positiveGridBounds
         
         self._desiredAcceleration = bv3.Vector3()
         self._needsBehaviourCalculation = False # True if position/heading/circumstance has 
@@ -147,7 +144,7 @@ class BoidAgent(BoidBaseObject):
             self._pendingBehavoirCountdown = incubationPeriod
             
 #####################            
-    def _decrementPendingBehaviourCountdown(self):
+    def _switchToPendingBehaviourIfNecessary(self):
         if(self._pendingBehavoirCountdown > 0):
             self._pendingBehavoirCountdown -= 1
             
@@ -163,24 +160,21 @@ class BoidAgent(BoidBaseObject):
         self._needsBehaviourCommit = False
            
 ###########################
-    def calculateDesiredBehaviour(self, otherAgentsList, forceUpdate=False, decrementPendingCountdown=True):
+    def calculateDesiredBehaviour(self, otherAgentsList, forceUpdate=False, checkForPendingBehaviour=True):
         """Calculates desired behaviour and updates desiredAccleration accordingly."""
         if(self._needsBehaviourCalculation or forceUpdate):     
-            if(decrementPendingCountdown):
-                self._decrementPendingBehaviourCountdown()
+            if(checkForPendingBehaviour):
+                self._switchToPendingBehaviourIfNecessary()
             
             self._desiredAcceleration = self._currentBehaviour.getDesiredAccelerationForAgent(self, otherAgentsList)
             
             self._needsBehaviourCalculation = False
             self._needsBehaviourCommit = True
-        
-        #boidBenchmarker.bmStop("update-setBehaviour")
 
 ##############################
     def _jump(self):
         if(self.isTouchingGround):
             self._desiredAcceleration.y += boidAttributes.jumpAcceleration()
-#             self._doNotClampAcceleration = True
             self.state.notifyJump()
             self._needsBehaviourCommit = True
             return True
@@ -192,10 +186,9 @@ class BoidAgent(BoidBaseObject):
         self._desiredAcceleration.invert()
         self._needsBehaviourCommit = True
 
-
 ######################  
     def commitNewBehaviour(self, particleShapeName):      
-        """Updates agent's corresponding Maya nParticle object with updated current internal state."""
+        """Updates agent's corresponding Maya nParticle with current internal state."""
         if(self._needsBehaviourCommit):
             desiredVelocity = bv3.Vector3(self.currentVelocity)
             desiredVelocity.add(self._desiredAcceleration)

@@ -28,8 +28,8 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
         
         self._normalBehaviour = bbc.ClassicBoid(self._zoneGraph.lowerBoundsVector, self._zoneGraph.upperBoundsVector)
         self._priorityGoalBehaviour = None   # 
-        self._secondaryGoalBehaviour = None  # boidBehavioursGoalDriven instances
-        self._curvePathBehaviour = None  # boidBehavioursFollowPath instance
+        self._secondaryGoalBehaviour = None  # boidBehaviours.GoalDriven instances
+        self._curvePathBehaviour = None  # boidBehaviours.FollowPath instance
         
         self._buildParticleList()
 
@@ -74,11 +74,8 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
 #############################
     def _buildParticleList(self, fullRebuild=True):
         """Builds/rebuilds the list of boidAgents based on the current state
-        of the corresponding nParticleShapeNode.
+        of the corresponding nParticle ShapeNode.
         """
-        lowerBounds = self._zoneGraph.lowerBoundsVector
-        upperBounds = self._zoneGraph.upperBoundsVector
-        
         if(fullRebuild):
             self._boidAgentList.clear()
             
@@ -86,8 +83,8 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
                 #particle IDs are NOT guaranteed to come in numerical order => have to use this list as reference
                 self._particleIdsOrdering = util.ParticleIdsListForParticleShape(self.particleShapeName)             
                 if(self._particleIdsOrdering is not None):
-                    for ptclId in self._particleIdsOrdering:
-                        newAgent = ba.BoidAgent(int(ptclId), self._normalBehaviour, lowerBounds, upperBounds)
+                    for particleId in self._particleIdsOrdering:
+                        newAgent = ba.BoidAgent(int(particleId), self._normalBehaviour)
                         self._boidAgentList[newAgent.particleId] = newAgent
         else:
             numParticles = self._particleShapeNode.getCount()
@@ -103,7 +100,7 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
                 
                 for ptclId in reversed(sortedIdsList):
                     if(ptclId > lastKey):
-                        newAgent = ba.BoidAgent(int(ptclId), self._normalBehaviour, lowerBounds, upperBounds)
+                        newAgent = ba.BoidAgent(int(ptclId), self._normalBehaviour)
                         self._boidAgentList[newAgent.particleId] = newAgent   
                         newAgentsList.append(newAgent)
                     else:
@@ -129,7 +126,6 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
         if(particleId in self._boidAgentList):
             util.KillParticle(self.particleShapeName, particleId)
         
-
 #############################            
     def _getSingleParticleInfo(self, particleId):            
         position =  util.GetSingleParticlePosition(self.particleShapeName, particleId) 
@@ -152,22 +148,13 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
         """Performs one full iteration of updating all boidAgent behaviour.
         Should be called from Maya once per frame update.
         """
-        
-#         print "\nSTART FRAME"
-        
         self._resetHelperObjects()
-#         print "reset done"
         self._getAllParticlesInfo()
-#         print "get info done"
         self._calculateAgentsBehaviour()
-#         print "calculate done"
         self._updateAllParticles()
-#         print "update done...\n"
 
 #############################
     def _resetHelperObjects(self):
-#         self._zoneGraph.resetZones()
-        
         if(self._priorityGoalBehaviour is not None):
             self._priorityGoalBehaviour.resetAverages()
             
@@ -225,7 +212,6 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
         """Iterates through all agents & calculates desired behaviour based on boids rules."""
         for agent in self._boidAgentList.itervalues():
             regionGenerator = self._zoneGraph.nearbyAgentsIterableForAgent(agent)
-#             regionList = self._zoneGraph.regionListForAgent(agent)
             agent.calculateDesiredBehaviour(regionGenerator)
 
 #############################
@@ -315,7 +301,7 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
             if(makeLeader):
                 self._secondaryGoalBehaviour.makeLeader(agent)
             
-    def makeNoneGoalInfected(self):
+    def makeNoneGoalDriven(self):
         for agent in self._boidAgentList.itervalues():
             agent.setNewBehaviour(self._normalBehaviour)
             

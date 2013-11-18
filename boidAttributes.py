@@ -2,18 +2,20 @@
 Client objects should use the setter/getter methods rather than 
 accessing the variables directly.
 
-TODO - have text file with 'default' values...
-
-A UI would interface primarily with this module..."""
+IMPORTANT - all attribute names must have the '_boidAttribute_' prefix in order
+to be compatible with the 'readDefaultValuesFromFile' and 'writeDefaultValuesToFile' methods.
+"""
 import os
 import sys
 import ConfigParser
 
-__DEFAULT_FILENAME__ = "/boidAttributeDefaults.ini"
+
+__DEFAULTS_FILENAME__ = "/boidAttributeDefaults.ini"
 __sectionTitle__ = "BoidAttributes - default values"
 __attributePrefix__ = "_boidAttribute_"
 __boolAttribute__, __intAttribute__, __floatAttribute__, __stringAttribute__ = range(4)
 
+################################## 
 
 _boidAttribute_USE_DEBUG_COLOURS_ = (True, __boolAttribute__)
 _boidAttribute_ACCN_DUE_TO_GRAVITY_ = (-38, __floatAttribute__)
@@ -34,6 +36,7 @@ _boidAttribute_PREFERRED_VELOCITY_ = (3.5, __floatAttribute__)
 _boidAttribute_HERD_AVG_DIRECTION_THRSHLD_ = (30, __intAttribute__)
 _boidAttribute_HERD_AVG_POSITION_THRSHLD_ = (1.9, __floatAttribute__)
 _boidAttribute_BLIND_REGION_ANGLE_ = (110, __intAttribute__)
+_boidAttribute_FORWARD_VISION_ANGLE_ = (90, __intAttribute__)
 _boidAttribute_SEARCH_MODE_MAX_TURNRATE_ = (40, __intAttribute__)
 _boidAttribute_LDR_MODE_WAYPOINT_THRSHLD_ = (3, __floatAttribute__)
 _boidAttribute_GOAL_TARGET_DISTANCE_THRSHLD_ = (0.5, __floatAttribute__)
@@ -48,40 +51,45 @@ _boidAttribute_CURVE_DEVIANCE_THRSHLD_ = (3, __floatAttribute__)
 _boidAttribute_CURVE_END_REACHED_DISANCE_THRSHLD_ = (1, __floatAttribute__)
 _boidAttribute_CURVE_GROUP_VECTOR_MAGNITUDE_ = (2, __floatAttribute__)
 
-
+################################## 
 
 def readDefaultValuesFromFile(filePath=None):
     createNewFileIfNeeded = False
     if(filePath is None):
         createNewFileIfNeeded = True
-        filePath = os.path.dirname(__file__) + __DEFAULT_FILENAME__
+        filePath = os.path.dirname(__file__) + __DEFAULTS_FILENAME__
 
     moduleName = __name__
     if(moduleName == '__main__'):
-        moduleFileName = sys.modules[moduleName].__file__
-        moduleName = os.path.splitext(os.path.basename(moduleFileName))[0]
+        moduleFilePath = sys.modules[moduleName].__file__
+        moduleName = os.path.splitext(os.path.basename(moduleFilePath))[0]
     module = sys.modules[moduleName]
-
+    
     configReader = ConfigParser.ConfigParser()
     configReader.optionxform = str  # replacing this method makes option names case-sensitive
-    filesRead = configReader.read(filePath)
     
-    if(filesRead):
+    if(configReader.read(filePath)):
+        print("Parsing file \'%s\' for defaults..." % filePath)
         for section in configReader.sections():
             for attributeNameStr, attributeValueStr in configReader.items(section):
-                if(not attributeNameStr.startswith(__attributePrefix__)):
-                    print("WARNING - found none-%s attribute \'%s\' in file \'%s\', ignoring..." %
-                          (__attributePrefix__, attributeNameStr, filePath))
+                try:
+                    if(not attributeNameStr.startswith(__attributePrefix__)):
+                        raise ValueError("Found none-%s attribute" % __attributePrefix__)
+                    else:
+                        attributeTuple = getattr(module, attributeNameStr)
+                        if(attributeTuple[1] == __floatAttribute__):
+                            attributeTuple = (float(attributeValueStr), attributeTuple[1])
+                        elif(attributeTuple[1] == __intAttribute__):
+                            attributeTuple = (int(attributeValueStr), attributeTuple[1])
+                        elif(attributeTuple[1] == __boolAttribute__):
+                            attributeTuple = (bool(attributeValueStr), attributeTuple[1])
+                        elif(attributeTuple[1] == __stringAttribute__):
+                            attributeTuple = (attributeValueStr, attributeTuple[1])
+                        else:
+                            raise TypeError("Unrecognised attribute type.")
+                except Exception as e:
+                    print("WARNING - could not read attribute: %s (%s), ignoring..." % (attributeNameStr, e))
                 else:
-                    attributeTuple = getattr(module, attributeNameStr)
-                    if(attributeTuple[1] == __floatAttribute__):
-                        attributeTuple = (float(attributeValueStr), attributeTuple[1])
-                    elif(attributeTuple[1] == __intAttribute__):
-                        attributeTuple = (int(attributeValueStr), attributeTuple[1])
-                    elif(attributeTuple[1] == __boolAttribute__):
-                        attributeTuple = (bool(attributeValueStr), attributeTuple[1])
-                    else: # it's a string if we're here.
-                        attributeTuple = (attributeValueStr, attributeTuple[1])
                     print("Restored default: %s = %s" % (attributeNameStr, attributeValueStr))
     else:
         print("Could not read default attributes file: %s" % filePath)
@@ -92,7 +100,7 @@ def readDefaultValuesFromFile(filePath=None):
 ##################################   
 def writeDefaultValuesToFile(filePath=None):
     if(filePath is None):
-        filePath = os.path.dirname(__file__) + __DEFAULT_FILENAME__
+        filePath = os.path.dirname(__file__) + __DEFAULTS_FILENAME__
         
     moduleName = __name__
     if(moduleName == '__main__'):
@@ -107,7 +115,10 @@ def writeDefaultValuesToFile(filePath=None):
     for attributeName in dir(module):
         if(attributeName.startswith(__attributePrefix__)):
             attributeTuple = getattr(module, attributeName)
-            configWriter.set(__sectionTitle__, attributeName, attributeTuple[0])
+            try:
+                configWriter.set(__sectionTitle__, attributeName, attributeTuple[0])
+            except Exception as e:
+                print("WARNING - Could not write attribute: %s (%s)" % (attributeName, e))
     
     defaultsFile = open(filePath, "w")   
     configWriter.write(defaultsFile)
@@ -141,7 +152,10 @@ def setListRebuildFrequency(value):
 def setMainRegionSize(value):
     """Sets size of boid's main perception radius"""
     global _boidAttribute_MAIN_REGION_SIZE_
-    _boidAttribute_MAIN_REGION_SIZE_ = (value, _boidAttribute_MAIN_REGION_SIZE_[1])
+    if(value > nearRegionSize()):
+        raise ValueError("Cannot set mainRegionSize - must be larger than nearRegionSize (%.2f)" % nearRegionSize())
+    
+    _boidAttribute_MAIN_REGION_SIZE_[0] = value
 
 def mainRegionSize(random=False):
     """Gets size of boid's main perception radius"""
@@ -153,19 +167,25 @@ def mainRegionSize(random=False):
 
 ##################################
 def setNearRegionSize(value):
-    """Sets size of region within which other boids are considered to be 'crowding'"""
+    """Sets size of region, as a fraction of mainRegionSize, within which other boids are considered to be 'crowding'"""
     global _boidAttribute_NEAR_REGION_SIZE_
-    _boidAttribute_NEAR_REGION_SIZE_ = (value, _boidAttribute_NEAR_REGION_SIZE_[1])
+    
+    if(value > mainRegionSize()):
+        raise ValueError("Cannot set nearRegionSize - must be smaller than mainRegionSize (%.2f)" % mainRegionSize())
+    
+    _boidAttribute_NEAR_REGION_SIZE_[0] = value
 
 def nearRegionSize():
     """Gets size of region within which other boids are considered to be 'crowding'"""
     return _boidAttribute_NEAR_REGION_SIZE_[0]
 
 ##################################
-def setCollisionRegionSize(value):
+def setCollisionRegion(value):
     """Sets size of region within which other boids are considered to be 'colliding'"""
     global _boidAttribute_COLLISION_REGION_SIZE_
     _boidAttribute_COLLISION_REGION_SIZE_ = (value, _boidAttribute_COLLISION_REGION_SIZE_[1])
+    if(nearRegionSize() <= collisionRegionSize()):
+        print("WARNING - near region <= collision region size.")
 
 def collisionRegionSize():
     """Sets size of region within which other boids are considered to be 'colliding'"""
@@ -243,13 +263,25 @@ def avPositionThreshold():
 
 ##################################
 def setBlindRegionAngle(value):
-    """Sets angle (in degrees, negative is anti-clockwise) of area 'behind' each boid considered a blind spot"""
+    """Sets angle (in degrees) of area 'behind' each boid considered a blind spot"""
     global _boidAttribute_BLIND_REGION_ANGLE_
     _boidAttribute_BLIND_REGION_ANGLE_ = (value, _boidAttribute_BLIND_REGION_ANGLE_[1])
 
 def blindRegionAngle():
-    """Gets angle (in degrees, negative is anti-clockwise) of area 'behind' each boid considered a blind spot"""
+    """Gets angle (in degrees) of area 'behind' each boid considered a blind spot"""
     return _boidAttribute_BLIND_REGION_ANGLE_[0]
+
+##################################
+def setForwardVisionRegionAngle(value):
+    """Sets angle (in degrees) of area in front of each agent within which other agents will always be
+    fully 'perceived' regardless of the agent's velocity."""
+    global _boidAttribute_FORWARD_VISION_ANGLE_
+    _boidAttribute_FORWARD_VISION_ANGLE_ = (value, _boidAttribute_FORWARD_VISION_ANGLE_[1])
+
+def forwardVisionRegionAngle():
+    """Gets angle (in degrees) of area in front of each agent within which other agents will always be
+    fully 'perceived' regardless of the agent's velocity."""
+    return _boidAttribute_FORWARD_VISION_ANGLE_[0]
 
 ##################################
 def setSearchModeMaxTurnrate(value):
@@ -394,4 +426,8 @@ crvDevThsld=%.4f, crvEndThrsld=%.4f, curveGrpMag=%.4f" %
 
 
 ##########################################################################################
+
+
+## INITALISATION...
+readDefaultValuesFromFile()
 

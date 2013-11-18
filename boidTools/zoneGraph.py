@@ -97,6 +97,7 @@ class ZoneGraph(BoidBaseObject):
         overspillZ = ((resolutionZ * zoneSize) - sizeZ) / 2
         
         self._zoneSize = zoneSize
+        self._zoneSizeReciprocal = 1.0 / float(zoneSize)
         self._xZoneOrigin = self._lowerBoundsVector.x - overspillX
         self._zZoneOrigin = self._lowerBoundsVector.z - overspillZ
         self._resolutionX = resolutionX
@@ -245,14 +246,14 @@ class ZoneGraph(BoidBaseObject):
     def _spatialKeyFromCoords(self, xCoord, zCoord):
         roundingErrorCorrection = 0.00000001
         
-        xNormalised = (xCoord - self._xZoneOrigin) / self._zoneSize
+        xNormalised = (xCoord - self._xZoneOrigin) * self._zoneSizeReciprocal
         xNormalised = int(xNormalised + roundingErrorCorrection)
         if(xNormalised < 0):    
             xNormalised = 0
         elif(xNormalised >= self._resolutionX):    
             xNormalised = self._resolutionX - 1
         
-        zNormalised = (zCoord - self._zZoneOrigin) / self._zoneSize
+        zNormalised = (zCoord - self._zZoneOrigin)  * self._zoneSizeReciprocal
         zNormalised = int(zNormalised + roundingErrorCorrection)
         if(zNormalised < 0):    
             zNormalised = 0

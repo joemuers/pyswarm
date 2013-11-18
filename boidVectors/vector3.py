@@ -9,6 +9,11 @@ import vector2 as bv2
 def IsVector2(otherVector):
     return type(otherVector) is bv2.Vector2
 
+def IsVector3(otherVector):
+    return type(otherVector) is Vector3
+
+
+__MAGNITUDE_UNDEFINED__ = -1.0
 
 class Vector3(BoidBaseObject):
     """3D vector with various trig functions.  
@@ -27,7 +32,7 @@ class Vector3(BoidBaseObject):
         - pass in numerical values for each axis
         - pass nothing for default values (0,0,0).
         """
-        if(type(x) is Vector3):
+        if(IsVector3(x)):
             self._x = x.x
             self._y = x.y
             self._z = x.z
@@ -40,10 +45,10 @@ class Vector3(BoidBaseObject):
             self._y = float(y)
             self._z = float(z)
    
-        self._needsMagCalc = True
-        self._magnitude = -1.0
-        self._needs2dMagCalc = True
-        self._2dMagnitude = -1.0
+        self._magnitude = __MAGNITUDE_UNDEFINED__
+        self._magnitudeSquared = __MAGNITUDE_UNDEFINED__
+        self._2dMagnitude = __MAGNITUDE_UNDEFINED__
+        self._2dMagnitudeSquared = __MAGNITUDE_UNDEFINED__
         
     
 
@@ -51,6 +56,15 @@ class Vector3(BoidBaseObject):
     def __str__(self):
         return "<x=%.4f, y=%.4f, z=%.4f>" % (self.x, self.y, self.z)
 
+#####################    
+    def _getMetaStr(self):
+        magStr = ("%.4f" % self._magnitude) if(self._magnitude != __MAGNITUDE_UNDEFINED__) else "notCalc\'d"
+        magSqStr = ("%.4f" % self._magnitudeSquared) if(self._magnitudeSquared != __MAGNITUDE_UNDEFINED__) else "notCalc\'d"
+        twoDMagStr = ("%.4f" % self._2dMagnitude) if(self._2dMagnitude != __MAGNITUDE_UNDEFINED__) else "notCalc\'d"
+        twoDMagSqStr = ("%.4f" % self._2dMagnitudeSquared) if(self._2dMagnitudeSquared != __MAGNITUDE_UNDEFINED__) else "notCalc\'d"
+        
+        return ("<mag=%s, magSqu=%s, 2dMag=%s, 2dMagSqu=%s>" % (magStr, magSqStr, twoDMagStr, twoDMagSqStr))
+    
 ##################### 
     def __add__(self, other):
         if(IsVector2(other)):
@@ -63,16 +77,49 @@ class Vector3(BoidBaseObject):
             return Vector3(self.x - other.u, self.y, self.z - other.v)
         else:
             return Vector3(self.x - other.x, self.y - other.y, self.z - other.z)
-
-    def __imul__(self, value):
-        magToo = not self._needsMagCalc
         
-        self.x *= value
-        self.y *= value
-        self.z *= value
-        if(magToo):
-            self._magnitude *= value
-            self._needsMagCalc = False
+    def __mul__(self, value):
+        multipliedVector = Vector3(self.x * value, self.y * value, self.z * value)
+        
+        if(self._magnitude != __MAGNITUDE_UNDEFINED__):
+            multipliedVector._magnitude = self._magnitude * value
+            multipliedVector._magnitudeSquared = self._magnitude **2
+        if(self._2dMagnitude != __MAGNITUDE_UNDEFINED__):
+            multipliedVector._2dMagnitude = self._2dMagnitude * value
+            multipliedVector._2dMagnitudeSquared = self._2dMagnitude **2
+
+        return multipliedVector
+    
+    def __rmul__(self, value):
+        return self.__mul__(value)
+    
+    def __div__(self, value):
+        dividedVector = Vector3(self.x / value, self.y / value, self.z / value)
+        
+        if(self._magnitude != __MAGNITUDE_UNDEFINED__):
+            dividedVector._magnitude = self._magnitude / value
+            dividedVector._magnitudeSquared = self._magnitude **2
+        if(self._2dMagnitude != __MAGNITUDE_UNDEFINED__):
+            dividedVector._2dMagnitude = self._2dMagnitude / value
+            dividedVector._2dMagnitudeSquared = self._2dMagnitude **2
+            
+        return dividedVector
+    
+    def __rdiv__(self, value):
+        return self.__div__(value)
+
+    def __imul__(self, value):        
+        self._x *= value
+        self._y *= value
+        self._z *= value
+        if(self._magnitudeSquared != __MAGNITUDE_UNDEFINED__):
+            self._magnitudeSquared *= value
+            if(self._magnitude != __MAGNITUDE_UNDEFINED__):
+                self._magnitude *= value
+        if(self._2dMagnitudeSquared != __MAGNITUDE_UNDEFINED__):
+            self._2dMagnitudeSquared *= __MAGNITUDE_UNDEFINED__
+            if(self._2dMagnitude != __MAGNITUDE_UNDEFINED__):
+                self._magnitude *= value
             
         return self
     
@@ -82,23 +129,29 @@ class Vector3(BoidBaseObject):
 
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y and self.z == other.z
+    
+    def __lt__(self, other):
+        return self.magnitudeSquared() < other.magnitudeSquared()
+    
+    def __gt__(self, other):
+        return self.magnitudeSquared() > other.magnitudeSquared()
 
 ####################### 
     def _get_x(self):
         return self._x
     def _set_x(self, value):
         if(value != self._x):
-            self._needsMagCalc = True
-            self._needs2dMagCalc = True
+            self._magnitudeSquared = __MAGNITUDE_UNDEFINED__
+            self._2dMagnitudeSquared = __MAGNITUDE_UNDEFINED__
             self._x = value
     x = property(_get_x, _set_x)
-    u = property(_get_x, _set_x) # for compatability with Vector2
+    u = property(_get_x, _set_x) # for compatibility with Vector2
     
     def _get_y(self):
         return self._y
     def _set_y(self, value):
         if(value != self._y):
-            self._needsMagCalc = True
+            self._magnitudeSquared = __MAGNITUDE_UNDEFINED__
             self._y = value
     y = property(_get_y, _set_y)
     
@@ -106,11 +159,11 @@ class Vector3(BoidBaseObject):
         return self._z
     def _set_z(self, value):
         if(value != self._z):
-            self._needsMagCalc = True
-            self._needs2dMagCalc = True
+            self._magnitudeSquared = __MAGNITUDE_UNDEFINED__
+            self._2dMagnitudeSquared = __MAGNITUDE_UNDEFINED__
             self._z = value
     z = property(_get_z, _set_z)
-    v = property(_get_z, _set_z) # for compatability with Vector2
+    v = property(_get_z, _set_z) # for compatibility with Vector2
     
 #######################
     def add(self, otherVector, ignoreVertical=False):
@@ -128,16 +181,23 @@ class Vector3(BoidBaseObject):
 
 #######################                 
     def divide(self, scalarVal, ignoreVertical=False):
-        magToo = not ignoreVertical and not self._needsMagCalc
         scalarMult = 1.0 / scalarVal
         
-        self.u *= scalarMult
-        if(not ignoreVertical): # and not IsVector2(otherVector):
-            self.y *= scalarMult
-        self.v *= scalarMult
-        if(magToo):
-            self._magnitude *= scalarMult 
-            self._needsMagCalc = False
+        self._x *= scalarMult
+        if(not ignoreVertical or self._y == 0): 
+            self._y *= scalarMult
+            if(self._magnitudeSquared != __MAGNITUDE_UNDEFINED__):
+                self._magnitudeSquared *= scalarMult
+                if(self._magnitude != __MAGNITUDE_UNDEFINED__):
+                    self._magnitude *= scalarMult
+        else:
+            self._magnitudeSquared = __MAGNITUDE_UNDEFINED__
+        self._z *= scalarMult
+        
+        if(self._2dMagnitudeSquared != __MAGNITUDE_UNDEFINED__):
+            self._2dMagnitudeSquared *= scalarMult
+            if(self._2dMagnitude != __MAGNITUDE_UNDEFINED__):
+                self._2dMagnitude *= scalarMult
 
 #######################
     def horizontalVector(self):
@@ -170,17 +230,22 @@ class Vector3(BoidBaseObject):
 
 ####################### 
     def resetVec(self, otherVector, ignoreVertical=False):
-        self.x = otherVector.u
+        self._x = otherVector.u
         if(not ignoreVertical):
-            self.y = 0 if IsVector2(otherVector) else otherVector.y
-        self.z = otherVector.v
-        
-        if(not ignoreVertical and not otherVector._needsMagCalc):
-            self._magnitude = otherVector._magnitude
-            self._needsMagCalc = False
-        elif(ignoreVertical and not otherVector._needs2dMagCalc):
-            self._2dMagnitude = otherVector._2dMagnitude
-            self._needs2dMagCalc = False
+            if(IsVector2(otherVector)):
+                self.y = 0
+                self._2dMagnitude = otherVector._magnitude
+                self._2dMagnitudeSquared = otherVector._magnitudeSquared
+            else:
+                self._y = otherVector.y
+                self._magnitude = otherVector._magnitude
+                self._magnitudeSquared = otherVector._magnitudeSquared
+                self._2dMagnitude = otherVector._2dMagnitude
+                self._2dMagnitudeSquared = otherVector._2dMagnitudeSquared
+        else:
+            self.y = 0
+
+        self._z = otherVector.v
 
 ####################### 
     def invert(self):
@@ -190,31 +255,51 @@ class Vector3(BoidBaseObject):
         
 ##################### 
     def inverseVector(self):
-        ret = Vector3(-(self.x), -(self.y), -(self.z))
-        if(not self._needsMagCalc):
-            ret._magnitude = self._magnitude
-            ret._needsMagCalc = False
-        return ret
+        invertedVector = Vector3(-(self.x), -(self.y), -(self.z))
+        invertedVector._magnitude = self._magnitude
+        invertedVector._magnitudeSquared = self._magnitudeSquared
+        invertedVector._2dMagnitude = self._2dMagnitude
+        invertedVector._2dMagnitudeSquared = self._2dMagnitudeSquared
+        
+        return invertedVector
 
 ####################### 
     def magnitude(self, ignoreVertical=False):
         if(not ignoreVertical):
-            if(self._needsMagCalc):
-                self._magnitude = mth.sqrt((self.x **2) + (self.y **2) + (self.z ** 2))
-                self._needsMagCalc = False
+            if(self._magnitude == __MAGNITUDE_UNDEFINED__ or self._magnitudeSquared == __MAGNITUDE_UNDEFINED__):
+                self._magnitude = mth.sqrt(self.magnitudeSquared(ignoreVertical))
             return self._magnitude
         else:
-            if(self._needs2dMagCalc):
-                self._2dMagnitude = mth.sqrt((self.x **2) + (self.z **2))
-                self._needs2dMagCalc = False
+            if(self._2dMagnitude == __MAGNITUDE_UNDEFINED__ or self._2dMagnitudeSquared == __MAGNITUDE_UNDEFINED__):
+                self._2dMagnitude = mth.sqrt(self.magnitudeSquared(ignoreVertical))
             return self._2dMagnitude  
+        
+#######################   
+    def magnitudeSquared(self, ignoreVertical=False):
+        if(not ignoreVertical):
+            if(self._magnitudeSquared == __MAGNITUDE_UNDEFINED__):
+                self._magnitudeSquared = (self.x **2) + (self.y **2) + (self.z **2)
+            return self._magnitudeSquared
+        else:
+            if(self._2dMagnitudeSquared == __MAGNITUDE_UNDEFINED__):
+                self._2dMagnitudeSquared = (self.x **2) + (self.z **2)
+            return self._2dMagnitudeSquared
 
 ####################### 
-    def dot(self, otherVector, ignoreVertical = False):
+    def dot(self, otherVector, ignoreVertical=False):
         if(ignoreVertical or IsVector2(otherVector)):
             return (self.x * otherVector.u) + (self.z * otherVector.v)
         else:
             return (self.x * otherVector.x) + (self.y * otherVector.y) + (self.z * otherVector.z)
+
+#######################        
+    def cross(self, otherVector, ignoreVertical=False):
+        if(ignoreVertical or IsVector2(otherVector)):
+            return (self.u * otherVector.v) - (self.v * otherVector.u)
+        else:
+            return (((self.y * otherVector.z) - (otherVector.y * self.z)) - 
+                    ((self.x * otherVector.z) - (otherVector.x * self.z)) -
+                    ((self.x * otherVector.y) - (otherVector.x * self.y)))
 
 #######################
     def normalise(self, scaleFactor=1.0):
@@ -225,17 +310,16 @@ class Vector3(BoidBaseObject):
             self.z *= multiple
             
             self._magnitude = scaleFactor
-            self._needsMagCalc = False
+            self._magnitudeSquared = scaleFactor **2
  
 #######################            
     def normalisedVector(self, scaleFactor=1.0):
-        retVal = Vector3(self.x, self.y, self.z)
-        if(not self._needsMagCalc):
-            retVal._magnitude = self._magnitude
-            retVal._needsMagCalc = False
-        else:
-            retVal.normalise(scaleFactor)
-        return retVal
+        normalisedVector = Vector3(self.x, self.y, self.z)
+        normalisedVector._magnitude = self._magnitude
+        normalisedVector._magnitudeSquared = self._magnitudeSquared
+        normalisedVector.normalise(scaleFactor)
+        
+        return normalisedVector
 
 ####################### 
     def angleFrom(self, otherVector, ignoreVertical=True):
@@ -278,11 +362,13 @@ class Vector3(BoidBaseObject):
         if(ignoreVertical or IsVector2(otherVector)):
             tempU = (self.x - otherVector.u) ** 2
             tempV = (self.z - otherVector.v) ** 2
+            
             return mth.sqrt(tempU + tempV)
         else:
             tempX = (self.x - otherVector.x) ** 2
             tempY = (self.y - otherVector.y) ** 2
             tempZ = (self.z - otherVector.z) ** 2
+
             return mth.sqrt(tempX + tempY + tempZ)
  
 #######################       
@@ -306,15 +392,12 @@ class Vector3(BoidBaseObject):
 ####################### 
     def moveTowards(self, toVector, byAmount, ignoreVertical=True):
         diffVec = toVector - self
-        if(ignoreVertical):
-            diffVec = diffVec.horizontalVector()
-        diffMag = diffVec.magnitude()
+        diffMagSquared = diffVec.magnitudeSquared(ignoreVertical)
         
-        if(diffMag < byAmount):
+        if(diffMagSquared < (byAmount ** 2)):
             self.resetVec(toVector, ignoreVertical)
         else:
-            diffVec.normalise()
-            diffVec *= byAmount
+            diffVec.normalise(byAmount)
             self.x += diffVec.u
             if(not ignoreVertical):
                 self.y += diffVec.y

@@ -41,9 +41,11 @@ class ClassicBoid(BehaviourBaseObject):
         
         if(agent.isTouchingGround):
             agent.state.updateRegionalStatsIfNecessary(agent, nearbyAgentsList,
-                                                   boidAttributes.mainRegionSize(),
-                                                   boidAttributes.nearRegionSize(),
-                                                   boidAttributes.collisionRegionSize())
+                                                       boidAttributes.mainRegionSize(),
+                                                       boidAttributes.nearRegionSize(),
+                                                       boidAttributes.collisionRegionSize(),
+                                                       boidAttributes.blindRegionAngle(),
+                                                       boidAttributes.forwardVisionRegionAngle())
             
             if(self._avoidMapEdgeBehaviour(agent, desiredAcceleration)):
                 self.clampDesiredAccelerationIfNecessary(agent, 
@@ -168,8 +170,8 @@ class ClassicBoid(BehaviourBaseObject):
 
 ######################             
     def _matchPreferredVelocityIfNecessary(self, agent, desiredAcceleration):
-        """Will increase desiredAcceleration if agent is travelling/accelerating below the preferred minimum values."""
-        
+        """Will increase desiredAcceleration if agent is travelling/accelerating below 
+        the preferred minimum values."""
         if(agent.currentVelocity.magnitude() < boidAttributes.preferredVel() and 
            desiredAcceleration.magnitude() < boidAttributes.maxAccel()):
             if(desiredAcceleration.isNull()):

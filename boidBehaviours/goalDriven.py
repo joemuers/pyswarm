@@ -270,9 +270,11 @@ class GoalDriven(BehaviourBaseObject):
                 return desiredAcceleration
             else:
                 agent.state.updateRegionalStatsIfNecessary(agent, nearbyAgentsList,
-                                                       boidAttributes.mainRegionSize(),
-                                                       boidAttributes.nearRegionSize(),
-                                                       boidAttributes.collisionRegionSize())
+                                                           boidAttributes.mainRegionSize(),
+                                                           boidAttributes.nearRegionSize(),
+                                                           boidAttributes.collisionRegionSize(),
+                                                           boidAttributes.blindRegionAngle(),
+                                                           boidAttributes.forwardVisionRegionAngle())
                 
                 if(self._atBasePyramidBorderBehaviour(agent, desiredAcceleration)):
                     return desiredAcceleration

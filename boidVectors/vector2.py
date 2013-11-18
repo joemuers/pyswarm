@@ -3,6 +3,7 @@ from boidBaseObject import BoidBaseObject
 import random as rand
 import math as mth
 
+__MAGNITUDE_UNDEFINED__ = -1.0
 
 class Vector2(BoidBaseObject):
     """2D vector with various trig functions.
@@ -11,6 +12,8 @@ class Vector2(BoidBaseObject):
     
     Note that angle inputs/outputs, currently, are in degrees, NOT radians.
     """
+    
+    
     
     def __init__(self, u=0, v=0):
         """Note that you can either: 
@@ -25,12 +28,19 @@ class Vector2(BoidBaseObject):
             self._u = float(u)
             self._v = float(v)
         
-        self._needsMagCalc = True
-        self._magnitude = -1.0
+        self._magnitude = __MAGNITUDE_UNDEFINED__
+        self._magnitudeSquared = __MAGNITUDE_UNDEFINED__
 
 ####################### 
     def __str__(self):
         return "<u=%.4f, v=%.4f>" % (self.u, self.v)
+
+#####################    
+    def _getMetaStr(self):
+        magStr = ("%.4f" % self._magnitude) if(self._magnitude != __MAGNITUDE_UNDEFINED__) else "notCalc\'d"
+        magSqStr = ("%.4f" % self._magnitudeSquared) if(self._magnitudeSquared != __MAGNITUDE_UNDEFINED__) else "notCalc\'d"
+        
+        return ("<mag=%s, magSqu=%s>" % (magStr, magSqStr))
 
 ##################### 
     def __add__(self, other):
@@ -51,13 +61,20 @@ class Vector2(BoidBaseObject):
 
     def __eq__(self, other):
         return self.u == other.u and self.v == other.v
+    
+    def __lt__(self, other):
+        return self.magnitudeSquared() < other.magnitudeSquared()
+    
+    def __gt__(self, other):
+        return self.magnitudeSquared() > other.magnitudeSquared()
 
 ####################### 
     def _get_u(self):
         return self._u
     def _set_u(self, value):
         if(value != self._u):
-            self._needsMagCalc = True
+            self._magnitude = __MAGNITUDE_UNDEFINED__ 
+            self._magnitudeSquared = __MAGNITUDE_UNDEFINED__
             self._u = value
     u = property(_get_u, _set_u)
     
@@ -65,7 +82,8 @@ class Vector2(BoidBaseObject):
         return self._v
     def _set_v(self, value):
         if(value != self._v):
-            self._needsMagCalc = True
+            self._magnitude = __MAGNITUDE_UNDEFINED__ 
+            self._magnitudeSquared = __MAGNITUDE_UNDEFINED__
             self._v = value
     v = property(_get_v, _set_v)
     
@@ -82,9 +100,9 @@ class Vector2(BoidBaseObject):
     def resetVec(self, otherVector):
         self.u = otherVector.u
         self.v = otherVector.v
-        if(not otherVector._needsMagCalc and isinstance(otherVector, Vector2)):
-            self._magnitude = otherVector._magnitude
-            self._needsMagCalc = False
+        if(isinstance(otherVector, Vector2)):
+            self._magnitudeSquared = otherVector._magnitudeSquared
+            self._magnitude = otherVector._magnitude 
 
 ####################### 
     def invert(self):
@@ -97,32 +115,46 @@ class Vector2(BoidBaseObject):
 
 ####################### 
     def magnitude(self, dummy=False): # dummy- so magnitude can be called interchangeably for Vector2/3. Very hacky, I know...
-        if(self._needsMagCalc):
-            self._magnitude = mth.sqrt((self._u **2) + (self._v **2))
-            self._needsMagCalc = False and dummy # pseudo usage stops Eclipse complaining about unused argument
+        if(self._magnitude == __MAGNITUDE_UNDEFINED__):
+            self._magnitude = mth.sqrt(self.magnitudeSquared())
         return self._magnitude
+    
+#######################
+    def magnitudeSquared(self):
+        if(self._magnitudeSquared == __MAGNITUDE_UNDEFINED__):
+            self._magnitudeSquared = (self._u **2) + (self._v **2)
+        return self._magnitudeSquared
 
 ####################### 
     def dot(self, otherVector):
         return (self.u * otherVector.u) + (self.v * otherVector.v)
 
+#######################    
+    def cross(self, otherVector):
+        return (self.u * otherVector.v) - (self.v * otherVector.u)
+
 #######################
-    def normalise(self, scaleFactor = 1.0):
+    def normalise(self, scaleFactor=1.0):
         if(not self.isNull()):
             multiple = scaleFactor / self.magnitude()
             self.u *= multiple
             self.v *= multiple
+            self._magnitude = scaleFactor
+            self._magnitudeSquared = scaleFactor **2
 
 #######################
-    def normalisedVector(self, scaleFactor = 1.0):
-        retVal = Vector2(self.u, self.v)
-        retVal.normalise(scaleFactor)
-        return retVal
-
+    def normalisedVector(self, scaleFactor=1.0):
+        normalisedVector = Vector2(self.u, self.v)
+        normalisedVector.normalise(scaleFactor)
+        return normalisedVector
+    
 #######################
     def degreeHeading(self):
         zeroDegrees = Vector2(0, 1)
-        return zeroDegrees.angleFrom(self)
+        heading = zeroDegrees.angleFrom(self)
+        if(heading < 180):
+            heading += 360
+        return heading
 
 ####################### 
     def angleFrom(self, otherVector):
@@ -177,11 +209,10 @@ class Vector2(BoidBaseObject):
         diffVec = toVector - self
         diffMag = diffVec.magnitude()
 
-        if(diffMag < byAmount):
+        if(diffMag.magnitudeSquared() < (byAmount **2)):
             self.resetVec(toVector)
         else:
-            diffVec.normalise()
-            diffVec *= byAmount
+            diffVec.normalise(byAmount)
             self.u += diffVec.u
             self.v += diffVec.v
 
