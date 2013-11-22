@@ -57,10 +57,10 @@ class BoidAgentState(BoidBaseObject):
         crowdStringsList = [("%d," % crowdingAgent.particleId) for crowdingAgent in self.crowdedList]
         collisionStringsList = [("%d," % collidingAgent.particleId) for collidingAgent in self.collisionList]
         
-        return ("id=%d, avP=%s, avV=%s, avCP=%s, nr=%s, cr=%s, col=%s, nextRbld=%d, bhvr=%s" % 
+        return ("id=%d, avP=%s, avV=%s, avCP=%s, nextRbld=%d, bhvr=%s, nr=%s, cr=%s, col=%s" % 
                 (self._particleId, self._avPosition, self._avVelocity, 
-                 self._avCrowdedPos, ''.join(nearStringsList), ''.join(crowdStringsList), ''.join(collisionStringsList),
-                 self._framesUntilNextRebuild, self.behaviourSpecificState))       
+                 self._avCrowdedPos, self._framesUntilNextRebuild, self.behaviourSpecificState,
+                 ''.join(nearStringsList), ''.join(crowdStringsList), ''.join(collisionStringsList)))       
     
 #####################
     def getParticleId(self):
@@ -154,7 +154,7 @@ class BoidAgentState(BoidBaseObject):
 
 #################################       
     def withinPreciseRadiusOfPoint(self, otherPosition, radius):
-        if(self._position.distanceFrom(otherPosition) > radius):
+        if(self._position.distanceSquaredFrom(otherPosition) > radius **2):
             return False
         else:
             return True
@@ -247,6 +247,11 @@ class BoidAgentState(BoidBaseObject):
             variableRange = blindAngle - forwardAngle
             return (float(variableRange - (angle - forwardAngle)) / variableRange)
     
+    @staticmethod
+    def _calculateWeighting(distanceVector, angle, forwardAngle, blindAngle):
+        return (BoidAgentState._getWeightingInverseSquareDistance(distanceVector) +
+                BoidAgentState._getWeightingAngular(angle, forwardAngle, blindAngle)) 
+    
 ##############################
     def _recalculateListsAndAverages(self, parentAgent, otherAgents, neighbourhoodSize, 
                                        crowdedRegionSize, collisionRegionSize, blindRegionAngle, forwardRegionAngle):
@@ -277,8 +282,8 @@ class BoidAgentState(BoidBaseObject):
                     if(angleToOtherAgent < visibleAreaAngle):
                         # otherBoid is "nearby" if we're here
                         self.nearbyList.append(otherAgent)
-                        weighting = (self._getWeightingInverseSquareDistance(directionToOtherAgent) + 
-                                     self._getWeightingAngular(angleToOtherAgent, forwardAreaAngle, visibleAreaAngle))
+                        weighting = self._calculateWeighting(directionToOtherAgent, angleToOtherAgent, 
+                                                             forwardAreaAngle, visibleAreaAngle)
                         self._otherAgentWeightingLookup[otherAgentParticleId] = weighting
                         
                         self._avVelocity.add(otherAgentState.velocity * weighting, True)
@@ -359,8 +364,8 @@ class BoidAgentState(BoidBaseObject):
                 
                 self.nearbyList.append(otherAgent)
                 
-                weighting = (self._getWeightingInverseSquareDistance(directionToOtherAgent) + 
-                                     self._getWeightingAngular(angleToOtherAgent, forwardAreaAngle, visibleAreaAngle))
+                weighting = self._calculateWeighting(directionToOtherAgent, angleToOtherAgent, 
+                                                     forwardAreaAngle, visibleAreaAngle)
                 self._otherAgentWeightingLookup[otherAgent.particleId] = weighting
                         
                 self._avVelocity.add(otherAgent.currentVelocity * weighting, True)

@@ -48,13 +48,13 @@ class ClassicBoid(BehaviourBaseObject):
                                                        boidAttributes.forwardVisionRegionAngle())
             
             if(self._avoidMapEdgeBehaviour(agent, desiredAcceleration)):
-                self.clampDesiredAccelerationIfNecessary(agent, 
+                self._clampDesiredAccelerationIfNecessary(agent, 
                                                          desiredAcceleration, 
                                                          boidAttributes.maxAccel(), 
                                                          boidAttributes.maxVel())
                 return desiredAcceleration
             elif(self._avoidNearbyAgentsBehaviour(agent, desiredAcceleration)):
-                self.clampDesiredAccelerationIfNecessary(agent, 
+                self._clampDesiredAccelerationIfNecessary(agent, 
                                                          desiredAcceleration, 
                                                          boidAttributes.maxAccel(), 
                                                          boidAttributes.maxVel())
@@ -66,7 +66,7 @@ class ClassicBoid(BehaviourBaseObject):
              
             self._matchPreferredVelocityIfNecessary(agent, desiredAcceleration)
             self._kickstartAgentMovementIfNecessary(agent, desiredAcceleration)
-            self.clampDesiredAccelerationIfNecessary(agent, 
+            self._clampDesiredAccelerationIfNecessary(agent, 
                                                      desiredAcceleration, 
                                                      boidAttributes.maxAccel(), 
                                                      boidAttributes.maxVel())
@@ -140,9 +140,9 @@ class ClassicBoid(BehaviourBaseObject):
 #############################
     def _matchSwarmPositionBehaviour(self, agent, desiredAcceleration):
         if(agent.hasNeighbours):
-            distanceFromSwarmAvrg = agent.currentPosition.distanceFrom(agent.state.avPosition)
+            distanceFromSwarmAvrgSquared = agent.currentPosition.distanceSquaredFrom(agent.state.avPosition)
             
-            if(boidAttributes.avPositionThreshold() < distanceFromSwarmAvrg):
+            if(boidAttributes.avPositionThreshold() **2 < distanceFromSwarmAvrgSquared):
                 differenceVector = agent.state.avPosition - agent.currentPosition
                 desiredAcceleration.resetVec(differenceVector)
                 
@@ -207,9 +207,9 @@ class ClassicBoid(BehaviourBaseObject):
         return False
 
 ######################
-    def clampDesiredAccelerationIfNecessary(self, agent, desiredAcceleration, maxAcceleration, maxVelocity):
+    def _clampDesiredAccelerationIfNecessary(self, agent, desiredAcceleration, maxAcceleration, maxVelocity):
         if(not self._doNotClampAcceleration):
-            return super(ClassicBoid, self).clampDesiredAccelerationIfNecessary(agent, desiredAcceleration, maxAcceleration, maxVelocity)
+            return super(ClassicBoid, self)._clampDesiredAccelerationIfNecessary(agent, desiredAcceleration, maxAcceleration, maxVelocity)
         else:
             self._doNotClampAcceleration = False
             return False

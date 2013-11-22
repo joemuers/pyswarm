@@ -46,9 +46,10 @@ class BehaviourBaseObject(bbo.BoidBaseObject):
         """
         return None
     
-    def clampDesiredAccelerationIfNecessary(self, agent, desiredAcceleration, maxAcceleration, maxVelocity):
+    def _clampDesiredAccelerationIfNecessary(self, agent, desiredAcceleration, maxAcceleration, maxVelocity):
         """Reduces desired acceleration, if necessary, such that resulting
         speed/acceleration stay below the maximum values.
+        Should be considered a "protected" method.
         """
         madeChanges = False
         

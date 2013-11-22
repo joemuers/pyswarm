@@ -156,13 +156,13 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
 #############################
     def _resetHelperObjects(self):
         if(self._priorityGoalBehaviour is not None):
-            self._priorityGoalBehaviour.resetAverages()
+            self._priorityGoalBehaviour.onFrameUpdate()
             
         if(self._secondaryGoalBehaviour is not None):
-            self._secondaryGoalBehaviour.resetAverages()
+            self._secondaryGoalBehaviour.onFrameUpdate()
             
         if(self._curvePathBehaviour is not None):
-            self._curvePathBehaviour.recheckCurvePoints()
+            self._curvePathBehaviour.onFrameUpdate()
 
 #############################
     def _getAllParticlesInfo(self, queryExtraInfo=False):
@@ -238,14 +238,14 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
                 util.SetParticleColour(self.particleShapeName, particleId, stickiness, stickiness, stickiness)
             elif(not agent.isTouchingGround):
                 util.SetParticleColour(self.particleShapeName, particleId, 0.2, 0.2, 0.2)
-            elif(agent.isCollided):
-                util.SetParticleColour(self.particleShapeName, particleId, 1, 0, 0)
-            elif(bbg.AgentIsChasingGoal(agent)):
-                util.SetParticleColour(self.particleShapeName, particleId, 1, 1, 0)
-            elif(agent.isCrowded):
-                util.SetParticleColour(self.particleShapeName, particleId, 0.65, 0, 0)
             elif(bbg.AgentBehaviourIsGoalDriven(agent) and agent.currentBehaviour.agentIsLeader(agent)):
                 util.SetParticleColour(self.particleShapeName, particleId, 1, 1, 1)
+            elif(bbg.AgentIsChasingGoal(agent)):
+                util.SetParticleColour(self.particleShapeName, particleId, 1, 1, 0)
+            elif(agent.isCollided):
+                util.SetParticleColour(self.particleShapeName, particleId, 1, 0, 0)            
+            elif(agent.isCrowded):
+                util.SetParticleColour(self.particleShapeName, particleId, 0.65, 0, 0)
             elif(agent.hasNeighbours):
                 util.SetParticleColour(self.particleShapeName, particleId, 0, 0.8, 0)
             else:
@@ -275,7 +275,7 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
                                                       self._normalBehaviour, useInfectionSpread, self)
         print("Made new secondary target - %s" % self._secondaryGoalBehaviour)
 
-    def makeAgentGoalDriven(self, particleId, makeLeader=True):
+    def makeAgentGoalDriven(self, particleId, makeLeader):
         """Causes agent with corresponding particleId to follow the current priorityGoal."""
         
         if(self._priorityGoalBehaviour is None):

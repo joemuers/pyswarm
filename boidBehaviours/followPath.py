@@ -111,7 +111,7 @@ class FollowPath(BehaviourBaseObject):
             pymelClosestCurvePoint = self._curve.closestPoint(pymelLocationVector, space='world')
             boidCurveClosestPoint = util.BoidVector3FromPymelPoint(pymelClosestCurvePoint)
             
-            if(boidCurveClosestPoint.distanceFrom(self._endVector) < boidAttributes.curveEndReachedDistanceThreshold()):
+            if(boidCurveClosestPoint.distanceSquaredFrom(self._endVector) < boidAttributes.curveEndReachedDistanceThreshold() **2):
                 self.endCurveBehaviourForAgent(agent)
             else:
                 self._currentlyFollowingList.add(agent)
@@ -123,7 +123,7 @@ class FollowPath(BehaviourBaseObject):
                 finalWidth = fromStartWidth + fromEndWidth
                 
                 nearStart = False
-                if(boidCurveClosestPoint.distanceFrom(agent.currentPosition) > finalWidth):
+                if(boidCurveClosestPoint.distanceSquaredFrom(agent.currentPosition) > finalWidth **2):
                     desiredAcceleration += (boidCurveClosestPoint - agent.currentPosition)
                     desiredAcceleration.normalise(boidAttributes.maxAccel())
                     nearStart = True
@@ -139,7 +139,7 @@ class FollowPath(BehaviourBaseObject):
         #TODO - implement 'normal' boidBehaviours also???     
          
          
-            self.clampDesiredAccelerationIfNecessary(agent, 
+            self._clampDesiredAccelerationIfNecessary(agent, 
                                                      desiredAcceleration, 
                                                      boidAttributes.maxAccel(), 
                                                      boidAttributes.maxVel())

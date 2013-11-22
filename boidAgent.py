@@ -47,6 +47,7 @@ class BoidAgent(BoidBaseObject):
     def __init__(self, particleId, startingBehaviour):
         self.state = bas.BoidAgentState(int(particleId))
         
+        self._currentBehaviour = None
         self.setNewBehaviour(startingBehaviour)
         self._pendingBehaviour = None
         self._pendingBehavoirCountdown = -1
@@ -136,10 +137,10 @@ class BoidAgent(BoidBaseObject):
 ##################### 
     def setNewBehaviour(self, behaviour, incubationPeriod=0):
         """Note that, to cancel pending behaviour, you can pass: behaviour == None, incubationPeriod == -1."""
-        if(incubationPeriod == 0):
+        if(incubationPeriod == 0 and self._currentBehaviour is not behaviour):
             self._currentBehaviour = behaviour
             self.state.behaviourSpecificState = behaviour.createBehaviourSpecificStateObject()
-        else:
+        elif(incubationPeriod != 0 and self._pendingBehaviour is not behaviour):
             self._pendingBehaviour = behaviour
             self._pendingBehavoirCountdown = incubationPeriod
             

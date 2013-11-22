@@ -303,7 +303,7 @@ class Vector3(BoidBaseObject):
 
 #######################
     def normalise(self, scaleFactor=1.0):
-        if(not self.isNull()):
+        if(self._magnitude != scaleFactor and not self.isNull()):
             multiple = scaleFactor / self.magnitude()
             self.x *= multiple
             self.y *= multiple
@@ -358,18 +358,21 @@ class Vector3(BoidBaseObject):
             return mth.degrees(mth.acos(vector1.dot(vector2)))
 
 #######################     
-    def distanceFrom(self, otherVector, ignoreVertical=True):
+    def distanceFrom(self, otherVector, ignoreVertical=True): 
+        return mth.sqrt(self.distanceSquaredFrom(otherVector, ignoreVertical))
+        
+    def distanceSquaredFrom(self, otherVector, ignoreVertical=True):
         if(ignoreVertical or IsVector2(otherVector)):
             tempU = (self.x - otherVector.u) ** 2
             tempV = (self.z - otherVector.v) ** 2
             
-            return mth.sqrt(tempU + tempV)
+            return (tempU + tempV)
         else:
             tempX = (self.x - otherVector.x) ** 2
             tempY = (self.y - otherVector.y) ** 2
             tempZ = (self.z - otherVector.z) ** 2
 
-            return mth.sqrt(tempX + tempY + tempZ)
+            return(tempX + tempY + tempZ)
  
 #######################       
     def isAbove(self, otherVector):

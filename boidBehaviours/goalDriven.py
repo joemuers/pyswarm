@@ -77,7 +77,7 @@ class GoalDriven(BehaviourBaseObject):
             self.goalChaseCountdown = -1
             
         def __str__(self):
-            status = "UNKNOWN"
+            status = ("UNKNOWN (%d)" % self.currentStatus)
             if(self.currentStatus == GoalDriven._BoidGoalDrivenState.normal):
                 status = "NORMAL"
             elif(self.currentStatus == GoalDriven._BoidGoalDrivenState.pending):
@@ -125,14 +125,13 @@ class GoalDriven(BehaviourBaseObject):
         
         self._leaders = []
         self._basePyramidDistanceLookup = {}
-        self._atTheLipLookup = set()     # not used any more, but 
-        self._overTheWallLookup = set()  # useful for debugging
         
         self._normalBehaviour = normalBehaviourInstance
         self.useInfectionSpread = useInfectionSpread
         
         # variables in the following block relate to agent's distance
         # from the baseLocator when in the basePyramid
+        self._agentPyramidEntryThreshold = boidAttributes.goalTargetDistanceThreshold()
         self._agentDistance_runningTotal = bv2.Vector2()
         self._agentDistance_average = bv2.Vector2()
         self._needsAverageDistanceCalc = False
@@ -154,20 +153,18 @@ class GoalDriven(BehaviourBaseObject):
 #######################
     def _getMetaStr(self):
         leaderStringsList = [("%d," % agent.particleId) for agent in self._leaders]
-        pyramidStringsList = [("\t%s - dist=%s (mag=%.4f)\n" % (agent, distance, distance.magnitude())) 
-                          for agent, distance in sorted(self._basePyramidDistanceLookup.iteritems())]
-        atLipStringsList = [("\t%s\n" % agent) for agent in self._atTheLipLookup]
-        overStringsList = [("\t%s\n" % agent) for agent in self._overTheWallLookup]
+        pyramidStringsList = [("\t%s\n" % agent) for agent in self._basePyramidDistanceLookup]
         
-        return ("<ldrs=%s, avDist=%s, maxDist=%s, avPos=%s, atLoctn=\n%s\natLip=\n%s\nover=\n%s>" % 
+        return ("<ldrs=%s, avDist=%s, maxDist=%s, avPos=%s\natLoctn=\n%s\natLip=\n%s\nover=\n%s>" % 
                 ("".join(leaderStringsList),
                  self._basePyramidAverageDistance(), self._maxAgentDistance, self._basePyramidAveragePosition(), 
-                 ''.join(pyramidStringsList), ''.join(atLipStringsList), ''.join(overStringsList)))
+                 ''.join(pyramidStringsList)))#, ''.join(atLipStringsList), ''.join(overStringsList)))
         
 ####################### 
     def makeLeader(self, agent):
         if(not agent in self._leaders):
             self._leaders.append(agent)
+            self._setGoalStatusForAgent(agent, GoalDriven._BoidGoalDrivenState.goalChase)
             return True
         else:
             return False
@@ -191,13 +188,14 @@ class GoalDriven(BehaviourBaseObject):
         """Lists of agents must be rebuild on every frame, this method clears the lists
         and sets up everything for a new frame."""
         
+        self._agentPyramidEntryThreshold = max((boidAttributes.goalTargetDistanceThreshold(), 
+                                                self._maxAgentDistance.u))
         self._agentPosition_runningTotal.reset()
         self._needsAveragePositionCalc = True
         self._agentDistance_runningTotal.reset()
         self._needsAverageDistanceCalc = True
         self._maxAgentDistance.reset()
         self._basePyramidDistanceLookup.clear()
-        self._overTheWallLookup.clear()
         
         # now, re-check Maya objects in case they've moved within the scene...
         if(self._baseLocator is not None):
@@ -211,46 +209,38 @@ class GoalDriven(BehaviourBaseObject):
 #######################
     def checkAgentLocation(self, agent):
         """Checks current location of agent to determine appropriate list it should be put
-        into (which then determines corresponding behaviour)."""
-        
+        into (which then determines corresponding behaviour).
+        """
         baseToAgentVec = agent.currentPosition - self._baseVector
+        
+        newStatus = self._goalStatusForAgent(agent)
         
         if(abs(self._baseToFinalDirection.angleFrom(baseToAgentVec)) < 90):
             # boid agent has cleared the wall...
-            
-            if(self._baseToFinalDirection.magnitude(True) < baseToAgentVec.magnitude(True)):
+            if(self._baseToFinalDirection.magnitudeSquared(True) < baseToAgentVec.magnitudeSquared(True)):
                 # reached final goal
-                self._deRegisterAgentFromBasePyramid(agent, GoalDriven._BoidGoalDrivenState.reachedFinalGoal)
-                self._notifyDelegateBehaviourEndedForAgent(agent)
+                newStatus = GoalDriven._BoidGoalDrivenState.reachedFinalGoal
             else:
                 # still on top of wall moving towards final goal
-                self._deRegisterAgentFromBasePyramid(agent, GoalDriven._BoidGoalDrivenState.overWallLip)
-            
-            self._overTheWallLookup.add(agent)
-            return True
+                newStatus = GoalDriven._BoidGoalDrivenState.overWallLip
         else:
-            if(agent.currentPosition.y >= (self._lipVector.y - 0.1)):
+            if(agent.currentPosition.y >= (self._lipVector.y - 0.1)): # TODO - make this check more robust.
                 # agent has reached top of the wall, now will move twds final goal
-                self._deRegisterAgentFromBasePyramid(agent, GoalDriven._BoidGoalDrivenState.atWallLip)
-                self._atTheLipLookup.add(agent)
-                
-                return True
-            elif(baseToAgentVec.magnitude() < boidAttributes.goalTargetDistanceThreshold()):
+                newStatus = GoalDriven._BoidGoalDrivenState.atWallLip
+            elif(baseToAgentVec.magnitudeSquared(True) < self._agentPyramidEntryThreshold **2):
                 # agent is close enough to be considered as being at the basePyramid
-                self._registerAgentAtBasePyramid(agent)
-                
-                return True
-            else:
+                newStatus = GoalDriven._BoidGoalDrivenState.inBasePyramid
+            elif(self._goalStatusForAgent(agent) >= GoalDriven._BoidGoalDrivenState.inBasePyramid):
                 # agent is still some distance away is will simply chase the baseLocator/leader for now
-                if(self._goalStatusForAgent(agent) >= GoalDriven._BoidGoalDrivenState.inBasePyramid):
-                    self._deRegisterAgentFromBasePyramid(agent, GoalDriven._BoidGoalDrivenState.goalChase)
+                newStatus = GoalDriven._BoidGoalDrivenState.goalChase
                 
                 behaviourStatus = agent.state.behaviourSpecificState
-                if(behaviourStatus.didArriveBasePyramid and baseToAgentVec.magnitude() > (boidAttributes.goalTargetDistanceThreshold() * 4)):
+                if(behaviourStatus.didArriveAtBasePyramid and 
+                   baseToAgentVec.magnitude() > boidAttributes.mainRegionSize()):
                     # if miles away, may as well just start over afresh
-                    behaviourStatus.didArriveBasePyramid = False
+                    behaviourStatus.didArriveAtBasePyramid = False
                 
-                return False
+        self._setGoalStatusForAgent(agent, newStatus, baseToAgentVec)
         
 
 #######################
@@ -308,7 +298,7 @@ class GoalDriven(BehaviourBaseObject):
         if(self._goalStatusForAgent(agent) == GoalDriven._BoidGoalDrivenState.atWallLip):
             desiredAcceleration.x = self._baseToFinalDirection.x
             desiredAcceleration.z = self._baseToFinalDirection.z
-            desiredAcceleration.normalise(boidAttributes.goalChaseSpeed()) # misleading place to use goalChaseSpeed, should use something else??
+            desiredAcceleration.normalise(boidAttributes.goalChaseSpeed()) # TODO - misleading place to use goalChaseSpeed, should use something else??
             desiredAcceleration.y = self._basePyramidPushUpwardsMagnitudeVertical()
             
             return True
@@ -323,7 +313,7 @@ class GoalDriven(BehaviourBaseObject):
             horizontalComponent.normalise(self._basePyramidPushUpwardsMagnitudeHorizontal())
             
             distance = self._basePyramidDistanceLookup[agent]
-            if(distance.magnitude() < self._basePyramidAverageDistance().magnitude()):
+            if(distance < self._basePyramidAverageDistance()):
                 diff = self._basePyramidAverageDistance().magnitude() - distance.magnitude()
                 proportion = diff / self._basePyramidAverageDistance().magnitude()
                 stickinessValue = 2 * proportion
@@ -344,18 +334,21 @@ class GoalDriven(BehaviourBaseObject):
 #######################
     def _atBasePyramidBorderBehaviour(self, agent, desiredAcceleration):
         if(self._goalStatusForAgent(agent) == GoalDriven._BoidGoalDrivenState.goalChase and agent.isCrowded):
+            goalThresholdDistanceSquared = boidAttributes.goalTargetDistanceThreshold() **2
+            goalChaseSpeedSquared = boidAttributes.goalChaseSpeed() **2
+            
             for nearbyAgent in agent.state.crowdedList:
                 # as the basePyramid grows in size, it's perceived 'boundary' (i.e. the position at which agents are said 
                 # to have joined the pyramid and can start their 'climbing' behaviour) is not fixed. So to determine it, we
                 # look at other agents in the immediate vicinity and see if they themselves are in the pyramid.
                 if(self._goalStatusForAgent(nearbyAgent) == GoalDriven._BoidGoalDrivenState.inBasePyramid and 
-                   (nearbyAgent.currentPosition.distanceFrom(self.currentPosition) < boidAttributes.goalTargetDistanceThreshold()) and
-                   (nearbyAgent.currentVelocity.magnitude(True) < boidAttributes.goalChaseSpeed() or 
-                    agent.currentVelocity.magnitude(True) < boidAttributes.goalChaseSpeed() or 
+                   (nearbyAgent.currentPosition.distanceSquaredFrom(agent.currentPosition) < goalThresholdDistanceSquared) and
+                   (nearbyAgent.currentVelocity.magnitudeSquared(True) < goalChaseSpeedSquared or 
+                    agent.currentVelocity.magnitudeSquared(True) < goalChaseSpeedSquared or 
                     abs(nearbyAgent.currentVelocity.angleFrom(agent.currentVelocity)) > 90) ):
-                   
+                    # TODO - just expand the goal's radius here...
                     self._registerAgentAtBasePyramid(agent)
-                    return self._inBasePyramidBehaviour(agent, desiredAcceleration)
+                    return self._goalChaseBehaviour(agent, desiredAcceleration)
         return False
     
 #######################  
@@ -369,7 +362,7 @@ class GoalDriven(BehaviourBaseObject):
             currentState = agent.state.behaviourSpecificState
             if(not currentState.didArriveAtBasePyramid and agent.isCrowded):   # note that we move AWAY from the avPos here
                 differenceVector = agent.currentPosition - agent.state.avCrowdedPosition
-                differenceVector.normalise(boidAttributes.maxAccel())
+                differenceVector.normalise(boidAttributes.maxAccel()) # TODO - dodgy algorithm here??
                 desiredAcceleration.add(differenceVector)    
             elif(currentState.didArriveAtBasePyramid):
                 # Agents in a basePyramid sometimes get pushed to the corners and get
@@ -378,17 +371,10 @@ class GoalDriven(BehaviourBaseObject):
                 if(angle > 82):
                     desiredAcceleration.subtract(self._baseToFinalDirection, True)
                     
-            self.clampDesiredAccelerationIfNecessary(agent, 
+            self._clampDesiredAccelerationIfNecessary(agent, 
                                                      desiredAcceleration, 
                                                      boidAttributes.maxAccel(), 
                                                      boidAttributes.goalChaseSpeed())
-            
-            
-            # TODO - Not really sure what I was doing with this bit below...???
-#             if(boid.isTouchingGround and boid.currentVelocity.magnitude() >= boidAttributes.maxVel()):
-#                 if(self._getShouldJump(agent)):
-#                     agent._jump()
-                    
             return True
         else:
             return False
@@ -397,7 +383,7 @@ class GoalDriven(BehaviourBaseObject):
     def _decrementGoalChaseCountdownIfNecessary(self, agent):
         if(self._goalStatusForAgent(agent) == GoalDriven._BoidGoalDrivenState.pending):
             agent.state.behaviourSpecificState.goalChaseCountdown -= 1
-            if(agent.state.behaviourSpecificState.goalChaseCountdown == 0):
+            if(agent.state.behaviourSpecificState.goalChaseCountdown <= 0):
                 self._setGoalStatusForAgent(agent, GoalDriven._BoidGoalDrivenState.goalChase)
                 return True
 
@@ -406,58 +392,49 @@ class GoalDriven(BehaviourBaseObject):
     def _startGoalChaseCountdownIfNecessary(self, agent):
         if(self._goalStatusForAgent(agent) == GoalDriven._BoidGoalDrivenState.normal):
             nearestNeighbour = None
-            nearestNeighbourDistance = float('inf')                    
+            nearestNeighbourDistanceSquared = float('inf')                    
             for nearbyAgent in agent.state.nearbyList:
-                if(nearbyAgent._currentBehaviour == self and
-                   self._goalStatusForAgent(nearbyAgent) >= GoalDriven._BoidGoalDrivenState.goalChase):
+                if(nearbyAgent._currentBehaviour is self):
                     distance = agent.currentPosition - nearbyAgent.currentPosition
-                    if(distance.magnitude() < nearestNeighbourDistance):
+                    if(distance.magnitudeSquared() < nearestNeighbourDistanceSquared):
                         nearestNeighbour = nearbyAgent
-                        nearestNeighbourDistance = distance.magnitude()
+                        nearestNeighbourDistanceSquared = distance.magnitudeSquared()
                         
-            if(nearestNeighbour is not None):
-                agent.setNewBehaviour(nearestNeighbour._currentBehaviour)
+            if(nearestNeighbour is not None and # TODO - this check could also be against == state.pending...??
+               self._goalStatusForAgent(nearbyAgent) >= GoalDriven._BoidGoalDrivenState.goalChase):
+                self._setGoalStatusForAgent(agent, GoalDriven._BoidGoalDrivenState.pending)
                 return True
             
         return False
 
 #######################
-    def _registerAgentAtBasePyramid(self, agent):
+    def _registerAgentAtBasePyramid(self, agent, distanceVector=None):
         """Registers agent as having arrived at the basePyramid, behaviour
-        for the agent will be switched from 'goalChase' to basePyramid 'push-up' behaviour."""
-        
+        for the agent will be switched from 'goalChase' to basePyramid 'push-up' behaviour.
+        """
         if(not agent in self._basePyramidDistanceLookup):
-            if(agent in self._leaders):
-                self._leaders.remove(agent)
             
-            distanceVec = agent.currentPosition - self._baseVector
-            self._agentDistance_runningTotal.u += distanceVec.magnitude(True)
-            self._agentDistance_runningTotal.v += distanceVec.y
+            if(distanceVector is None):
+                distanceVector = agent.currentPosition - self._baseVector
+            self._agentDistance_runningTotal.u += distanceVector.magnitude(True)
+            self._agentDistance_runningTotal.v += distanceVector.y
             self._needsAverageDistanceCalc = True         
             
-            if(distanceVec.magnitude(True) > self._maxAgentDistance.u):
-                self._maxAgentDistance.u = distanceVec.magnitude(True)
-            if(distanceVec.y > self._maxAgentDistance.v):
-                self._maxAgentDistance.v = distanceVec.y
+            if(distanceVector.magnitude(True) > self._maxAgentDistance.u):
+                self._maxAgentDistance.u = distanceVector.magnitude(True)
+            if(distanceVector.y > self._maxAgentDistance.v):
+                self._maxAgentDistance.v = distanceVector.y
             
             self._agentPosition_runningTotal.add(agent.currentPosition)
             self._needsAveragePositionCalc = True   
             
-            self._basePyramidDistanceLookup[agent] = distanceVec
-            if(agent in self._overTheWallLookup):
-                self._overTheWallLookup.remove(agent)
-            if(agent in self._atTheLipLookup):
-                self._atTheLipLookup.remove(agent)
-        
-        self._setGoalStatusForAgent(agent, GoalDriven._BoidGoalDrivenState.inBasePyramid)
+            self._basePyramidDistanceLookup[agent] = distanceVector
           
-    def _deRegisterAgentFromBasePyramid(self, agent, newStatus):
+#######################        
+    def _deRegisterAgentFromBasePyramid(self, agent):
         """Should be called when agent leaves/falls out of basePyramid, switches out
-        of 'push-up' behaviour"""
-        
-        if(newStatus == GoalDriven._BoidGoalDrivenState.inBasePyramid):
-            raise TypeError
-        
+        of 'push-up' behaviour
+        """
         if(agent in self._basePyramidDistanceLookup):            
             distanceVec = agent.currentPosition - self._baseVector
             self._agentDistance_runningTotal.u -= distanceVec.magnitude(True)
@@ -468,13 +445,6 @@ class GoalDriven(BehaviourBaseObject):
             self._needsAveragePositionCalc = True       
             
             del self._basePyramidDistanceLookup[agent]
-            
-        if(agent in self._overTheWallLookup):
-            self._overTheWallLookup.remove(agent)
-        if(agent in self._atTheLipLookup):
-            self._atTheLipLookup.remove(agent)
-            
-        self._setGoalStatusForAgent(agent, newStatus)
 
 #######################
     def _basePyramidAverageDistance(self):
@@ -515,7 +485,6 @@ class GoalDriven(BehaviourBaseObject):
         return boidAttributes.pushUpwardsAccelerationVertical()
         #return self._pushUpwardsVector.u
         
-        
 #######################
     def _goalChaseAttractorPositionForAgent(self, agent):
         """Returns position (Vector3) towards which the boidAgent should be made to move
@@ -524,17 +493,18 @@ class GoalDriven(BehaviourBaseObject):
         returnValue = None
         numLeaders = len(self._leaders)
 
-        if(agent.didArriveAtBasePyramid or numLeaders == 0 or self.agentIsLeader(agent)):
+        if(agent.state.behaviourSpecificState.didArriveAtBasePyramid or 
+           numLeaders == 0 or self.agentIsLeader(agent)):
             returnValue = self._baseVector
         elif(numLeaders == 1):
             returnValue = self._leaders[0].currentPosition
         else:
             candidateLeader = None
-            minDist = agent.currentPosition.distanceFrom(self._baseVector)
+            minDistanceSquared = agent.currentPosition.distanceSquaredFrom(self._baseVector)
             for leader in self._leaders:
-                candidateDist = agent.currentPosition.distanceFrom(leader.currentPosition)
-                if(candidateDist < minDist):
-                    minDist = candidateDist
+                candidateDistanceSquared = agent.currentPosition.distanceSquaredFrom(leader.currentPosition)
+                if(candidateDistanceSquared < minDistanceSquared):
+                    minDistanceSquared = candidateDistanceSquared
                     candidateLeader = leader
             
             if(candidateLeader is not None):
@@ -566,12 +536,28 @@ class GoalDriven(BehaviourBaseObject):
         if(AgentBehaviourIsGoalDriven(agent)):
             return agent.state.behaviourSpecificState.currentStatus
         else:
+            raise TypeError
             return GoalDriven._BoidGoalDrivenState._invalid
-        
-    def _setGoalStatusForAgent(self, agent, status):
-        agent.state.behaviourSpecificState.currentStatus = status
-        if(status >= GoalDriven._BoidGoalDrivenState.inBasePyramid):
-            agent.state.behaviourSpecificState.didArriveAtBasePyramid = True
+    
+    def _setGoalStatusForAgent(self, agent, status, distanceVector=None):
+        if(status != self._goalStatusForAgent(agent)):
+            agent.state.behaviourSpecificState.currentStatus = status
+            
+            if(status == GoalDriven._BoidGoalDrivenState.pending):
+                agent.state.behaviourSpecificState.goalChaseCountdown = boidAttributes.goalIncubationPeriod()
+            else:
+                if(status >= GoalDriven._BoidGoalDrivenState.inBasePyramid):
+                    if(agent in self._leaders):
+                        self._leaders.remove(agent)
+                    if(status == GoalDriven._BoidGoalDrivenState.reachedFinalGoal):
+                        self._notifyDelegateBehaviourEndedForAgent(agent)
+                    agent.state.behaviourSpecificState.didArriveAtBasePyramid = True
+                agent.state.behaviourSpecificState.goalChaseCountdown = -1
+                
+        if(status == GoalDriven._BoidGoalDrivenState.inBasePyramid):
+            self._registerAgentAtBasePyramid(agent, distanceVector)
+        else:
+            self._deRegisterAgentFromBasePyramid(agent)
         
         
 # END OF CLASS - BoidBehaviourGoalDriven

@@ -135,7 +135,7 @@ class Vector2(BoidBaseObject):
 
 #######################
     def normalise(self, scaleFactor=1.0):
-        if(not self.isNull()):
+        if(self._magnitude != scaleFactor and not self.isNull()):
             multiple = scaleFactor / self.magnitude()
             self.u *= multiple
             self.v *= multiple
@@ -180,9 +180,12 @@ class Vector2(BoidBaseObject):
 
 #######################     
     def distanceFrom(self, otherVector):
+        return mth.sqrt(self.distanceSquaredFrom(otherVector))
+    
+    def distanceSquaredFrom(self, otherVector):
         tempU = (self.u - otherVector.u) ** 2
         tempV = (self.v - otherVector.v) ** 2
-        return mth.sqrt(tempU + tempV)
+        return (tempU + tempV)
 
 #######################
     def add(self, otherVector):
