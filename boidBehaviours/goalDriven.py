@@ -246,8 +246,8 @@ class GoalDriven(BehaviourBaseObject):
 #######################
     def getDesiredAccelerationForAgent(self, agent, nearbyAgentsList):  # overridden BoidBehaviourBaseObject method
         """Returns corresponding acceleration for the agent as determined by calculated behaviour.
-        Client agents should call this method on each frame update and modify their own desiredAcceleration accordingly."""
-        
+        Client agents should call this method on each frame update and modify their own desiredAcceleration accordingly.
+        """
         desiredAcceleration = bv3.Vector3()
         agent.stickinessScale = 0 # reset on each frame, as may have been set on previous iteration
 
@@ -266,7 +266,7 @@ class GoalDriven(BehaviourBaseObject):
                                                            boidAttributes.blindRegionAngle(),
                                                            boidAttributes.forwardVisionRegionAngle())
                 
-                if(self._atBasePyramidBorderBehaviour(agent, desiredAcceleration)):
+                if(not self._performCollapse and self._atBasePyramidBorderBehaviour(agent, desiredAcceleration)):
                     return desiredAcceleration
                 elif(self._goalChaseBehaviour(agent, desiredAcceleration)):
                     return desiredAcceleration
@@ -312,18 +312,18 @@ class GoalDriven(BehaviourBaseObject):
             horizontalComponent = directionToGoal.horizontalVector()
             horizontalComponent.normalise(self._basePyramidPushUpwardsMagnitudeHorizontal())
             
-            distance = self._basePyramidDistanceLookup[agent]
-            if(distance < self._basePyramidAverageDistance()):
-                diff = self._basePyramidAverageDistance().magnitude() - distance.magnitude()
-                proportion = diff / self._basePyramidAverageDistance().magnitude()
-                stickinessValue = 2 * proportion
-                agent.stickinessScale = stickinessValue
-                
             desiredAcceleration.x = horizontalComponent.u
             desiredAcceleration.z = horizontalComponent.v
             
             if(not self._performCollapse):
                 desiredAcceleration.y = self._basePyramidPushUpwardsMagnitudeVertical()
+                
+                distance = self._basePyramidDistanceLookup[agent]
+                if(distance < self._basePyramidAverageDistance()):
+                    diff = self._basePyramidAverageDistance().magnitude() - distance.magnitude()
+                    proportion = diff / self._basePyramidAverageDistance().magnitude()
+                    stickinessValue = 2 * proportion
+                    agent.stickinessScale = stickinessValue
             else:
                 desiredAcceleration.invert()
                 
@@ -558,6 +558,10 @@ class GoalDriven(BehaviourBaseObject):
             self._registerAgentAtBasePyramid(agent, distanceVector)
         else:
             self._deRegisterAgentFromBasePyramid(agent)
+            
+#######################            
+    def collapsePyramid(self, cancel=False):
+        self._performCollapse = not cancel
         
         
 # END OF CLASS - BoidBehaviourGoalDriven

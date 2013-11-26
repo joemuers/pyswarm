@@ -45,7 +45,7 @@ class FollowPath(BehaviourBaseObject):
         self._taperStart = taperStartMult
         self._taperEnd = taperEndMult
         
-        self._currentlyFollowingList = set()
+        self._currentlyFollowingSet = set()
         
         self._normalBehaviour = normalBehaviorInstance
         self._curveBehaviourInfluence = 0.75
@@ -57,7 +57,7 @@ class FollowPath(BehaviourBaseObject):
         
 #############################
     def _getMetaStr(self):
-        agentStringsList = [("\n\t%s" % agent) for agent in self._currentlyFollowingList]
+        agentStringsList = [("\n\t%s" % agent) for agent in self._currentlyFollowingSet]
         
         return ("<crv=%s, strt=%s, end=%s (prm=%.2f), following:%s>" % 
                 (self._curve, self._startVector, self._endVector, self._endParam, ''.join(agentStringsList)))
@@ -68,7 +68,7 @@ class FollowPath(BehaviourBaseObject):
 
 ################################      
     def _getCurrentFollowCount(self):
-        return len(self._currentlyFollowingList)
+        return len(self._currentlyFollowingSet)
     currentFollowCount = property(_getCurrentFollowCount)
     
     def _getStartPoint(self):
@@ -93,7 +93,7 @@ class FollowPath(BehaviourBaseObject):
      
 ################################ 
     def onFrameUpdate(self):  # overridden BoidBehaviourBaseObject method
-        """Re-checks curve points from Maya in case the have moved..."""
+        """Re-checks curve points from Maya in case the curve has moved..."""
         self._startVector = util.BoidVector3FromPymelPoint(self._curve.getPointAtParam(0.0, space='world'))
         self._endParam = self._curve.findParamFromLength(self._curve.length())
         endPoint = self._curve.getPointAtParam(self._endParam, space='world')
@@ -114,7 +114,7 @@ class FollowPath(BehaviourBaseObject):
             if(boidCurveClosestPoint.distanceSquaredFrom(self._endVector) < boidAttributes.curveEndReachedDistanceThreshold() **2):
                 self.endCurveBehaviourForAgent(agent)
             else:
-                self._currentlyFollowingList.add(agent)
+                self._currentlyFollowingSet.add(agent)
                 
                 currentParamValue = self._curve.getParamAtPoint(pymelClosestCurvePoint, space='world')
                 lengthAlongCurve = currentParamValue / self._endParam
@@ -122,34 +122,27 @@ class FollowPath(BehaviourBaseObject):
                 fromEndWidth = lengthAlongCurve * boidAttributes.curveDevianceThreshold() * self._taperEnd
                 finalWidth = fromStartWidth + fromEndWidth
                 
-                nearStart = False
                 if(boidCurveClosestPoint.distanceSquaredFrom(agent.currentPosition) > finalWidth **2):
                     desiredAcceleration += (boidCurveClosestPoint - agent.currentPosition)
                     desiredAcceleration.normalise(boidAttributes.maxAccel())
-                    nearStart = True
-                
-                if(currentParamValue > 0 or nearStart):
-                    curveParam = self._curve.getParamAtPoint(pymelClosestCurvePoint, space='world')
-                    tangent = self._curve.tangent(curveParam, space='world')
+                else:
+                    tangent = self._curve.tangent(currentParamValue, space='world')
                     boidTangentVector = util.BoidVector3FromPymelVector(tangent)
                     
                     desiredAcceleration += boidTangentVector
                     desiredAcceleration.normalise(boidAttributes.curveGroupVectorMagnitude())
-
-        #TODO - implement 'normal' boidBehaviours also???     
-         
-         
-            self._clampDesiredAccelerationIfNecessary(agent, 
-                                                     desiredAcceleration, 
-                                                     boidAttributes.maxAccel(), 
-                                                     boidAttributes.maxVel())
+            
             if(self.curveBehaviourInfluence < 1.0):
                 normalDesiredAcceleration = self._normalBehaviour.getDesiredAccelerationForAgent(agent, nearbyAgents)
                 normalBehaviourInfluence = 1 - self.curveBehaviourInfluence
                 normalDesiredAcceleration *= normalBehaviourInfluence
                 desiredAcceleration *= self.curveBehaviourInfluence
                 desiredAcceleration.add(normalDesiredAcceleration)
-        
+            
+            self._clampDesiredAccelerationIfNecessary(agent, 
+                                         desiredAcceleration, 
+                                         boidAttributes.maxAccel(), 
+                                         boidAttributes.maxVel())
         
         return desiredAcceleration
     
@@ -157,8 +150,8 @@ class FollowPath(BehaviourBaseObject):
     def endCurveBehaviourForAgent(self, agent):
 #         boid.reachedEndOfCurvePath = True
         
-        if(agent in self._currentlyFollowingList):
-            self._currentlyFollowingList.remove(agent)     
+        if(agent in self._currentlyFollowingSet):
+            self._currentlyFollowingSet.remove(agent)     
             self._notifyDelegateBehaviourEndedForAgent(agent)
             
 # END OF CLASS

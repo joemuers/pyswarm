@@ -242,6 +242,8 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
                 util.SetParticleColour(self.particleShapeName, particleId, 1, 1, 1)
             elif(bbg.AgentIsChasingGoal(agent)):
                 util.SetParticleColour(self.particleShapeName, particleId, 1, 1, 0)
+            elif(bbf.agentBehaviourIsFollowPath(agent)):
+                util.SetParticleColour(self.particleShapeName, particleId, 0.5, 0.5, 0)
             elif(agent.isCollided):
                 util.SetParticleColour(self.particleShapeName, particleId, 1, 0, 0)            
             elif(agent.isCrowded):
