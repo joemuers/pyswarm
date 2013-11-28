@@ -184,6 +184,7 @@ class Vector3(BoidBaseObject):
         scalarMult = 1.0 / scalarVal
         
         self._x *= scalarMult
+        self._z *= scalarMult
         if(not ignoreVertical or self._y == 0): 
             self._y *= scalarMult
             if(self._magnitudeSquared != __MAGNITUDE_UNDEFINED__):
@@ -192,7 +193,6 @@ class Vector3(BoidBaseObject):
                     self._magnitude *= scalarMult
         else:
             self._magnitudeSquared = __MAGNITUDE_UNDEFINED__
-        self._z *= scalarMult
         
         if(self._2dMagnitudeSquared != __MAGNITUDE_UNDEFINED__):
             self._2dMagnitudeSquared *= scalarMult
@@ -231,6 +231,7 @@ class Vector3(BoidBaseObject):
 ####################### 
     def resetVec(self, otherVector, ignoreVertical=False):
         self._x = otherVector.u
+        self._z = otherVector.v
         if(not ignoreVertical):
             if(IsVector2(otherVector)):
                 self.y = 0
@@ -244,8 +245,6 @@ class Vector3(BoidBaseObject):
                 self._2dMagnitudeSquared = otherVector._2dMagnitudeSquared
         else:
             self.y = 0
-
-        self._z = otherVector.v
 
 ####################### 
     def invert(self):

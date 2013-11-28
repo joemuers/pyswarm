@@ -230,7 +230,7 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
             util.SetParticleColour(self.particleShapeName, agent.particleId, 0, 0, 0)
             
     def setDebugColour(self, agent):
-        if(boidAttributes.useDebugColours()):
+        if(boidAttributes.UseDebugColours()):
             particleId = agent.particleId
             
             if(bbg.AgentIsInBasePyramid(agent)):
@@ -303,10 +303,6 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
             if(makeLeader):
                 self._secondaryGoalBehaviour.makeLeader(agent)
             
-    def makeNoneGoalDriven(self):
-        for agent in self._boidAgentList.itervalues():
-            agent.setNewBehaviour(self._normalBehaviour)
-            
     def collapseGoal(self):
         """Will 'collapse' the basePyramid at the wall base of a priority goal."""
         if(self._priorityGoalBehaviour is not None):
@@ -341,6 +337,14 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
             
         for agent in self._boidAgentList.itervalues():
             agent.setNewBehaviour(self._curvePathBehaviour)
+        
+#############################        
+    def makeAgentBoidRulesDriven(self, particleIndex):
+        self._boidAgentList[particleIndex].setNewBehaviour(self._normalBehaviour)
+        
+    def makeAllAgentsBoidRulesDriven(self):
+        for agent in self._boidAgentList.itervalues():
+            agent.setNewBehaviour(self._normalBehaviour)
         
 #############################  
     def makeJump(self, particleId):

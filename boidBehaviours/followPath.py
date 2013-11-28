@@ -111,26 +111,26 @@ class FollowPath(BehaviourBaseObject):
             pymelClosestCurvePoint = self._curve.closestPoint(pymelLocationVector, space='world')
             boidCurveClosestPoint = util.BoidVector3FromPymelPoint(pymelClosestCurvePoint)
             
-            if(boidCurveClosestPoint.distanceSquaredFrom(self._endVector) < boidAttributes.curveEndReachedDistanceThreshold() **2):
+            if(boidCurveClosestPoint.distanceSquaredFrom(self._endVector) < boidAttributes.CurveEndReachedDistanceThreshold() **2):
                 self.endCurveBehaviourForAgent(agent)
             else:
                 self._currentlyFollowingSet.add(agent)
                 
                 currentParamValue = self._curve.getParamAtPoint(pymelClosestCurvePoint, space='world')
                 lengthAlongCurve = currentParamValue / self._endParam
-                fromStartWidth = (1 - lengthAlongCurve) * boidAttributes.curveDevianceThreshold() * self._taperStart
-                fromEndWidth = lengthAlongCurve * boidAttributes.curveDevianceThreshold() * self._taperEnd
+                fromStartWidth = (1 - lengthAlongCurve) * boidAttributes.CurveDevianceThreshold() * self._taperStart
+                fromEndWidth = lengthAlongCurve * boidAttributes.CurveDevianceThreshold() * self._taperEnd
                 finalWidth = fromStartWidth + fromEndWidth
                 
                 if(boidCurveClosestPoint.distanceSquaredFrom(agent.currentPosition) > finalWidth **2):
                     desiredAcceleration += (boidCurveClosestPoint - agent.currentPosition)
-                    desiredAcceleration.normalise(boidAttributes.maxAccel())
+                    desiredAcceleration.normalise(boidAttributes.MaxAccel())
                 else:
                     tangent = self._curve.tangent(currentParamValue, space='world')
                     boidTangentVector = util.BoidVector3FromPymelVector(tangent)
                     
                     desiredAcceleration += boidTangentVector
-                    desiredAcceleration.normalise(boidAttributes.curveGroupVectorMagnitude())
+                    desiredAcceleration.normalise(boidAttributes.CurveGroupVectorMagnitude())
             
             if(self.curveBehaviourInfluence < 1.0):
                 normalDesiredAcceleration = self._normalBehaviour.getDesiredAccelerationForAgent(agent, nearbyAgents)
@@ -141,8 +141,8 @@ class FollowPath(BehaviourBaseObject):
             
             self._clampDesiredAccelerationIfNecessary(agent, 
                                          desiredAcceleration, 
-                                         boidAttributes.maxAccel(), 
-                                         boidAttributes.maxVel())
+                                         boidAttributes.MaxAccel(), 
+                                         boidAttributes.MaxVel())
         
         return desiredAcceleration
     

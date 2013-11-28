@@ -175,7 +175,7 @@ class BoidAgent(BoidBaseObject):
 ##############################
     def _jump(self):
         if(self.isTouchingGround):
-            self._desiredAcceleration.y += boidAttributes.jumpAcceleration()
+            self._desiredAcceleration.y += boidAttributes.JumpAcceleration()
             self.state.notifyJump()
             self._needsBehaviourCommit = True
             return True
@@ -193,6 +193,13 @@ class BoidAgent(BoidBaseObject):
         if(self._needsBehaviourCommit):
             desiredVelocity = bv3.Vector3(self.currentVelocity)
             desiredVelocity.add(self._desiredAcceleration)
+            
+#             angleChange = desiredVelocity.angleFrom(self.currentVelocity, True)
+#             if(angleChange > 4):
+#                 desiredVelocity.rotateInHorizontal(angleChange - 4)
+#             elif(angleChange < -4):
+#                 desiredVelocity.rotateInHorizontal(angleChange + 4)
+            
             util.SetSingleParticleVelocity(particleShapeName, self.particleId, desiredVelocity)
             
             if(self._stickinessChanged):

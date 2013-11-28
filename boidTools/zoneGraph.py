@@ -88,7 +88,7 @@ class ZoneGraph(BoidBaseObject):
         if(self._upperBoundsVector.z < self._lowerBoundsVector.z):
             self._lowerBoundsVector.z, self._upperBoundsVector.z = self._upperBoundsVector.z, self._lowerBoundsVector.z
         
-        zoneSize = boidAttributes.mainRegionSize()
+        zoneSize = boidAttributes.MainRegionSize()
         sizeX = self._upperBoundsVector.x - self._lowerBoundsVector.x
         sizeZ = self._upperBoundsVector.z - self._lowerBoundsVector.z
         resolutionX = int((sizeX / zoneSize) + 1)
