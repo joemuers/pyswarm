@@ -32,6 +32,8 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
         self._curvePathBehaviour = None  # boidBehaviours.FollowPath instance
         
         self._buildParticleList()
+        
+        self._active = True
 
 #############################
     def __str__(self):
@@ -49,6 +51,18 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
         return ''.join([("\t%s\n" % agent.metaStr) for agent in self.agentListSorted])
 
 #############################    
+    def activate(self):
+        if(not self._active):
+            self._active = True
+            print("BoidSwarm updates are now ACTIVE.")
+        else:
+            print("BoidSwarm updates already active.")
+
+    def deactivate(self):
+        self._active = False
+        print("BoidSwarm updates DEACTIVATED")
+        
+#############################
     def _getZoneStr(self):
         return self._zoneGraph.__str__()
     zoneStr = property(_getZoneStr)
@@ -148,10 +162,11 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
         """Performs one full iteration of updating all boidAgent behaviour.
         Should be called from Maya once per frame update.
         """
-        self._resetHelperObjects()
-        self._getAllParticlesInfo()
-        self._calculateAgentsBehaviour()
-        self._updateAllParticles()
+        if(self._active):
+            self._resetHelperObjects()
+            self._getAllParticlesInfo()
+            self._calculateAgentsBehaviour()
+            self._updateAllParticles()
 
 #############################
     def _resetHelperObjects(self):
@@ -316,7 +331,6 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
         
         print("Made new curve path - %s" % self._curvePathBehaviour)
         
-    
     def onNewBoidsCreated(self, newBoidsList):
         #TODO - use this? or delete??
 #         if(self._curvePathBehaviour is not None):

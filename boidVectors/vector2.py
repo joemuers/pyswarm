@@ -97,7 +97,7 @@ class Vector2(BoidBaseObject):
         self.v = float(v)
 
 ####################### 
-    def resetVec(self, otherVector):
+    def resetToVector(self, otherVector):
         self.u = otherVector.u
         self.v = otherVector.v
         if(isinstance(otherVector, Vector2)):
@@ -150,15 +150,16 @@ class Vector2(BoidBaseObject):
     
 #######################
     def degreeHeading(self):
+        """Absolute degree heading of the vector, where (x=0,z=1) is 0 degrees."""
         zeroDegrees = Vector2(0, 1)
-        heading = zeroDegrees.angleFrom(self)
-        if(heading < 180):
+        heading = self.angleFrom(zeroDegrees)
+        if(heading < 0):
             heading += 360
         return heading
 
 ####################### 
-    def angleFrom(self, otherVector):
-        """angle between direction vectors in DEGREES (negative for anti-clockwise)"""
+    def angleTo(self, otherVector):
+        """angle TO other vector FROM this vector in DEGREES (negative for anti-clockwise)"""
         if(self.isNull() or otherVector.isNull()):
             return 0
         else:    
@@ -177,6 +178,11 @@ class Vector2(BoidBaseObject):
                     return angle
             else:
                 return angle
+            
+    def angleFrom(self, otherVector):
+        """angle FROM other vector TO this vector in DEGREES (negative for anti-clockwise)"""
+        angleTo = self.angleTo(otherVector)
+        return -angleTo
 
 #######################     
     def distanceFrom(self, otherVector):
@@ -213,7 +219,7 @@ class Vector2(BoidBaseObject):
         diffMag = diffVec.magnitude()
 
         if(diffMag.magnitudeSquared() < (byAmount **2)):
-            self.resetVec(toVector)
+            self.resetToVector(toVector)
         else:
             diffVec.normalise(byAmount)
             self.u += diffVec.u

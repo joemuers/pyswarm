@@ -124,7 +124,7 @@ class FollowPath(BehaviourBaseObject):
                 
                 if(boidCurveClosestPoint.distanceSquaredFrom(agent.currentPosition) > finalWidth **2):
                     desiredAcceleration += (boidCurveClosestPoint - agent.currentPosition)
-                    desiredAcceleration.normalise(boidAttributes.MaxAccel())
+                    desiredAcceleration.normalise(boidAttributes.MaxAcceleration())
                 else:
                     tangent = self._curve.tangent(currentParamValue, space='world')
                     boidTangentVector = util.BoidVector3FromPymelVector(tangent)
@@ -141,8 +141,8 @@ class FollowPath(BehaviourBaseObject):
             
             self._clampDesiredAccelerationIfNecessary(agent, 
                                          desiredAcceleration, 
-                                         boidAttributes.MaxAccel(), 
-                                         boidAttributes.MaxVel())
+                                         boidAttributes.MaxAcceleration(), 
+                                         boidAttributes.MaxVelocity())
         
         return desiredAcceleration
     

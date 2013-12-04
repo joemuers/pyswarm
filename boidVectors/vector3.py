@@ -204,7 +204,8 @@ class Vector3(BoidBaseObject):
         return bv2.Vector2(self.x, self.z)
     
 #######################
-    def degreeHeadingHorizontal(self):
+    def degreeHeading(self):
+        """Absolute, horizontal, degree heading of the vector, where (x=0,z=1) is 0 degrees."""
         return self.horizontalVector().degreeHeading()
 
 #######################
@@ -229,7 +230,7 @@ class Vector3(BoidBaseObject):
         self.z = float(z)
 
 ####################### 
-    def resetVec(self, otherVector, ignoreVertical=False):
+    def resetToVector(self, otherVector, ignoreVertical=False):
         self._x = otherVector.u
         self._z = otherVector.v
         if(not ignoreVertical):
@@ -321,8 +322,8 @@ class Vector3(BoidBaseObject):
         return normalisedVector
 
 ####################### 
-    def angleFrom(self, otherVector, ignoreVertical=True):
-        """angle between direction vectors in DEGREES (negative for anti-clockwise)."""
+    def angleTo(self, otherVector, ignoreVertical=True):
+        """angle TO other vector FROM this vector in DEGREES (negative for anti-clockwise)."""
         if(self.isNull(ignoreVertical) or otherVector.isNull(ignoreVertical)):
             return 0
         elif(ignoreVertical or IsVector2(otherVector)):
@@ -343,6 +344,11 @@ class Vector3(BoidBaseObject):
                 return angle
         else:
             return self.angleFrom3DVector(otherVector)
+    
+    def angleFrom(self, otherVector, ignoreVertical=True):
+        """angle FROM other vector TO this vector in DEGREES (negative for anti-clockwise)."""
+        angleTo = self.angleTo(otherVector, ignoreVertical)
+        return -angleTo
 
 ####################### 
     def angleFrom3DVector(self, otherVector):
@@ -376,9 +382,9 @@ class Vector3(BoidBaseObject):
 #######################       
     def isAbove(self, otherVector):
         if(IsVector2(otherVector)):
-            return self._y > 0
+            return self.y > 0
         else:
-            return self._y > otherVector.y
+            return self.y > otherVector.y
 
 #######################  
     def rotateInHorizontal(self, angle):
@@ -388,8 +394,9 @@ class Vector3(BoidBaseObject):
         sinTheta = mth.sin(theta)
         xTemp = self.x
         
-        self.x = (self.x * cosTheta) - (self.z * sinTheta)
-        self.z = (xTemp * sinTheta) + (self.z * cosTheta)
+        # magnitude should be unaffected => don't set values with property accessors
+        self._x = (self.x * cosTheta) - (self.z * sinTheta)
+        self._z = (xTemp * sinTheta) + (self.z * cosTheta)
 
 ####################### 
     def moveTowards(self, toVector, byAmount, ignoreVertical=True):
@@ -397,7 +404,7 @@ class Vector3(BoidBaseObject):
         diffMagSquared = diffVec.magnitudeSquared(ignoreVertical)
         
         if(diffMagSquared < (byAmount ** 2)):
-            self.resetVec(toVector, ignoreVertical)
+            self.resetToVector(toVector, ignoreVertical)
         else:
             diffVec.normalise(byAmount)
             self.x += diffVec.u

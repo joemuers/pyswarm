@@ -48,8 +48,11 @@ class BoidAgentState(BoidBaseObject):
         
 ###################        
     def __str__(self):
-        return ("id=%d, pos=%s, vel=%s, acln=%s, TG=%s" % 
-                (self._particleId, self._position, self._velocity, self._acceleration, "Y" if(self._isTouchingGround) else "N"))
+        return ("id=%d, pos=%s, vel:(hdgH=%d, hdgV=%d, spd=%.2f), acln:(hdgH=%d, hdgV=%d, spd=%.2f), TG=%s" % 
+                (self._particleId, self._position, 
+                 self._velocity.degreeHeadingHorizontal(), self._velocity.degreeHeadingVertical(), self._velocity.magnitude(),
+                 self._acceleration.degreeHeadingHorizontal(), self._acceleration.degreeHeadingVertical(), self._acceleration.magnitude(),
+                 "Y" if(self._isTouchingGround) else "N"))
     
 ################### 
     def _getMetaStr(self):
@@ -57,8 +60,9 @@ class BoidAgentState(BoidBaseObject):
         crowdStringsList = [("%d," % crowdingAgent.particleId) for crowdingAgent in self.crowdedList]
         collisionStringsList = [("%d," % collidingAgent.particleId) for collidingAgent in self.collisionList]
         
-        return ("id=%d, avP=%s, avV=%s, avCP=%s, nextRbld=%d, bhvr=%s, nr=%s, cr=%s, col=%s" % 
-                (self._particleId, self._avPosition, self._avVelocity, 
+        return ("id=%d, avP=%s, avV=:(hdgH=%d, hdgV=%d, spd=%.2f), avCP=%s, nextRbld=%d, bhvr=%s, nr=%s, cr=%s, col=%s" % 
+                (self._particleId, self._avPosition, 
+                 self._avVelocity.degreeHeadingHorizontal(), self._avVelocity.degreeHeadingVertical(), self._avVelocity.magnitude(), 
                  self._avCrowdedPos, self._framesUntilNextRebuild, self.behaviourSpecificState,
                  ''.join(nearStringsList), ''.join(crowdStringsList), ''.join(collisionStringsList)))       
     
@@ -130,9 +134,9 @@ class BoidAgentState(BoidBaseObject):
 #####################           
     def updateCurrentVectors(self, position, velocity):
         """Updates internal state from corresponding vectors."""
-        self._position.resetVec(position)
+        self._position.resetToVector(position)
         self._acceleration = velocity - self._velocity
-        self._velocity.resetVec(velocity)
+        self._velocity.resetToVector(velocity)
         
         if(self._acceleration.y < boidAttributes.AccelerationPerFrameDueToGravity()):
             self._isTouchingGround = False
@@ -168,7 +172,7 @@ class BoidAgentState(BoidBaseObject):
     def angleToLocation(self, location):
         """Angle, in degrees, of given location with respect to current heading."""
         directionVec = location - self._position
-        return self._velocity.angleFrom(directionVec)
+        return self._velocity.angleTo(directionVec)
        
 ##############################
     def notifyJump(self):
@@ -277,7 +281,7 @@ class BoidAgentState(BoidBaseObject):
                 directionToOtherAgent = otherAgentPosition - self._position # slightly more efficient than using self.withinPreciseRadius,
                 distanceToOtherAgentSquared = directionToOtherAgent.magnitudeSquared(True) # as this way we can reuse locally created Vectors
                 if(distanceToOtherAgentSquared < neighbourhoodRegionSquared):
-                    angleToOtherAgent = abs(self._velocity.angleFrom(directionToOtherAgent, True))
+                    angleToOtherAgent = abs(self._velocity.angleTo(directionToOtherAgent, True))
                     
                     if(angleToOtherAgent < visibleAreaAngle):
                         # otherBoid is "nearby" if we're here
@@ -319,8 +323,8 @@ class BoidAgentState(BoidBaseObject):
                 if(self.collisionList):
                     self._avCollisionDirection.divide(len(self.collisionList))
         else:
-            self._avVelocity.resetVec(self._velocity)
-            self._avPosition.resetVec(self._position)
+            self._avVelocity.resetToVector(self._velocity)
+            self._avPosition.resetToVector(self._position)
 
 ##############################        
     def _recalculateAverages(self):
@@ -358,7 +362,7 @@ class BoidAgentState(BoidBaseObject):
         self._reciprocalNearbyChecks.add(otherAgent.particleId)
         
         if(isNearby):
-            angleToOtherAgent = abs(self._velocity.angleFrom(directionToOtherAgent, True))
+            angleToOtherAgent = abs(self._velocity.angleTo(directionToOtherAgent, True))
             if(angleToOtherAgent < visibleAreaAngle):
                 otherAgentPosition = otherAgent.currentPosition
                 

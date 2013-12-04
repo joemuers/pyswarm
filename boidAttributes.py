@@ -15,6 +15,7 @@ __sectionTitle__ = "BoidAttributes - default values"
 __attributePrefix__ = "_boidAttribute_"
 __boolAttribute__, __intAttribute__, __floatAttribute__, __stringAttribute__ = range(4)
 
+
 ################################## 
 
 _boidAttribute_USE_DEBUG_COLOURS_ = (True, __boolAttribute__)
@@ -30,13 +31,17 @@ _boidAttribute_LIST_REBUILD_FREQUENCY_ = (5, __intAttribute__)
 
 _boidAttribute_MAX_VELOCITY_ = (5, __floatAttribute__)
 _boidAttribute_MIN_VELOCITY_ = (0.5, __floatAttribute__)
-_boidAttribute_MAX_ACCELERATION_ = (1, __floatAttribute__)
-_boidAttribute_MAX_TURNRATE_ = (5, __intAttribute__)
 _boidAttribute_PREFERRED_VELOCITY_ = (3.5, __floatAttribute__)
+_boidAttribute_MAX_ACCELERATION_ = (1, __floatAttribute__)
+_boidAttribute_MAX_TURN_RATE_ = (5, __intAttribute__)
+_boidAttribute_MAX_TURN_ANGULAR_ACCLN_ = (4, __intAttribute__)
+_boidAttribute_PREFERRED_TURN_VELOCITY_  = (0.5, __floatAttribute__)
+
 _boidAttribute_HERD_AVG_DIRECTION_THRSHLD_ = (30, __intAttribute__)
 _boidAttribute_HERD_AVG_POSITION_THRSHLD_ = (1.9, __floatAttribute__)
 _boidAttribute_BLIND_REGION_ANGLE_ = (110, __intAttribute__)
 _boidAttribute_FORWARD_VISION_ANGLE_ = (90, __intAttribute__)
+
 _boidAttribute_LDR_MODE_WAYPOINT_THRSHLD_ = (3, __floatAttribute__)
 _boidAttribute_GOAL_TARGET_DISTANCE_THRSHLD_ = (0.5, __floatAttribute__)
 _boidAttribute_JUMP_ACCELERATION_ = (65, __floatAttribute__)
@@ -46,6 +51,7 @@ _boidAttribute_PUSH_UPWARDS_ACCN_HORIZONTAL_ = (15, __floatAttribute__)
 _boidAttribute_PUSH_UPWARDS_ACCN_VERTICAL_ = (22, __floatAttribute__)
 _boidAttribute_GOAL_CHASE_SPEED_ = (10, __floatAttribute__)
 _boidAttribute_GOAL_INCUBATION_PERIOD_ = (10, __floatAttribute__)
+
 _boidAttribute_CURVE_DEVIANCE_THRSHLD_ = (3, __floatAttribute__)
 _boidAttribute_CURVE_END_REACHED_DISANCE_THRSHLD_ = (1, __floatAttribute__)
 _boidAttribute_CURVE_GROUP_VECTOR_MAGNITUDE_ = (2, __floatAttribute__)
@@ -68,12 +74,13 @@ def ReadDefaultValuesFromFile(filePath=None):
     configReader.optionxform = str  # replacing this method makes option names case-sensitive
     
     if(configReader.read(filePath)):
-        print("Parsing file \'%s\' for defaults..." % filePath)
+        print("Parsing file \'%s\' for default values..." % filePath)
+        prefixLength = len(__attributePrefix__)
         for section in configReader.sections():
             for attributeNameStr, attributeValueStr in configReader.items(section):
                 try:
                     if(not attributeNameStr.startswith(__attributePrefix__)):
-                        raise ValueError("Found none-%s attribute" % __attributePrefix__)
+                        raise ValueError("No \"%s\" prefix" % __attributePrefix__)
                     else:
                         attributeTuple = getattr(module, attributeNameStr)
                         if(attributeTuple[1] == __floatAttribute__):
@@ -89,7 +96,7 @@ def ReadDefaultValuesFromFile(filePath=None):
                 except Exception as e:
                     print("WARNING - could not read attribute: %s (%s), ignoring..." % (attributeNameStr, e))
                 else:
-                    print("Restored default: %s = %s" % (attributeNameStr, attributeValueStr))
+                    print("Set attribute value: %s = %s" % (attributeNameStr[prefixLength:], attributeValueStr))
     else:
         print("Could not read default attributes file: %s" % filePath)
         if(createNewFileIfNeeded):
@@ -149,7 +156,7 @@ def SetListRebuildFrequency(value):
 
 ##################################
 def SetMainRegionSize(value):
-    """Sets size of boid's main perception radius"""
+    """Sets size of agent's main perception radius"""
     global _boidAttribute_MAIN_REGION_SIZE_
     if(value > NearRegionSize()):
         raise ValueError("Cannot set mainRegionSize - must be larger than nearRegionSize (%.2f)" % NearRegionSize())
@@ -157,7 +164,7 @@ def SetMainRegionSize(value):
     _boidAttribute_MAIN_REGION_SIZE_[0] = value
 
 def MainRegionSize(random=False):
-    """Gets size of boid's main perception radius"""
+    """Gets size of agent's main perception radius"""
     if(not random):
         return _boidAttribute_MAIN_REGION_SIZE_[0]
     else:
@@ -166,7 +173,7 @@ def MainRegionSize(random=False):
 
 ##################################
 def SetNearRegionSize(value):
-    """Sets size of region, as a fraction of mainRegionSize, within which other boids are considered to be 'crowding'"""
+    """Sets size of region, as a fraction of mainRegionSize, within which other agents are considered to be 'crowding'"""
     global _boidAttribute_NEAR_REGION_SIZE_
     
     if(value > MainRegionSize()):
@@ -175,59 +182,59 @@ def SetNearRegionSize(value):
     _boidAttribute_NEAR_REGION_SIZE_[0] = value
 
 def NearRegionSize():
-    """Gets size of region within which other boids are considered to be 'crowding'"""
+    """Gets size of region within which other agents are considered to be 'crowding'"""
     return _boidAttribute_NEAR_REGION_SIZE_[0]
 
 ##################################
 def SetCollisionRegion(value):
-    """Sets size of region within which other boids are considered to be 'colliding'"""
+    """Sets size of region within which other agents are considered to be 'colliding'"""
     global _boidAttribute_COLLISION_REGION_SIZE_
     _boidAttribute_COLLISION_REGION_SIZE_ = (value, _boidAttribute_COLLISION_REGION_SIZE_[1])
     if(NearRegionSize() <= CollisionRegionSize()):
         print("WARNING - near region <= collision region size.")
 
 def CollisionRegionSize():
-    """Sets size of region within which other boids are considered to be 'colliding'"""
+    """Sets size of region within which other agents are considered to be 'colliding'"""
     return _boidAttribute_COLLISION_REGION_SIZE_[0]
 
 ##################################
-def SetMaxVel(value):
-    """Maximum velocity that boids will travel at under normal behaviour."""
+def SetMaxVelocity(value):
+    """Maximum velocity that agents will travel at under normal behaviour."""
     global _boidAttribute_MAX_VELOCITY_
     _boidAttribute_MAX_VELOCITY_ = (value, _boidAttribute_MAX_VELOCITY_[1])
 
-def MaxVel():
-    """Maximum velocity that boids will travel at under normal behaviour."""
+def MaxVelocity():
+    """Maximum velocity that agents will travel at under normal behaviour."""
     return _boidAttribute_MAX_VELOCITY_[0]
 
 ##################################
-def SetMinVel(value):
-    """Minimum velocity that boids will travel at under normal behaviour."""
+def SetMinVelocity(value):
+    """Minimum velocity that agents will travel at under normal behaviour."""
     global _boidAttribute_MIN_VELOCITY_
     _boidAttribute_MIN_VELOCITY_ = (value, _boidAttribute_MIN_VELOCITY_[1])
     
-def MinVel():
-    """Minimum velocity that boids will travel at under normal behaviour."""
+def MinVelocity():
+    """Minimum velocity that agents will travel at under normal behaviour."""
     return _boidAttribute_MIN_VELOCITY_[0]
 ##################################
 
-def SetMaxAccel(value):
-    """Maximum acceleration that boids will apply under normal behaviour."""
+def SetMaxAcceleration(value):
+    """Maximum acceleration that agents will apply under normal behaviour."""
     global _boidAttribute_MAX_ACCELERATION_
     _boidAttribute_MAX_ACCELERATION_ = (value, _boidAttribute_MAX_ACCELERATION_[1])
 
-def MaxAccel():
-    """Maximum acceleration that boids will apply under normal behaviour."""
+def MaxAcceleration():
+    """Maximum acceleration that agents will apply under normal behaviour."""
     return _boidAttribute_MAX_ACCELERATION_[0]
 
 ##################################
-def SetPreferredVel(value):
-    """'Cruising speed' that boids will tend towards under normal behaviour."""
+def SetPreferredVelocity(value):
+    """'Cruising speed' that agents will tend towards under normal behaviour."""
     global _boidAttribute_PREFERRED_VELOCITY_
     _boidAttribute_PREFERRED_VELOCITY_ = (value, _boidAttribute_PREFERRED_VELOCITY_[1])
 
-def PreferredVel():
-    """'Cruising speed' that boids will tend towards under normal behaviour."""
+def PreferredVelocity():
+    """'Cruising speed' that agents will tend towards under normal behaviour."""
     return _boidAttribute_PREFERRED_VELOCITY_[0]
 
 ##################################
@@ -252,12 +259,12 @@ def AvPositionThreshold():
 
 ##################################
 def SetBlindRegionAngle(value):
-    """Sets angle (in degrees) of area 'behind' each boid considered a blind spot"""
+    """Sets angle (in degrees) of area 'behind' each agent considered a blind spot"""
     global _boidAttribute_BLIND_REGION_ANGLE_
     _boidAttribute_BLIND_REGION_ANGLE_ = (value, _boidAttribute_BLIND_REGION_ANGLE_[1])
 
 def BlindRegionAngle():
-    """Gets angle (in degrees) of area 'behind' each boid considered a blind spot"""
+    """Gets angle (in degrees) of area 'behind' each agent considered a blind spot"""
     return _boidAttribute_BLIND_REGION_ANGLE_[0]
 
 ##################################
@@ -273,15 +280,39 @@ def ForwardVisionRegionAngle():
     return _boidAttribute_FORWARD_VISION_ANGLE_[0]
 
 ##################################
-def SetMaxTurnrate(value):
-    """Sets max amount will change direction **per frame** (in degrees)"""
-    global _boidAttribute_MAX_TURNRATE_
-    _boidAttribute_MAX_TURNRATE_ = (value, _boidAttribute_MAX_TURNRATE_[1])
+def SetMaxTurnRate(value):
+    """Sets max amount of change in direction an agent can make **per frame** (in degrees)"""
+    global _boidAttribute_MAX_TURN_RATE_
+    _boidAttribute_MAX_TURN_RATE_ = (value, _boidAttribute_MAX_TURN_RATE_[1])
 
-def MaxTurnrate():
-    """Gets max amount will change direction **per frame** (in degrees)"""
-    return _boidAttribute_MAX_TURNRATE_[0]
+def MaxTurnRate():
+    """Gets max amount of change in direction an agent can make **per frame** (in degrees)"""
+    return _boidAttribute_MAX_TURN_RATE_[0]
 
+##################################
+def SetMaxTurnAngularAcceleration(value):
+    """Sets max rate of change of the turning angle an agent can make when rotating at low velocity (high value prevents
+    'jitter'-like behaviour, but restricts movement)."""
+    global _boidAttribute_MAX_TURN_ANGULAR_ACCLN_
+    _boidAttribute_MAX_TURN_ANGULAR_ACCLN_ = (value, _boidAttribute_MAX_TURN_ANGULAR_ACCLN_[1])
+    
+def MaxTurnAngularAcceleration():
+    """Sets max rate of change of the turning angle an agent can make when rotating at low velocity (high value prevents
+    'jitter'-like behaviour, but restricts movement)."""
+    return _boidAttribute_MAX_TURN_ANGULAR_ACCLN_[0]
+
+##################################
+def SetPreferredTurnVelocity(value):
+    """Sets speed (i.e. velocity's magnitude) at which agents will travel whilst turning at a rate equal 
+    to or above MaxTurnRate."""
+    global _boidAttribute_PREFERRED_TURN_VELOCITY_ 
+    _boidAttribute_PREFERRED_TURN_VELOCITY_ = (value, _boidAttribute_PREFERRED_TURN_VELOCITY_[1])
+    
+def PreferredTurnVelocity():
+    """Gets speed (i.e. velocity's magnitude) at which agents will travel whilst turning at a rate equal 
+    to or above MaxTurnRate."""
+    return _boidAttribute_PREFERRED_TURN_VELOCITY_[0]
+    
 ##################################
 def SetLeaderWaypointThreshold(value):
     """Sets min distance from waypoint at which it is considered as 'reached'"""
@@ -314,42 +345,42 @@ def JumpAcceleration():
 
 ##################################
 def SetJumpOnPyramidProbability(value):
-    """Probability that, upon joining a basePyramid, boid will 'jump' instead of just joining at the bottom."""
+    """Probability that, upon joining a basePyramid, agent will 'jump' instead of just joining at the bottom."""
     global _boidAttribute_JUMP_ON_PYRAMID_PROBABILITY_
     _boidAttribute_JUMP_ON_PYRAMID_PROBABILITY_ = (value, _boidAttribute_JUMP_ON_PYRAMID_PROBABILITY_[1])
     
 def JumpOnPyramidProbability():
-    """Probability that, upon joining a basePyramid, boid will 'jump' instead of just joining at the bottom."""
+    """Probability that, upon joining a basePyramid, agent will 'jump' instead of just joining at the bottom."""
     return _boidAttribute_JUMP_ON_PYRAMID_PROBABILITY_[0]
 
 def SetJumpOnPyramidDistanceThreshold(value):
-    """Distance from basePyramid at which boids will 'jump' (if they are to do so)."""
+    """Distance from basePyramid at which agents will 'jump' (if they are to do so)."""
     global _boidAttribute_JUMP_ON_PYRAMID_DISTANCE_THRSHLD_
     _boidAttribute_JUMP_ON_PYRAMID_DISTANCE_THRSHLD_ = (value, _boidAttribute_JUMP_ON_PYRAMID_DISTANCE_THRSHLD_[1])
     
 def JumpOnPyramidDistanceThreshold():
-    """Distance from basePyramid at which boids will 'jump' (if they are to do so)."""
+    """Distance from basePyramid at which agents will 'jump' (if they are to do so)."""
     return _boidAttribute_JUMP_ON_PYRAMID_DISTANCE_THRSHLD_[0]
 
 ##################################
 def SetPushUpwardsAcclerationHorizontal(value):
-    """Acceleration applied by each boid in the horizontal direction (directed towards
+    """Acceleration applied by each agent in the horizontal direction (directed towards
     the baseLocator of the priority goal) after having joined the basePyramid."""
     global _boidAttribute_PUSH_UPWARDS_ACCN_HORIZONTAL_
     _boidAttribute_PUSH_UPWARDS_ACCN_HORIZONTAL_ = (value, _boidAttribute_PUSH_UPWARDS_ACCN_HORIZONTAL_[1])
     
 def PushUpwardsAccelerationHorizontal():
-    """Acceleration applied by each boid in the horizontal direction (directed towards
+    """Acceleration applied by each agent in the horizontal direction (directed towards
     the baseLocator of the priority goal) after having joined the basePyramid."""
     return _boidAttribute_PUSH_UPWARDS_ACCN_HORIZONTAL_[0]
 
 def SetPushUpwardsAccelerationVertical(value):
-    """Acceleration applied by each boid in the vertical direction after having joined the basePyramid."""
+    """Acceleration applied by each agent in the vertical direction after having joined the basePyramid."""
     global _boidAttribute_PUSH_UPWARDS_ACCN_VERTICAL_
     _boidAttribute_PUSH_UPWARDS_ACCN_VERTICAL_ = (value, _boidAttribute_PUSH_UPWARDS_ACCN_VERTICAL_[1])
         
 def PushUpwardsAccelerationVertical():
-    """Acceleration applied by each boid in the vertical direction after having joined the basePyramid."""
+    """Acceleration applied by each agent in the vertical direction after having joined the basePyramid."""
     return _boidAttribute_PUSH_UPWARDS_ACCN_VERTICAL_[0]
 
 ##################################
@@ -374,21 +405,21 @@ def GoalIncubationPeriod():
 
 ##################################
 def SetCurveDevianceThreshold(value):
-    """Sets distance from nearest point on curve beyond which boid will be pulled back towards the curve"""
+    """Sets distance from nearest point on curve beyond which agent will be pulled back towards the curve"""
     global _boidAttribute_CURVE_DEVIANCE_THRSHLD_
     _boidAttribute_CURVE_DEVIANCE_THRSHLD_ = (value, _boidAttribute_CURVE_DEVIANCE_THRSHLD_[1])
 
 def CurveDevianceThreshold():
-    """Gets distance from nearest point on curve beyond which boid will be pulled back towards the curve"""
+    """Gets distance from nearest point on curve beyond which agent will be pulled back towards the curve"""
     return _boidAttribute_CURVE_DEVIANCE_THRSHLD_[0]
 
 def SetCurveEndReachedDistanceThreshold(value):
-    """Sets proximity to end point - MEASURED FROM THE NEAREST CURVE POINT, NOT THE BOID'S ACTUAL POSITION - at which destination is considered reached"""
+    """Sets proximity to end point - MEASURED FROM THE NEAREST CURVE POINT, NOT THE AGENT'S ACTUAL POSITION - at which destination is considered reached"""
     global _boidAttribute_CURVE_END_REACHED_DISANCE_THRSHLD_
     _boidAttribute_CURVE_END_REACHED_DISANCE_THRSHLD_ = (value, _boidAttribute_CURVE_END_REACHED_DISANCE_THRSHLD_[1])
     
 def CurveEndReachedDistanceThreshold():
-    """Gets proximity to end point - MEASURED FROM THE NEAREST CURVE POINT, NOT THE BOID'S ACTUAL POSITION - at which destination is considered reached"""
+    """Gets proximity to end point - MEASURED FROM THE NEAREST CURVE POINT, NOT THE AGENT'S ACTUAL POSITION - at which destination is considered reached"""
     return _boidAttribute_CURVE_END_REACHED_DISANCE_THRSHLD_[0]
 
 def SetCurveGroupVectorMagnitude(value):
@@ -407,9 +438,9 @@ def PrintValues():
 maxTn=%d, avDir=%d\navPos=%.4f, blindRgn=%d, maxTurn=%d, leaderWaypt=%.4f\n\
 prtyGl=%.4f, jump=%.4f, jmpProb=%.2f, jmpRgn=%.2f, pushHztl=%.4f, pushVtcl=%.4f, goalSpd=%.4f, goalInbtn=%d\n\
 crvDevThsld=%.4f, crvEndThrsld=%.4f, curveGrpMag=%.4f" %
-          (ListRebuildFrequency(), MainRegionSize(), NearRegionSize(), CollisionRegionSize(), MaxVel(), MinVel(), MaxAccel(), PreferredVel(),
-          MaxTurnrate(), AvDirectionThreshold(), AvPositionThreshold(), BlindRegionAngle(),
-          MaxTurnrate(), LeaderWaypointThreshold(), GoalTargetDistanceThreshold(), JumpAcceleration(), JumpOnPyramidProbability(), JumpOnPyramidDistanceThreshold(),
+          (ListRebuildFrequency(), MainRegionSize(), NearRegionSize(), CollisionRegionSize(), MaxVelocity(), MinVelocity(), MaxAcceleration(), PreferredVelocity(),
+          MaxTurnRate(), AvDirectionThreshold(), AvPositionThreshold(), BlindRegionAngle(),
+          MaxTurnRate(), LeaderWaypointThreshold(), GoalTargetDistanceThreshold(), JumpAcceleration(), JumpOnPyramidProbability(), JumpOnPyramidDistanceThreshold(),
           PushUpwardsAccelerationHorizontal(), PushUpwardsAccelerationVertical(), GoalChaseSpeed(), GoalIncubationPeriod(),
           CurveDevianceThreshold(), CurveEndReachedDistanceThreshold(), CurveGroupVectorMagnitude()))
 

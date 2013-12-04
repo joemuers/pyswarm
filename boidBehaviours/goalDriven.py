@@ -215,7 +215,7 @@ class GoalDriven(BehaviourBaseObject):
         
         newStatus = self._goalStatusForAgent(agent)
         
-        if(abs(self._baseToFinalDirection.angleFrom(baseToAgentVec)) < 90):
+        if(abs(self._baseToFinalDirection.angleTo(baseToAgentVec)) < 90):
             # boid agent has cleared the wall...
             if(self._baseToFinalDirection.magnitudeSquared(True) < baseToAgentVec.magnitudeSquared(True)):
                 # reached final goal
@@ -285,9 +285,9 @@ class GoalDriven(BehaviourBaseObject):
             
             targetVelocity = bv3.Vector3(self._baseToFinalDirection.x, 0, self._baseToFinalDirection.z)
             targetVelocity.normalise(boidAttributes.GoalChaseSpeed())
-            desiredAcceleration.resetVec(targetVelocity - agent.currentVelocity)
-            if(desiredAcceleration.magnitude() > boidAttributes.MaxAccel()):
-                desiredAcceleration.normalise(boidAttributes.MaxAccel())
+            desiredAcceleration.resetToVector(targetVelocity - agent.currentVelocity)
+            if(desiredAcceleration.magnitude() > boidAttributes.MaxAcceleration()):
+                desiredAcceleration.normalise(boidAttributes.MaxAcceleration())
             
             return True
         else:
@@ -345,7 +345,7 @@ class GoalDriven(BehaviourBaseObject):
                    (nearbyAgent.currentPosition.distanceSquaredFrom(agent.currentPosition) < goalThresholdDistanceSquared) and
                    (nearbyAgent.currentVelocity.magnitudeSquared(True) < goalChaseSpeedSquared or 
                     agent.currentVelocity.magnitudeSquared(True) < goalChaseSpeedSquared or 
-                    abs(nearbyAgent.currentVelocity.angleFrom(agent.currentVelocity)) > 90) ):
+                    abs(nearbyAgent.currentVelocity.angleTo(agent.currentVelocity)) > 90) ):
                     # TODO - just expand the goal's radius here...
                     self._registerAgentAtBasePyramid(agent)
                     return self._goalChaseBehaviour(agent, desiredAcceleration)
@@ -355,25 +355,25 @@ class GoalDriven(BehaviourBaseObject):
     def _goalChaseBehaviour(self, agent, desiredAcceleration):
         if(self._goalStatusForAgent(agent) == GoalDriven._BoidGoalDrivenState.goalChase):
             directionVec = self._goalChaseAttractorPositionForAgent(agent) - agent.currentPosition
-            directionVec.normalise(boidAttributes.MaxAccel())
-            desiredAcceleration.resetVec(directionVec)      
+            directionVec.normalise(boidAttributes.MaxAcceleration())
+            desiredAcceleration.resetToVector(directionVec)      
             
             # push away from nearby agents??
             currentState = agent.state.behaviourSpecificState
             if(not currentState.didArriveAtBasePyramid and agent.isCrowded):   # note that we move AWAY from the avPos here
                 differenceVector = agent.currentPosition - agent.state.avCrowdedPosition
-                differenceVector.normalise(boidAttributes.MaxAccel()) # TODO - dodgy algorithm here??
+                differenceVector.normalise(boidAttributes.MaxAcceleration()) # TODO - dodgy algorithm here??
                 desiredAcceleration.add(differenceVector)    
             elif(currentState.didArriveAtBasePyramid):
                 # Agents in a basePyramid sometimes get pushed to the corners and get
                 # stuck there, which is not desirable. This corrects that behaviour.
-                angle = abs(directionVec.angleFrom(self._baseToFinalDirection))
+                angle = abs(directionVec.angleTo(self._baseToFinalDirection))
                 if(angle > 82):
                     desiredAcceleration.subtract(self._baseToFinalDirection, True)
                     
             self._clampDesiredAccelerationIfNecessary(agent, 
                                                      desiredAcceleration, 
-                                                     boidAttributes.MaxAccel(), 
+                                                     boidAttributes.MaxAcceleration(), 
                                                      boidAttributes.GoalChaseSpeed())
             return True
         else:
@@ -449,18 +449,16 @@ class GoalDriven(BehaviourBaseObject):
 #######################
     def _basePyramidAverageDistance(self):
         """Average distance from baseLocator of agents in the basePyramid."""
-        
         if(self._needsAverageDistanceCalc and len(self._basePyramidDistanceLookup) > 0):
-            self._agentDistance_average.resetVec(self._agentDistance_runningTotal)
+            self._agentDistance_average.resetToVector(self._agentDistance_runningTotal)
             self._agentDistance_average.divide(len(self._basePyramidDistanceLookup))
             self._needsAverageDistanceCalc = False
         return self._agentDistance_average
     
     def _basePyramidAveragePosition(self):
-        """Average position of agents in the basePyramid."""
-        
+        """Average position of agents in the basePyramid."""        
         if(self._needsAveragePositionCalc and len(self._basePyramidDistanceLookup) > 0):
-            self._agentPosition_average.resetVec(self._agentPosition_runningTotal)
+            self._agentPosition_average.resetToVector(self._agentPosition_runningTotal)
             self._agentPosition_average.divide(len(self._basePyramidDistanceLookup))
             self._needsAveragePositionCalc = False
         return self._agentPosition_average

@@ -183,7 +183,7 @@ class BoidAgent(BoidBaseObject):
             return False
 
     def _stop(self):
-        self._desiredAcceleration.resetVec(self.currentVelocity, False)
+        self._desiredAcceleration.resetToVector(self.currentVelocity, False)
         self._desiredAcceleration.invert()
         self._needsBehaviourCommit = True
 
@@ -193,12 +193,6 @@ class BoidAgent(BoidBaseObject):
         if(self._needsBehaviourCommit):
             desiredVelocity = bv3.Vector3(self.currentVelocity)
             desiredVelocity.add(self._desiredAcceleration)
-            
-#             angleChange = desiredVelocity.angleFrom(self.currentVelocity, True)
-#             if(angleChange > 4):
-#                 desiredVelocity.rotateInHorizontal(angleChange - 4)
-#             elif(angleChange < -4):
-#                 desiredVelocity.rotateInHorizontal(angleChange + 4)
             
             util.SetSingleParticleVelocity(particleShapeName, self.particleId, desiredVelocity)
             

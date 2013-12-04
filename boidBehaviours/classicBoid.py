@@ -24,7 +24,7 @@ class ClassicBoid(BehaviourBaseObject):
         self._negativeGridBounds = negativeGridBounds
         self._positiveGridBounds = positiveGridBounds
         
-        self._doNotClampAcceleration = False
+        self._doNotClampMovement = False
 
 ######################       
     def __str__(self):
@@ -32,12 +32,12 @@ class ClassicBoid(BehaviourBaseObject):
 
 ######################
     def createBehaviourSpecificStateObject(self):
-        return _CLASSIC_BEHAVIOUR_ID  # just give something to identify the behaviour itself
+        return _CLASSIC_BEHAVIOUR_ID  # just return something that can identify the behaviour itself
         
 ######################         
     def getDesiredAccelerationForAgent(self, agent, nearbyAgentsList):
         desiredAcceleration = bv3.Vector3()
-        self._doNotClampAcceleration = False
+        self._doNotClampMovement = False
         
         if(agent.isTouchingGround):
             agent.state.updateRegionalStatsIfNecessary(agent, nearbyAgentsList,
@@ -48,55 +48,61 @@ class ClassicBoid(BehaviourBaseObject):
                                                        boidAttributes.ForwardVisionRegionAngle())
             
             if(self._avoidMapEdgeBehaviour(agent, desiredAcceleration)):
-                self._clampDesiredAccelerationIfNecessary(agent, 
-                                                         desiredAcceleration, 
-                                                         boidAttributes.MaxAccel(), 
-                                                         boidAttributes.MaxVel())
-                self._restrictTurnrateIfNecessary(agent, desiredAcceleration, boidAttributes.MaxTurnrate())
+                self._clampMovementIfNecessary(agent, 
+                                               desiredAcceleration, 
+                                               boidAttributes.MaxAcceleration(), 
+                                               boidAttributes.MaxVelocity(), 
+                                               boidAttributes.MaxTurnRate(),
+                                               boidAttributes.MaxTurnAngularAcceleration(),
+                                               boidAttributes.PreferredTurnVelocity())
                 
                 return desiredAcceleration
             elif(self._avoidNearbyAgentsBehaviour(agent, desiredAcceleration)):
-                self._clampDesiredAccelerationIfNecessary(agent, 
-                                                         desiredAcceleration, 
-                                                         boidAttributes.MaxAccel(), 
-                                                         boidAttributes.MaxVel())
-                self._restrictTurnrateIfNecessary(agent, desiredAcceleration, boidAttributes.MaxTurnrate())
+                self._clampMovementIfNecessary(agent, 
+                                               desiredAcceleration, 
+                                               boidAttributes.MaxAcceleration(), 
+                                               boidAttributes.MaxVelocity(), 
+                                               boidAttributes.MaxTurnRate(),
+                                               boidAttributes.MaxTurnAngularAcceleration(),
+                                               boidAttributes.PreferredTurnVelocity())
                 
                 return desiredAcceleration
             elif(self._matchSwarmHeadingBehaviour(agent, desiredAcceleration)):
                 self._matchSwarmPositionBehaviour(agent, desiredAcceleration)   # - TODO check if we want this or not???
             elif(not self._matchSwarmPositionBehaviour(agent, desiredAcceleration) and not agent.hasNeighbours):
                 self._searchForSwarmBehaviour(agent, desiredAcceleration)
-             
+            
             self._matchPreferredVelocityIfNecessary(agent, desiredAcceleration)
             self._kickstartAgentMovementIfNecessary(agent, desiredAcceleration)
-            self._clampDesiredAccelerationIfNecessary(agent, 
-                                                      desiredAcceleration, 
-                                                      boidAttributes.MaxAccel(), 
-                                                      boidAttributes.MaxVel())
-            self._restrictTurnrateIfNecessary(agent, desiredAcceleration, boidAttributes.MaxTurnrate())
+            self._clampMovementIfNecessary(agent, 
+                                           desiredAcceleration, 
+                                           boidAttributes.MaxAcceleration(), 
+                                           boidAttributes.MaxVelocity(), 
+                                           boidAttributes.MaxTurnRate(),
+                                           boidAttributes.MaxTurnAngularAcceleration(),
+                                           boidAttributes.PreferredTurnVelocity())
             
         return desiredAcceleration
         
 ######################         
     def _avoidMapEdgeBehaviour(self, agent, desiredAcceleration):
-        madeChange = False
+        madeChanges = False
         if(self._negativeGridBounds is not None and self._positiveGridBounds is not None):
-            if(agent.currentPosition.x < self._negativeGridBounds.u and agent.currentVelocity.x < boidAttributes.MaxVel()):
-                desiredAcceleration.x = boidAttributes.MaxAccel() 
-                madeChange = True
-            elif(self._positiveGridBounds.u < agent.currentPosition.x and -(boidAttributes.MaxVel() ) < agent.currentVelocity.x):
-                desiredAcceleration.x = -(boidAttributes.MaxAccel() )
-                madeChange = True
+            if(agent.currentPosition.x < self._negativeGridBounds.u and agent.currentVelocity.x < boidAttributes.MaxVelocity()):
+                desiredAcceleration.x += boidAttributes.MaxAcceleration() 
+                madeChanges = True
+            elif(self._positiveGridBounds.u < agent.currentPosition.x and -(boidAttributes.MaxVelocity()) < agent.currentVelocity.x):
+                desiredAcceleration.x -= boidAttributes.MaxAcceleration()
+                madeChanges = True
             
-            if(agent.currentPosition.z < self._negativeGridBounds.v and agent.currentVelocity.z < boidAttributes.MaxVel()):
-                desiredAcceleration.z = boidAttributes.MaxAccel() 
-                madeChange = True
-            elif(self._positiveGridBounds.v < agent.currentPosition.z and -(boidAttributes.MaxVel() ) < agent.currentVelocity.z):
-                desiredAcceleration.z = -(boidAttributes.MaxAccel() )
-                madeChange = True
+            if(agent.currentPosition.z < self._negativeGridBounds.v and agent.currentVelocity.z < boidAttributes.MaxVelocity()):
+                desiredAcceleration.z += boidAttributes.MaxAcceleration() 
+                madeChanges = True
+            elif(self._positiveGridBounds.v < agent.currentPosition.z and -(boidAttributes.MaxVelocity()) < agent.currentVelocity.z):
+                desiredAcceleration.z -= boidAttributes.MaxAcceleration()
+                madeChanges = True
         
-        return madeChange
+        return madeChanges
         
 ######################                  
     def _avoidNearbyAgentsBehaviour(self, agent, desiredAcceleration):
@@ -105,18 +111,18 @@ class ClassicBoid(BehaviourBaseObject):
             stopVector = bv3.Vector3(agent.currentVelocity)
             stopVector.invert()
             
-            desiredAcceleration.resetVec(agent.state.avCollisionDirection)
+            desiredAcceleration.resetToVector(agent.state.avCollisionDirection)
             desiredAcceleration.invert()
-            desiredAcceleration.normalise(boidAttributes.MaxAccel())
+            desiredAcceleration.normalise(boidAttributes.MaxAcceleration())
             desiredAcceleration.add(stopVector)
             #  self._desiredAcceleration.y = 0
-            self._doNotClampAcceleration = True
+            self._doNotClampMovement = True
             
             return True
         
         elif(agent.isCrowded):   # note that we move AWAY from the avPos here
             differenceVector = agent.currentPosition - agent.state.avCrowdedPosition
-            desiredAcceleration.resetVec(differenceVector)
+            desiredAcceleration.add(differenceVector)
 
             return True
 
@@ -127,16 +133,13 @@ class ClassicBoid(BehaviourBaseObject):
     def _matchSwarmHeadingBehaviour(self, agent, desiredAcceleration):
         # just change the heading here, *not* the speed...
         if(agent.hasNeighbours):
-            desiredRotationAngle = agent.currentVelocity.angleFrom(agent.state.avVelocity)
-            angleMag = abs(desiredRotationAngle)
+            desiredRotationAngle = agent.currentVelocity.angleTo(agent.state.avVelocity)
+            desiredAngleMagnitude = abs(desiredRotationAngle)
             
-            if(angleMag > boidAttributes.AvDirectionThreshold()):
-                if(angleMag > boidAttributes.MaxTurnrate()):
-                    desiredRotationAngle = boidAttributes.MaxTurnrate() if(desiredRotationAngle > 0) else -(boidAttributes.MaxTurnrate())
-                
-                desiredDirection = bv3.Vector3(agent.currentVelocity)
-                desiredDirection.rotateInHorizontal(desiredRotationAngle)
-                desiredAcceleration.resetVec(desiredDirection - agent.currentVelocity)
+            if(desiredAngleMagnitude > boidAttributes.AvDirectionThreshold()):
+                desiredVelocity = bv3.Vector3(agent.currentVelocity)
+                desiredVelocity.rotateInHorizontal(desiredRotationAngle)
+                desiredAcceleration.add(desiredVelocity - agent.currentVelocity)
                     
                 return True
 
@@ -149,7 +152,7 @@ class ClassicBoid(BehaviourBaseObject):
             
             if(boidAttributes.AvPositionThreshold() **2 < distanceFromSwarmAvrgSquared):
                 differenceVector = agent.state.avPosition - agent.currentPosition
-                desiredAcceleration.resetVec(differenceVector)
+                desiredAcceleration.add(differenceVector)
                 
                 return True
 
@@ -160,14 +163,14 @@ class ClassicBoid(BehaviourBaseObject):
         ## TODO - change this algorithm??
         if(not agent.hasNeighbours):
             if(agent.currentVelocity.isNull()):
-                desiredAcceleration.reset(boidAttributes.MaxAccel(), 0, 0)
+                desiredAcceleration.reset(boidAttributes.MaxAcceleration(), 0, 0)
                 rotation = random.uniform(-179, 179)
                 desiredAcceleration.rotateInHorizontal(rotation)
             else:
-                desiredRotationAngle = random.uniform(-boidAttributes.MaxTurnrate(), boidAttributes.MaxTurnrate())
+                desiredRotationAngle = random.uniform(-boidAttributes.MaxTurnRate(), boidAttributes.MaxTurnRate())
                 desiredDirection = bv3.Vector3(agent.currentVelocity)
                 desiredDirection.rotateInHorizontal(desiredRotationAngle)
-                desiredAcceleration.resetVec(agent.currentVelocity - desiredDirection)         
+                desiredAcceleration.resetToVector(agent.currentVelocity - desiredDirection)         
             
             return True
 
@@ -176,34 +179,37 @@ class ClassicBoid(BehaviourBaseObject):
 ######################             
     def _matchPreferredVelocityIfNecessary(self, agent, desiredAcceleration):
         """Will increase desiredAcceleration if agent is travelling/accelerating below 
-        the preferred minimum values."""
-        if(agent.currentVelocity.magnitude() < boidAttributes.PreferredVel() and 
-           desiredAcceleration.magnitude() < boidAttributes.MaxAccel()):
-            if(desiredAcceleration.isNull()):
-                desiredAcceleration.resetVec(agent.currentVelocity)
-                desiredAcceleration.normalise(boidAttributes.MaxAccel())
-                
-                return True
-            else:
-                magAccel = desiredAcceleration.magnitude()
-                if(magAccel < boidAttributes.MaxAccel()):
-                    desiredAcceleration *= (boidAttributes.MaxAccel() / magAccel)
-                    
-                    return True
+        the preferred minimum values.
+        """
+        madeChanges = False
         
-        return False
+        if(agent.currentVelocity.magnitude() < boidAttributes.PreferredVelocity() and 
+           desiredAcceleration.magnitude() < boidAttributes.MaxAcceleration()):
+            if(desiredAcceleration.isNull()):
+                desiredAcceleration.resetToVector(agent.currentVelocity)
+                desiredAcceleration.normalise(boidAttributes.MaxAcceleration())
+                
+                madeChanges = True
+            else:
+                accelerationMagnitude = desiredAcceleration.magnitude()
+                if(accelerationMagnitude < boidAttributes.MaxAcceleration()):
+                    desiredAcceleration *= (boidAttributes.MaxAcceleration() / accelerationMagnitude)
+                    
+                    madeChanges = True
+        
+        return madeChanges
 
 ######################                     
     def _kickstartAgentMovementIfNecessary(self, agent, desiredAcceleration):
         """Occasionally a group of stationary agents can influence each other to remain still,
-        collectively getting stuck.  This method corrects this behaviour."""
-        
+        collectively getting stuck.  This method corrects this behaviour.
+        """
         magAccel = desiredAcceleration.magnitude()
         
-        if(magAccel < boidAttributes.MinVel() and 
-           agent.currentVelocity.magnitude() < boidAttributes.MinVel() and 
+        if(magAccel < boidAttributes.MinVelocity() and 
+           agent.currentVelocity.magnitude() < boidAttributes.MinVelocity() and 
            agent.hasNeighbours and not agent.isCollided and not agent.isCrowded):
-            desiredAcceleration.reset(boidAttributes.MaxAccel(), 0, 0)
+            desiredAcceleration.reset(boidAttributes.MaxAcceleration(), 0, 0)
             desiredHeading = random.uniform(-179, 179)
             desiredAcceleration.rotateInHorizontal(desiredHeading)
             
@@ -212,11 +218,11 @@ class ClassicBoid(BehaviourBaseObject):
         return False
 
 ######################
-    def _clampDesiredAccelerationIfNecessary(self, agent, desiredAcceleration, maxAcceleration, maxVelocity):
-        if(not self._doNotClampAcceleration):
-            return super(ClassicBoid, self)._clampDesiredAccelerationIfNecessary(agent, desiredAcceleration, maxAcceleration, maxVelocity)
+    def _clampMovementIfNecessary(self, agent, desiredAcceleration, maxAcceleration, maxVelocity, maxTurnRate, maxAngularAcceleration, maxTurnVelocity):
+        if(not self._doNotClampMovement):
+            return super(ClassicBoid, self)._clampMovementIfNecessary(agent, desiredAcceleration, maxAcceleration, maxVelocity, maxTurnRate, maxAngularAcceleration, maxTurnVelocity)
         else:
-            self._doNotClampAcceleration = False
+            self._doNotClampMovement = False
             return False
         
         
