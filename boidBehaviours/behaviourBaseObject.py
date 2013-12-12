@@ -100,7 +100,6 @@ class BehaviourBaseObject(bbo.BoidBaseObject):
                 desiredTurnAngle = minimumAngle
 #                 madeChanges = True
         
-        
         # this block of code restricts the turnrate to a maximum value, and slows the agent to
         # the given 'turningSpeed' if the agent is attempting to turn at or above the max rate.
         if(desiredTurnAngle > maxTurnAngle):            

@@ -106,7 +106,7 @@ class Vector3(BoidBaseObject):
         return dividedVector
     
     def __rdiv__(self, value):
-        return self.__div__(value)
+        return self.__div__(1/value)
 
     def __imul__(self, value):        
         self._x *= value
@@ -205,7 +205,7 @@ class Vector3(BoidBaseObject):
     
 #######################
     def degreeHeading(self):
-        """Absolute, horizontal, degree heading of the vector, where (x=0,z=1) is 0 degrees."""
+        """Absolute, horizontal, degree heading of the vector (where <x=0,z=1> is 0 degrees)."""
         return self.horizontalVector().degreeHeading()
 
 #######################

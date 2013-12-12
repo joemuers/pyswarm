@@ -201,7 +201,7 @@ class BoidSwarm(BoidBaseObject, BoidBehaviourDelegate):
                 #repeated call here because of shitty Maya bug whereby sometimes only get first item in request for goalsU...
                 positions = util.ParticlePositionsListForParticleShape(self.particleShapeName) 
     
-            for i in range(0, numParticles):
+            for i in range(numParticles):
                 j = i * 3
                 particleId = self._particleIdsOrdering[i]
                 agent = self._boidAgentList[particleId]

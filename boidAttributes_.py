@@ -8,26 +8,398 @@ to be compatible with the 'readDefaultValuesFromFile' and 'writeDefaultValuesToF
 import os
 import sys
 import ConfigParser
+import random
 
 
-__DEFAULTS_FILENAME__ = "/boidAttributeDefaults.ini"
+__DEFAULTS_FILENAME__ = "/boidAttributeDefaults_new.ini"
 __sectionTitle__ = "BoidAttributes - default values"
 __attributePrefix__ = "_boidAttribute_"
-__boolAttribute__, __intAttribute__, __floatAttribute__, __stringAttribute__ = range(4)
+__boolAttribute__, __intAttribute__, __floatAttribute__, __stringAttribute__, __notDefined__ = range(5)
 
 
+class BoidAttributesController(object):
+    
+    def __init__(self):
+        self._generalSection = GeneralAttributesSection()
+        self._sections = [self._generalSection]
+            
+    def readDefaultAttributesFromFile(self, filePath=None):
+        createNewFileIfNeeded = False
+        if(filePath is None):
+            createNewFileIfNeeded = True
+            filePath = os.path.dirname(__file__) + __DEFAULTS_FILENAME__
+        
+        configReader = ConfigParser.ConfigParser()
+        configReader.optionxform = str  # replacing this method makes option names case-sensitive
+        
+        if(configReader.read(filePath)):
+            print("Parsing file \'%s\' for default values..." % filePath)
+            for section in self._sections:
+                section.getDefaultsFromConfigReader(configReader)
+        else:
+            print("Could not read default attributes file: %s" % filePath)
+            if(createNewFileIfNeeded):
+                print("Creating new default attributes file...")
+                self.WriteDefaultValuesToFile(filePath)
+    
+    def writeDefaultValuesToFile(self, filePath=None):            
+        configWriter = ConfigParser.ConfigParser()
+        configWriter.optionxform = str # replacing this method makes option names case-sensitive
+        
+        for section in self._sections:
+            section.setDefaultsToConfigWriter(configWriter)
+        
+        if(filePath is None):
+            filePath = os.path.dirname(__file__) + __DEFAULTS_FILENAME__ 
+        defaultsFile = open(filePath, "w")   
+        configWriter.write(defaultsFile)
+        defaultsFile.close()
+        
+        print("Wrote current attributes to defaults file:%s" % filePath)
+        
+
+class BoidAttributesListener(object):
+    
+    def onAttributeChanged(self, sectionObject, attributeName):
+        raise NotImplemented
+    
+    def onDestroy(self):
+        ## Must remove itself as a listener here to avoid memory leaks...
+        raise NotImplemented
+
+
+
+class _BoidAttributesBaseObject(object):
+    
+    def __init__(self):
+        self._listeners = []
+    
+    def getDefaultsFromConfigReader(self, configReader):
+        for attributeNameStr, attributeValueStr in configReader.items(self._sectionTitle()):
+            try:
+                attributeType = self._attributeTypeForAttributeName(attributeNameStr)
+                if(attributeType == __floatAttribute__):
+                    setattr(self, attributeNameStr, float(attributeValueStr))
+                elif(attributeType == __intAttribute__):
+                    setattr(self, attributeNameStr, int(attributeValueStr))
+                elif(attributeType == __boolAttribute__):
+                    setattr(self, attributeNameStr, bool(attributeValueStr))
+                elif(attributeType == __stringAttribute__):
+                    setattr(self, attributeNameStr, attributeValueStr)
+                else:
+                    raise TypeError("Unrecognised attribute type.")
+            except Exception as e:
+                print("WARNING - could not read attribute: %s (%s), ignoring..." % (attributeNameStr, e))
+            else:
+                print("Re-set attribute value: %s = %s" % (attributeNameStr, attributeValueStr))
+    
+    def setDefaultsToConfigWriter(self, configWriter):
+        configWriter.add_section(self._sectionTitle())
+    
+        for attributeNameStr in dir(self):
+            if(self._attributeTypeForAttributeName(attributeNameStr) != __notDefined__):
+                try:
+                    attributeValue = getattr(self, attributeNameStr)
+                    configWriter.set(self._sectionTitle(), attributeNameStr, attributeValue)
+                    print("Changed default attribute value: %s = %s" % (attributeNameStr, attributeValue))
+                except Exception as e:
+                    print("WARNING - Could not write attribute to defaults file: %s (%s)" % (attributeNameStr, e))
+        
+    def _sectionTitle(self):
+        raise NotImplemented
+    
+    def _attributeTypeForAttributeName(self, attributeNameString):
+        raise NotImplemented
+        
+    def addListener(self, listener):
+        if(type(listener) != BoidAttributesListener):
+            raise TypeError
+        else:
+            self._listeners.append(listener)
+        
+    def removeListener(self, listener):
+        self._listeners.remove(listener)    
+        
+    def _notifyListeners(self, changedAttributeName):
+        for listener in self._listeners:
+            listener.onAttributeChanged(self, changedAttributeName)
+    
+
+class GeneralAttributesSection(_BoidAttributesBaseObject):
+    
+    def __init__(self):
+        super(GeneralAttributesSection, self).__init__()
+        
+        self.accelerationDueToGravity = -38
+        self._useDebugColours = True
+    
+    def _getUseDebugColours(self):
+        return self._useDebugColours
+    def _setUseDebugColours(self, value):
+        if(self._useDebugColours != value):
+            self._useDebugColours = value
+            self._notifyListeners("useDebugColours")
+    useDebugColours = property(_getUseDebugColours, _setUseDebugColours)
+    
+    def _attributeTypeForAttributeName(self, attributeNameString):
+        if(attributeNameString == "accelerationDueToGravity"):
+            return __floatAttribute__
+        elif(attributeNameString == "useDebugColours"):
+            return __boolAttribute__
+        else:
+            return __notDefined__
+    
+    def _sectionTitle(self):
+        return "General attributes"
+    
+
+    
+class RegionCharacteristicsSection(_BoidAttributesBaseObject):
+    
+    def __init__(self):
+        super(RegionCharacteristicsSection, self).__init__()
+        
+        self._mainRegionSize = 4.0
+        self._mainRegionSize_Random = 0.0
+        self._nearRegionSize = 1.0
+        self._collisionRegionSize = 0.1
+        self._collisionRegionSize_Random = 0.0
+        self._blindRegionAngle = 110
+        self._blindRegionAngle_Random = 0.0
+        self._forwardVisionAngle = 90
+        self._forwardVisionAngle_Random = 0.0
+        
+    def _getMainRegionSize(self):
+        if(self._mainRegionSize_Random == 0):
+            return self._mainRegionSize
+        else:
+            diff = self._mainRegionSize_Random * self._mainRegionSize
+            return self._mainRegionSize + random.uniform(-diff, diff)
+    def _setMainRegionSize(self, value):
+        if(value != self._mainRegionSize):
+            self._mainRegionSize = value
+            self._notifyListeners("mainRegionSize")
+    mainRegionSize = property(_getMainRegionSize, _setMainRegionSize)
+    
+    def _getMainRegionSize_Random(self):
+        return self._mainRegionSize_Random
+    def _setMainRegionSize_Random(self, value):
+        if(value < 0 or 0 < value):
+            raise ValueError
+        elif(value != self._mainRegionSize_Random):
+            self._mainRegionSize_Random = value
+            self._notifyListeners("mainRegionSize_Random")
+    mainRegionSize_Random = property(_getMainRegionSize_Random, _setMainRegionSize_Random)
+    
+    def _getNearRegionSize(self):
+        if(self._nearRegionSize_Random == 0):
+            return self._nearRegionSize
+        else:
+            diff = self._nearRegionSize_Random * self._nearRegionSize
+            return self._nearRegionSize + random.uniform(-diff, diff)
+    def _setNearRegionSize(self, value):
+        if(value != self._nearRegionSize):
+            self._nearRegionSize = value
+            self._notifyListeners("nearRegionSize")
+    nearRegionSize = property(_getNearRegionSize, _setNearRegionSize)
+    
+    def _getNearRegionSize_Random(self):
+        return self._nearRegionSize_Random
+    def _setNearRegionSize_Random(self, value):
+        if(value < 0 or 0 < value):
+            raise ValueError
+        elif(value != self._nearRegionSize_Random):
+            self._nearRegionSize_Random = value
+            self._notifyListeners("nearRegionSize_Random")
+    nearRegionSize_Random = property(_getNearRegionSize_Random, _setNearRegionSize_Random)
+    
+    def _getCollisionRegionSize(self):
+        if(self._collisionRegionSize_Random == 0):
+            return self._collisionRegionSize
+        else:
+            diff = self._collisionRegionSize_Random * self._collisionRegionSize
+            return self._collisionRegionSize + random.uniform(-diff, diff)
+    def _setCollisionRegionSize(self, value):
+        if(value != self._collisionRegionSize):
+            self._collisionRegionSize = value
+            self._notifyListeners("collisionRegionSize")
+    collisionRegionSize = property(_getCollisionRegionSize, _setCollisionRegionSize)
+    
+    def _getCollisionRegionSize_Random(self):
+        return self._collisionRegionSize_Random
+    def _setCollisionRegionSize_Random(self, value):
+        if(value < 0 or 0 < value):
+            raise ValueError
+        elif(value != self._collisionRegionSize_Random):
+            self._collisionRegionSize_Random = value
+            self._notifyListeners("collisionRegionSize_Random")
+    collisionRegionSize_Random = property(_getCollisionRegionSize_Random, _setCollisionRegionSize_Random)
+        
+    def _getBlindRegionAngle(self):
+        if(self._blindRegionAngle_Random == 0):
+            return self._blindRegionAngle
+        else:
+            diff = self._blindRegionAngle_Random * self._blindRegionAngle
+            return self._blindRegionAngle + random.uniform(-diff, diff)
+    def _setBlindRegionAngle(self, value):
+        if(value  != self._blindRegionAngle):
+            self._blindRegionAngle = value
+            self._notifyListeners("blindRegionAngle")
+    blindRegionAngle = property(_getBlindRegionAngle, _setBlindRegionAngle)
+    
+    def _getBlindRegionAngle_Random(self):
+        return self._blindRegionAngle_Random
+    def _setBlindRegionAngle_Random(self, value):
+        if(value != self._blindRegionAngle_Random):
+            self._blindRegionAngle_Random = value
+            self._notifyListeners("blindRegionAngle_Random")
+    blindRegionAngle_Random = property(_getBlindRegionAngle_Random, _setBlindRegionAngle_Random)
+    
+    def _getForwardVisionAngle(self):
+        if(self._forwardVisionAngle_Random == 0):
+            return self._forwardVisionAngle
+        else:
+            diff = self._forwardVisionAngle_Random * self._forwardVisionAngle
+            return self._forwardVisionAngle + random.uniform(-diff, diff)
+    def _setForwardVisionAngle(self, value):
+        if(value  != self._forwardVisionAngle):
+            self._forwardVisionAngle = value
+            self._notifyListeners("forwardVisionAngle")
+    blindRegionAngle = property(_getForwardVisionAngle, _setForwardVisionAngle)
+    
+    def _getForwardVisionAngle_Random(self):
+        return self._forwardVisionAngle_Random
+    def _setForwardVisionAngle_Random(self, value):
+        if(value != self._forwardVisionAngle_Random):
+            self._forwardVisionAngle_Random = value
+            self._notifyListeners("forwardVisionAngle_Random")
+    blindRegionAngle_Random = property(_getForwardVisionAngle_Random, _setForwardVisionAngle_Random)
+    
+    def _attributeTypeForAttributeName(self, attributeNameString):
+        if(attributeNameString == "mainRegionSize"):
+            return __floatAttribute__
+        elif(attributeNameString == "mainRegionSize_Random"):
+            return __floatAttribute__
+        elif(attributeNameString == "nearRegionSize"):
+            return __floatAttribute__
+        elif(attributeNameString == "nearRegionSize_Random"):
+            return __floatAttribute__
+        elif(attributeNameString == "collisionRegionSize"):
+            return __floatAttribute__
+        elif(attributeNameString == "collisionRegionSize_Random"):
+            return __floatAttribute__
+        elif(attributeNameString == "blindRegionAngle"):
+            return __intAttribute__
+        elif(attributeNameString == "blindRegionAngle_Random"):
+            return __floatAttribute__
+        elif(attributeNameString == "forwardVisionAngle"):
+            return __intAttribute__
+        elif(attributeNameString == "forwardVisionAngle_Random"):
+            return __floatAttribute__
+        else:
+            return __notDefined__
+        
+    def _sectionTitle(self):
+        return "Region characteristics"
+    
+
+        
+        
+class ClassicBoidCharacteristicsSection(_BoidAttributesBaseObject):
+    
+    def __init__(self):
+        super(ClassicBoidCharacteristicsSection, self).__init__()
+        
+        self._herdAverageDirectionThreshold = 30
+        self._herdAverageDirectionThreshold_Random = 0.0
+        self._headAveragePositionThreshold = 1.9
+        self._headAveragePositionThreshold_Random = 0.0
+        
+    def _getHerdAverageDirectionThresholdSize(self):
+        if(self._herdAverageDirectionThresholdSize_Random == 0):
+            return self._herdAverageDirectionThresholdSize
+        else:
+            diff = self._herdAverageDirectionThresholdSize_Random * self._herdAverageDirectionThresholdSize
+            return self._herdAverageDirectionThresholdSize + random.uniform(-diff, diff)
+    def _setHerdAverageDirectionThresholdSize(self, value):
+        if(value != self._herdAverageDirectionThresholdSize):
+            self._herdAverageDirectionThresholdSize = value
+            self._notifyListeners("herdAverageDirectionThresholdSize")
+    herdAverageDirectionThresholdSize = property(_getHerdAverageDirectionThresholdSize, _setHerdAverageDirectionThresholdSize)
+        
+    def _getHerdAverageDirectionThresholdSize_Random(self):
+        return self._herdAverageDirectionThresholdSize_Random
+    def _setHerdAverageDirectionThresholdSize_Random(self, value):
+        if(value < 0 or 0 < value):
+            raise ValueError
+        elif(value != self._herdAverageDirectionThresholdSize_Random):
+            self._herdAverageDirectionThresholdSize_Random = value
+            self._notifyListeners("herdAverageDirectionThresholdSize_Random")
+    herdAverageDirectionThresholdSize_Random = property(_getHerdAverageDirectionThresholdSize_Random, _setHerdAverageDirectionThresholdSize_Random)
+        
+    def _getHerdAveragePositionThresholdSize(self):
+        if(self._herdAveragePositionThresholdSize_Random == 0):
+            return self._herdAveragePositionThresholdSize
+        else:
+            diff = self._herdAveragePositionThresholdSize_Random * self._herdAveragePositionThresholdSize
+            return self._herdAveragePositionThresholdSize + random.uniform(-diff, diff)
+    def _setHerdAveragePositionThresholdSize(self, value):
+        if(value != self._herdAveragePositionThresholdSize):
+            self._herdAveragePositionThresholdSize = value
+            self._notifyListeners("herdAveragePositionThresholdSize")
+    herdAveragePositionThresholdSize = property(_getHerdAveragePositionThresholdSize, _setHerdAveragePositionThresholdSize)
+        
+    def _getHerdAveragePositionThresholdSize_Random(self):
+        return self._herdAveragePositionThresholdSize_Random
+    def _setHerdAveragePositionThresholdSize_Random(self, value):
+        if(value < 0 or 0 < value):
+            raise ValueError
+        elif(value != self._herdAveragePositionThresholdSize_Random):
+            self._herdAveragePositionThresholdSize_Random = value
+            self._notifyListeners("herdAveragePositionThresholdSize_Random")
+    herdAveragePositionThresholdSize_Random = property(_getHerdAveragePositionThresholdSize_Random, _setHerdAveragePositionThresholdSize_Random)
+    
+    def _attributeTypeForAttributeName(self, attributeNameString):
+        if(attributeNameString == "herdAveragePositionThresholdSize"):
+            return __intAttribute__
+        elif(attributeNameString == "herdAveragePositionThresholdSize_Random"):
+            return __floatAttribute__
+        else:
+            return __notDefined__
+        
+    def _sectionTitle(self):
+        return "Classic boid"
+    
+    
+    
+class AgentMovementAttributes(_BoidAttributesBaseObject):
+    
+    def __init__(self):
+        super(AgentMovementAttributes, self).__init__()
+        
+        self._maxVelocity = 5.0
+        self._minVelocity = 0.5
+        self._preferredVelocity = 3.5
+        self._maxAcceleration = 1
+        self._maxTurnRate = 5
+        self._maxTurnRateChange = 4
+        self._preferredTurnVelocity = 0.5
+        
+    
+    
+ 
 ################################## 
 
 _boidAttribute_USE_DEBUG_COLOURS_ = (True, __boolAttribute__)
 _boidAttribute_ACCN_DUE_TO_GRAVITY_ = (-38, __floatAttribute__)
+
+_boidAttribute_LIST_REBUILD_FREQUENCY_ = (5, __intAttribute__)
 
 _boidAttribute_MAIN_REGION_SIZE_ = (4, __floatAttribute__)
 _boidAttribute_MAIN_REGION_SIZE_Random = (0.0, __floatAttribute__)
 _boidAttribute_NEAR_REGION_SIZE_ = (1, __floatAttribute__)
 _boidAttribute_NEAR_REGION_Random = (0.0, __floatAttribute__)
 _boidAttribute_COLLISION_REGION_SIZE_ = (0.2, __floatAttribute__)
-
-_boidAttribute_LIST_REBUILD_FREQUENCY_ = (5, __intAttribute__)
 
 _boidAttribute_MAX_VELOCITY_ = (5, __floatAttribute__)
 _boidAttribute_MIN_VELOCITY_ = (0.5, __floatAttribute__)
@@ -43,6 +415,7 @@ _boidAttribute_BLIND_REGION_ANGLE_ = (110, __intAttribute__)
 _boidAttribute_FORWARD_VISION_ANGLE_ = (90, __intAttribute__)
 
 _boidAttribute_LDR_MODE_WAYPOINT_THRSHLD_ = (3, __floatAttribute__)
+
 _boidAttribute_GOAL_TARGET_DISTANCE_THRSHLD_ = (0.5, __floatAttribute__)
 _boidAttribute_JUMP_ACCELERATION_ = (65, __floatAttribute__)
 _boidAttribute_JUMP_ON_PYRAMID_PROBABILITY_ = (0.1, __floatAttribute__)
@@ -96,7 +469,7 @@ def ReadDefaultValuesFromFile(filePath=None):
                 except Exception as e:
                     print("WARNING - could not read attribute: %s (%s), ignoring..." % (attributeNameStr, e))
                 else:
-                    print("Set attribute value: %s = %s" % (attributeNameStr[prefixLength:], attributeValueStr))
+                    print("Re-set attribute value: %s = %s" % (attributeNameStr[prefixLength:], attributeValueStr))
     else:
         print("Could not read default attributes file: %s" % filePath)
         if(createNewFileIfNeeded):
@@ -186,7 +559,7 @@ def NearRegionSize():
     return _boidAttribute_NEAR_REGION_SIZE_[0]
 
 ##################################
-def SetCollisionRegion(value):
+def Set_herdAverageDirectionThreshold(value):
     """Sets size of region within which other agents are considered to be 'colliding'"""
     global _boidAttribute_COLLISION_REGION_SIZE_
     _boidAttribute_COLLISION_REGION_SIZE_ = (value, _boidAttribute_COLLISION_REGION_SIZE_[1])
@@ -434,15 +807,25 @@ def CurveGroupVectorMagnitude():
 ##################################
 
 def PrintValues():
-    print("listIntvl=%d, mainR=%.4f, nearR=%.4f, collR=%.4f maxVl=%.4f, minVl=%.4f, maxAc=%.4f, prefV=%.4f, \n\
-maxTn=%d, avDir=%d\navPos=%.4f, blindRgn=%d, maxTurn=%d, leaderWaypt=%.4f\n\
-prtyGl=%.4f, jump=%.4f, jmpProb=%.2f, jmpRgn=%.2f, pushHztl=%.4f, pushVtcl=%.4f, goalSpd=%.4f, goalInbtn=%d\n\
-crvDevThsld=%.4f, crvEndThrsld=%.4f, curveGrpMag=%.4f" %
-          (ListRebuildFrequency(), MainRegionSize(), NearRegionSize(), CollisionRegionSize(), MaxVelocity(), MinVelocity(), MaxAcceleration(), PreferredVelocity(),
-          MaxTurnRate(), AvDirectionThreshold(), AvPositionThreshold(), BlindRegionAngle(),
-          MaxTurnRate(), LeaderWaypointThreshold(), GoalTargetDistanceThreshold(), JumpAcceleration(), JumpOnPyramidProbability(), JumpOnPyramidDistanceThreshold(),
-          PushUpwardsAccelerationHorizontal(), PushUpwardsAccelerationVertical(), GoalChaseSpeed(), GoalIncubationPeriod(),
-          CurveDevianceThreshold(), CurveEndReachedDistanceThreshold(), CurveGroupVectorMagnitude()))
+    moduleName = __name__
+    if(moduleName == '__main__'):
+        moduleFileName = sys.modules[moduleName].__file__
+        moduleName = os.path.splitext(os.path.basename(moduleFileName))[0]
+    module = sys.modules[moduleName]    
+    prefixLength = len(__attributePrefix__)
+    
+    print("BoidAttribute values...")
+    for attributeName in dir(module):
+        if(attributeName.startswith(__attributePrefix__)):
+            attributeTuple = getattr(module, attributeName)
+            if(attributeTuple[1] == __intAttribute__):
+                print("\t%s  =  %d" % (attributeName[prefixLength:], attributeTuple[0]))
+            elif(attributeTuple[1] == __floatAttribute__):
+                print("\t%s  =  %.4f" % (attributeName[prefixLength:], attributeTuple[0]))
+            elif(attributeTuple[1] == __boolAttribute__):
+                print("\t%s  =  %s" % (attributeName[prefixLength:], "True" if(attributeTuple[0]) else "False"))
+            else:
+                print("\t%s  =  %s" % (attributeName[prefixLength:], attributeTuple[0]))
 
 
 ##########################################################################################
