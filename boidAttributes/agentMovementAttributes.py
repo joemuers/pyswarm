@@ -1,150 +1,148 @@
 import attributesBaseObject as abo
 import attributeTypes as at
+import boidTools.uiBuilder as uib
 
 
 
+##########################################
+class MovementAttributesDataBlob(abo.DataBlobBaseObject):
+    
+    def __init__(self, agent):
+        super(MovementAttributesDataBlob, self).__init__(agent)
+        
+        self.maxVelocity = 0.0
+        self.preferredVelocity = 0.0
+        self.maxAcceleration = 0.0
+        self.maxTurnRate = 0
+        self.preferredTurnVelocity = 0.0
+        self.jumpAcceleration = 0.0
+
+#####################
+    def __str__(self):
+        return ("<MOVEMENT: maxVel=%.2f, prefVel=%.2f, maxAccel=%.2f, maxTurn=%.2f, prefTurn=%.2f, jump=%.2f>" %
+                (self.maxVelocity, self.preferredVelocity, self.maxAcceleration,
+                 self.maxTurnRate, self.preferredTurnVelocity, self.jumpAcceleration))
+
+# END OF CLASS - MovementAttributesDataBlob
+###########################################
+
+
+        
+##########################################
 class AgentMovementAttributes(abo.AttributesBaseObject):
     
     def __init__(self):
         super(AgentMovementAttributes, self).__init__()
         
-        self._maxVelocity = at.FloatAttribute("maxVelocity", 5.0, "maxVelocity_Random", 0.0, self)
-        self._minVelocity = at.FloatAttribute("minVelocity", 0.5)
-        self._preferredVelocity = at.FloatAttribute("preferredVelocity", 3.5, "preferredVelocity_Random", 0.0, self)
-        self._maxAcceleration = at.FloatAttribute("maxAcceleration", 1.0, "maxAcceleration_Random", 0.0, self)
-        self._maxTurnRate = at.IntAttribute("maxTurnRate", 5, "maxTurnRate_Random", 0.0, self)
-        self._maxTurnRateChange = at.IntAttribute("maxTurnRateChange", 4)
-        self._preferredTurnVelocity = at.FloatAttribute("preferredTurnVelocity", 0.5, "preferredTurnVelocity_Random", 0.0, self)
-        self._jumpAcceleration = at.FloatAttribute("jumpAcceleration", 65, "jumpAcceleration_Random", 0.0, self)
+        self._maxVelocity = at.FloatAttribute("Max Velocity", 5.0, self)
+        self._maxVelocity_Random = at.RandomizeController(self._maxVelocity)
+        self._minVelocity = at.FloatAttribute("Min Velocity", 0.5)
+        self._preferredVelocity = at.FloatAttribute("Preferred Velocity", 3.5, self)
+        self._preferredVelocity_Random = at.RandomizeController(self._preferredVelocity)
+        self._maxAcceleration = at.FloatAttribute("Max Acceleration", 1.0, self)
+        self._maxAcceleration_Random = at.RandomizeController(self._maxAcceleration)
+        
+        self._maxTurnRate = at.IntAttribute("Max Turn Rate", 5, self, maximumValue=359)
+        self._maxTurnRate_Random = at.RandomizeController(self._maxTurnRate)
+        self._maxTurnRateChange = at.IntAttribute("Max Turn Rate Change", 4, maximumValue=359)
+        self._preferredTurnVelocity = at.FloatAttribute("Preferred Turn Velocity", 0.5, self)
+        self._preferredTurnVelocity_Random = at.RandomizeController(self._preferredTurnVelocity)
+        
+        self._jumpAcceleration = at.FloatAttribute("Jump Acceleration", 65, self)
+        self._jumpAcceleration_Random = at.RandomizeController(self._jumpAcceleration)
         
 ##################### 
-    def _sectionTitle(self):
-        return "Agent movement"
-    
+    def sectionTitle(self): 
+        return "Agent Movement"
+
+#####################     
+    def populateUiLayout(self):
+        
+        speedFrameLayout = uib.MakeFrameLayout("Speed")
+        uib.MakeSliderGroup(self._maxVelocity, self._getMaxVelocityForBlob.__doc__)
+        uib.MakeRandomizerFields(self._maxVelocity_Random)
+        uib.MakeSeparator()
+        uib.MakeSliderGroup(self._minVelocity)
+        uib.MakeSeparator()
+        uib.MakeSliderGroup(self._preferredVelocity)
+        uib.MakeRandomizerFields(self._preferredVelocity_Random)
+        uib.MakeSeparator()
+        uib.MakeSliderGroup(self._maxAcceleration)
+        uib.MakeRandomizerFields(self._maxAcceleration_Random)
+        uib.SetAsChildLayout(speedFrameLayout)
+        
+        turnFrameLayout = uib.MakeFrameLayout("Turning")
+        uib.MakeSliderGroup(self._maxTurnRate)
+        uib.MakeRandomizerFields(self._maxTurnRate_Random)
+        uib.MakeSeparator()
+        uib.MakeSliderGroup(self._maxTurnRateChange)
+        uib.MakeSeparator()
+        uib.MakeSliderGroup(self._preferredTurnVelocity)
+        uib.MakeRandomizerFields(self._preferredTurnVelocity_Random)
+        uib.SetAsChildLayout(turnFrameLayout)
+        
+        uib.MakeSliderGroup(self._jumpAcceleration)
+        uib.MakeRandomizerFields(self._jumpAcceleration_Random)
+        
 #####################
-    def makeFrameLayout(self):
-        mainFrame = at.MakeFrameLayout(self._sectionTitle())
+    def _createDataBlobForAgent(self, agent):
+        return MovementAttributesDataBlob(agent)
 
-        velocityFrame = at.MakeFrameLayout("Velocity")
-        maxVelFrame = self._maxVelocity.makeFrameLayout("Max Velocity", "velocity", 0)
-        at.SetAsChildToPrevious(maxVelFrame)
-        minVelFrame = self._minVelocity.makeFrameLayout("Min Velocity", "velocity", 0)
-        at.SetAsChildToPrevious(minVelFrame)
-        prefVelFrame = self._preferredVelocity.makeFrameLayout("Preferred velocity", "velocity", 0)
-        at.SetAsChildToPrevious(prefVelFrame, velocityFrame)
+# #####################        
+#     def _updateDataBlob(self, dataBlob):
+#         agentId = dataBlob.agentId
+#         
+#         dataBlob.maxVelocity = self._getMaxVelocityForId(agentId)
+#         dataBlob.preferredVelocity = self._getPreferredVelocityForId(agentId)
+#         dataBlob.maxAcceleration = self._getMaxAccelerationForId(agentId)
+#         dataBlob.maxTurnRate = self._getMaxTurnRateForId(agentId)
+#         dataBlob.preferredTurnVelocity = self._getPreferredTurnVelocityForId(agentId)
+#         dataBlob.jumpAcceleration = self._getJumpAccelerationForId(agentId)
         
-        maxAccelFrame = self._maxAcceleration.makeFrameLayout("Max acceleration", "acceleration scalar", 0)
-        at.SetAsChildToPrevious(maxAccelFrame)
+#####################        
+    def _updateDataBlobWithAttribute(self, dataBlob, attribute):
+        if(attribute is self._maxVelocity):
+            dataBlob.maxVelocity = self._getMaxVelocityForBlob(dataBlob)
+        elif(attribute is self._preferredVelocity):
+            dataBlob.preferredVelocity = self._getPreferredVelocityForBlob(dataBlob)
+        elif(attribute is self._maxAcceleration):
+            dataBlob.maxAcceleration = self._getMaxAccelerationForBlob(dataBlob)
+        elif(attribute is self._maxTurnRate):
+            dataBlob.maxTurnRate = self._getMaxTurnRateForBlob(dataBlob)
+        elif(attribute is self._preferredTurnVelocity):
+            dataBlob.preferredTurnVelocity = self._getPreferredTurnVelocityForBlob(dataBlob)
+        elif(attribute is self._jumpAcceleration):
+            dataBlob.jumpAcceleration = self._getJumpAccelerationForBlob(dataBlob)       
         
-        turningFrame = at.MakeFrameLayout("Turning")
-        maxTurnFrame = self._maxTurnRate.makeFrameLayout("Max turn rate", "degrees", 0, 360)
-        maxTurnChange = self._maxTurnRateChange.makeRowLayout("max rate of change", 0, 360)
-        at.SetAsChildToPrevious(maxTurnChange, maxTurnFrame)
-        preferredTurnFrame = self._preferredTurnVelocity.makeFrameLayout("Preferred turn velocity", "velocity", 0)
-        at.SetAsChildToPrevious(preferredTurnFrame, turningFrame)
-        jumpFrame = self._jumpAcceleration.makeFrameLayout("Jump accleration", "magnitude", 0)
-        at.SetAsChildToPrevious(jumpFrame)
-        
-        return mainFrame
-
-#####################     
-    def _getMaxVelocity(self):
-        return self._maxVelocity.value
-    def _setMaxVelocity(self, value):
-        self._maxVelocity.value = value
-    maxVelocity = property(_getMaxVelocity, _setMaxVelocity)
-
-#####################     
-    def _getMaxVelocity_Random(self):
-        return self._maxVelocity.randomizerValue
-    def _setMaxVelocity_Random(self, value):
-        self._maxVelocity.randomizerValue = value
-    maxVelocity_Random = property(_getMaxVelocity_Random, _setMaxVelocity_Random)
-
 #####################     
     def _getMinVelocity(self):
         return self._minVelocity.value
-    def _setMinVelocity(self, value):
-        self._minVelocity.value = value
-    minVelocity = property(_getMinVelocity, _setMinVelocity)
-
-#####################     
-    def _getPreferredVelocity(self):
-        return self._preferredVelocity.value
-    def _setPreferredVelocity(self, value):
-        self._preferredVelocity.value = value
-    preferredVelocity = property(_getPreferredVelocity, _setPreferredVelocity)
-
-#####################     
-    def _getPreferredVelocity_Random(self):
-        return self._preferredVelocity.randomizerValue
-    def _setPreferredVelocity_Random(self, value):
-        self._preferredVelocity.randomizerValue = value
-    preferredVelocity_Random = property(_getPreferredVelocity_Random, _setPreferredVelocity_Random)
-
-#####################     
-    def _getMaxAcceleration(self):
-        return self._maxAcceleration.value
-    def _setMaxAcceleration(self, value):
-        self._maxAcceleration.value = value
-    maxAcceleration = property(_getMaxAcceleration, _setMaxAcceleration)
-
-#####################     
-    def _getMaxAcceleration_Random(self):
-        return self._maxAcceleration.randomizerValue
-    def _setMaxAcceleration_Random(self, value):
-        self._maxAcceleration.randomizerValue = value
-    maxAcceleration_Random = property(_getMaxAcceleration_Random, _setMaxAcceleration_Random)
-
-#####################     
-    def _getMaxTurnRate(self):
-        return self._maxTurnRate.value
-    def _setMaxTurnRate(self, value):
-        self._maxTurnRate.value = value
-    maxTurnRate = property(_getMaxTurnRate, _setMaxTurnRate)
-
-#####################     
-    def _getMaxTurnRate_Random(self):
-        return self._maxTurnRate.randomizerValue
-    def _setMaxTurnRate_Random(self, value):
-        self._maxTurnRate.randomizerValue = value
-    maxTurnRate_Random = property(_getMaxTurnRate_Random, _setMaxTurnRate_Random)
-
+    minVelocity  = property(_getMinVelocity) 
+    
 #####################     
     def _getMaxTurnRateChange(self):
         return self._maxTurnRateChange.value
-    def _setMaxTurnRateChange(self, value):
-        self._maxTurnRateChange.value = value
-    maxTurnRateChange = property(_getMaxTurnRateChange, _setMaxTurnRateChange)
-
-##################### 
-    def _getPreferredTurnVelocity(self):
-        return self._preferredTurnVelocity.value
-    def _setPreferredTurnVelocity(self, value):
-        self._preferredTurnVelocity.value = value
-    preferredTurnVelocity = property(_getPreferredTurnVelocity, _setPreferredTurnVelocity)
-
+    maxTurnRateChange = property(_getMaxTurnRateChange)
+          
 #####################     
-    def _getPreferredTurnVelocity_Random(self):
-        return self._preferredTurnVelocity.randomizerValue
-    def _setPreferredTurnVelocity_Random(self, value):
-        self._preferredTurnVelocity.randomizerValue = value
-    preferredTurnVelocity_Random = property(_getPreferredTurnVelocity_Random, _setPreferredTurnVelocity_Random)
-    
-#####################     
-    def _getJumpAcceleration(self):
-        return self._jumpAcceleration.value
-    def _setJumpAcceleration(self, value):
-        self._jumpAcceleration.value = value
-    jumpAcceleration = property(_getJumpAcceleration, _setJumpAcceleration)
-
-#####################     
-    def _getJumpAcceleration_Random(self):
-        return self._jumpAcceleration.randomizerValue
-    def _setJumpAcceleration_Random(self, value):
-        self._jumpAcceleration.randomizerValue = value
-    jumpAcceleration_Random = property(_getJumpAcceleration_Random, _setJumpAcceleration_Random)
-    
+    def _getMaxVelocityForBlob(self, dataBlob):
+        """Maximum velocity that agents will travel at under normal behaviour."""
+        return self._maxVelocity_Random.valueForIntegerId(dataBlob.agentId)
+   
+    def _getPreferredVelocityForBlob(self, dataBlob):
+        return self._preferredVelocity_Random.valueForIntegerId(dataBlob.agentId)
+     
+    def _getMaxAccelerationForBlob(self, dataBlob):
+        return self._maxAcceleration_Random.valueForIntegerId(dataBlob.agentId)
+     
+    def _getMaxTurnRateForBlob(self, dataBlob):
+        return self._maxTurnRate_Random.valueForIntegerId(dataBlob.agentId)
+ 
+    def _getPreferredTurnVelocityForBlob(self, dataBlob):
+        return self._preferredTurnVelocity_Random.valueForIntegerId(dataBlob.agentId)
+     
+    def _getJumpAccelerationForBlob(self, dataBlob):
+        return self._jumpAcceleration_Random.valueForIntegerId(dataBlob.agentId)
 
 # END OF CLASS
 ########################    

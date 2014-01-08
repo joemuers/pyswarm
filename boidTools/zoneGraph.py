@@ -1,20 +1,18 @@
 from boidBaseObject import BoidBaseObject
+from boidAttributes.attributesBaseObject import AttributesListener
 
 import itertools
 
-import boidAttributes
-from boidTools import util
 
 
 #############################
-
 class ZoneGraph(BoidBaseObject):
     '''
     classdocs
     '''
     
     #############################
-    class _Zone(BoidBaseObject):
+    class _Zone(BoidBaseObject, AttributesListener):
         
         def __init__(self, xMin, xMax, zMin, zMax):
             self.regionalSetsList = [set()]
@@ -77,18 +75,13 @@ class ZoneGraph(BoidBaseObject):
     #############################
     
     
-    def __init__(self, cornerOneLocator, cornerTwoLocator):
+    def __init__(self, attributesController, lowerBoundsVector, upperBoundsVector):
         self._currentFrameIteration = 0
         
-        self._lowerBoundsVector = util.BoidVector3FromPymelLocator(cornerOneLocator)
-        self._upperBoundsVector = util.BoidVector3FromPymelLocator(cornerTwoLocator)
-        if(self._upperBoundsVector.x < self._lowerBoundsVector.x):
-            self._lowerBoundsVector.x, self._upperBoundsVector.x = self._upperBoundsVector.x, self._lowerBoundsVector.x
-        # 2D only at present => not bothered about y direction
-        if(self._upperBoundsVector.z < self._lowerBoundsVector.z):
-            self._lowerBoundsVector.z, self._upperBoundsVector.z = self._upperBoundsVector.z, self._lowerBoundsVector.z
+        self._lowerBoundsVector = lowerBoundsVector
+        self._upperBoundsVector = upperBoundsVector
         
-        zoneSize = boidAttributes.MainRegionSize()
+        zoneSize = attributesController.agentPerceptionAttributes.maxNeighbourhoodSize
         sizeX = self._upperBoundsVector.x - self._lowerBoundsVector.x
         sizeZ = self._upperBoundsVector.z - self._lowerBoundsVector.z
         resolutionX = int((sizeX / zoneSize) + 1)
@@ -182,6 +175,11 @@ class ZoneGraph(BoidBaseObject):
             return "".join(zoneStringsList)
         else:
             return "UNOPTIMISED... Agents list: ".join([(("%s, " % agent) for agent in self._zoneMap)])
+
+########################################        
+    def onAttributeChanged(self, sectionObject, attributeName):
+        if(attributeName == "Neighbourhood Size" or attributeName is None):
+            print("XXXXXXXXXXX      REBUILD ZONE GRAPH!!!!!!!!!!!!")
 
 ########################################
     def _getLowerBoundsVector(self):

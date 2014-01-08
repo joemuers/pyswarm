@@ -1,70 +1,91 @@
 import attributesBaseObject as abo
 import attributeTypes as at
+import boidTools.uiBuilder as uib
 
 
 
+###########################################
+class FollowPathDataBlob(abo.DataBlobBaseObject):
+    
+    def __init__(self, agent):
+        super(FollowPathDataBlob, self).__init__(agent)
+        
+        self.pathDevianceThreshold = 0.0
+        self.goalDistanceThreshold = 0.0
+        
+#####################
+    def __str__(self):
+        return ("<FOLLOW-PATH BHVR: pathDev=%.2f, goalDist=%.2f>" % 
+                (self.pathDevianceThreshold, self.goalDistanceThreshold))
+        
+# END OF CLASS - ClassicBoidDataBlob
+###########################################
+
+
+
+###########################################
 class FollowPathBehaviourAttributes(abo.AttributesBaseObject):
     
     def __init__(self):
         super(FollowPathBehaviourAttributes, self).__init__()
         
-        self._pathDevianceThreshold = at.FloatAttribute("pathDevianceThreshold", 3.0, 
-                                                        "pathDevianceThreshold_Random", 0.0, self)
-        self._endReachedDistanceThreshold = at.FloatAttribute("endReachedDistanceThreshold", 1.0, 
-                                                              "endReachedDistanceThreshold_Random", 0.0, self)
-        self._pathInfluenceMagnitude = at.FloatAttribute("pathInfluenceMagnitude", 2.0)
+        self._pathDevianceThreshold = at.FloatAttribute("Path Deviance Threshold", 3.0, self)
+        self._pathDevianceThreshold_Random = at.RandomizerAttribute(self._pathDevianceThreshold)
+        self._goalDistanceThreshold = at.FloatAttribute("Goal Distance Threshold", 1.0, self)
+        self._goalDistanceThreshold_Random = at.RandomizerAttribute(self._goalDistanceThreshold)
+        self._pathInfluenceMagnitude = at.FloatAttribute("Path Influence Magnitude", 0.75, minimumValue=0.0, maximumValue=1.0)
+        self._startingTaper = at.FloatAttribute("Starting Taper", 0.5)
+        self._endingTaper = at.FloatAttribute("Ending Taper", 2.0)
 
 #####################         
-    def _sectionTitle(self):
-        return "Follow path behaviour"
+    def sectionTitle(self):
+        return "Follow Path Behaviour"
     
 #####################
-    def makeFrameLayout(self):
-        pathFrame = at.MakeFrameLayout(self._sectionTitle())
+    def populateUiLayout(self):
+        uib.MakeSliderGroup(self._pathDevianceThreshold)
+        uib.MakeRandomizerGroup(self._pathDevianceThreshold_Random)
+        uib.MakeSeparator()
+        uib.MakeSliderGroup(self._goalDistanceThreshold)
+        uib.MakeRandomizerGroup(self._goalDistanceThreshold_Random)
+        uib.MakeSeparator()
+        uib.MakeSliderGroup(self._pathInfluenceMagnitude)
+        uib.MakeSeparator()
+        uib.MakeSliderGroup(self._startingTaper)
+        uib.MakeSliderGroup(self._endingTaper)
         
-        pathDevianceFrame = self._pathDevianceThreshold.makeFrameLayout("Path deviance", "distance", 0)
-        at.SetAsChildToPrevious(pathDevianceFrame)
-        endReachedFrame = self._endReachedDistanceThreshold.makeFrameLayout("End reached threshold", "distance", 0)
-        at.SetAsChildToPrevious(endReachedFrame)
-        influenceMagFrame = self._pathInfluenceMagnitude.makeFrameLayout("Path influence", "magnitude", 0)
-        at.SetAsChildToPrevious(influenceMagFrame)
-        
-        return pathFrame
+#####################
+    def _createDataBlobForAgent(self, agent):
+        return FollowPathDataBlob(agent)
+    
+#####################
+    def _updateDataBlobWithAttribute(self, dataBlob, attribute):
+        if(attribute is self._pathDevianceThreshold):
+            dataBlob.pathDevianceThreshold = self._getPathDevianceThresholdForBlob(dataBlob)
+        elif(attribute is self._goalDistanceThreshold):
+            dataBlob.goalDistanceThreshold = self._getGoalDistanceThresholdForBlob(dataBlob)
 
 #####################     
-    def _getPathDevianceThreshold(self):
-        return self._pathDevianceThreshold.value
-    def _setPathDevianceThreshold(self, value):
-        self._pathDevianceThreshold.value = value
-    pathDevianceThreshold = property(_getPathDevianceThreshold, _setPathDevianceThreshold)
-
-#####################     
-    def _getPathDevianceThreshold_Random(self):
-        return self._pathDevianceThreshold.randomizerValue
-    def _setPathDevianceThreshold_Random(self, value):
-        self._pathDevianceThreshold.randomizerValue = value
-    pathDevianceThreshold_Random = property(_getPathDevianceThreshold_Random, _setPathDevianceThreshold_Random)
-
-#####################     
-    def _getEndReachedDistanceThreshold(self):
-        return self._endReachedDistanceThreshold.value
-    def _setEndReachedDistanceThreshold(self, value):
-        self._endReachedDistanceThreshold.value = value
-    endReachedDistanceThreshold = property(_getEndReachedDistanceThreshold, _setEndReachedDistanceThreshold)
-
-#####################     
-    def _getEndReachedDistanceThreshold_Random(self):
-        return self._endReachedDistanceThreshold.randomizerValue
-    def _setEndReachedDistanceThreshold_Random(self, value):
-        self._endReachedDistanceThreshold.randomizerValue = value
-    endReachedDistanceThreshold_Random = property(_getEndReachedDistanceThreshold_Random, _setEndReachedDistanceThreshold_Random)
+    def _getPathDevianceThresholdForBlob(self, dataBlob):
+        return self._pathDevianceThreshold_Random.getRandomizedValueForIntegerId(dataBlob.agentId)
+     
+    def _getGoalDistanceThresholdForBlob(self, dataBlob):
+        return self._goalDistanceThreshold_Random.getRandomizedValueForIntegerId(dataBlob.agentId)
 
 #####################     
     def _getPathInfluenceMagnitude(self):
         return self._pathDevianceThreshold.value
-    def _setPathInfluenceMagnitude(self, value):
-        self._pathDevianceThreshold.value = value
-    pathInfluenceMagnitude = property(_getPathInfluenceMagnitude, _setPathInfluenceMagnitude)
+    pathInfluenceMagnitude = property(_getPathInfluenceMagnitude)
+
+#####################    
+    def _getTaperStart(self):
+        return self._startingTaper.value
+    taperStart = property(_getTaperStart)
+    
+    def _getTaperEnd(self):
+        return self._endingTaper.value
+    taperEnd = property(_getTaperEnd)
+
     
 # END OF CLASS
 ################################    

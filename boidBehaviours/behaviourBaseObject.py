@@ -20,6 +20,16 @@ class BehaviourBaseObject(bbo.BoidBaseObject):
             raise TypeError
         else:
             self._delegate = delegate
+            self._attributes = self._createBehaviourAttributes()
+
+##########################
+    def _getAttributes(self):
+        return self._attributes
+    attributes = property(_getAttributes)
+    
+##########################            
+    def _createBehaviourAttributes(self):
+        raise NotImplemented
  
 ##########################
     def _notifyDelegateBehaviourEndedForAgent(self, agent):
@@ -30,9 +40,14 @@ class BehaviourBaseObject(bbo.BoidBaseObject):
             self._delegate.onBehaviourEndedForAgent(agent, self)
   
 ##########################          
-    def onFrameUpdate(self):
+    def onFrameUpdated(self):
         """Can be implemented by subclasses if necessary, to set up everything for a new frame."""
-        return  # default does nothing
+        pass  # default does nothing
+ 
+##########################   
+    def onAgentUpdated(self, agent):
+        """Called when an agent's internal state has been updated. Override if needed."""
+        pass  # default does nothing
 
 ##########################    
     def getDesiredAccelerationForAgent(self, agent, nearbyAgentsList):
@@ -42,13 +57,15 @@ class BehaviourBaseObject(bbo.BoidBaseObject):
         raise NotImplementedError
 
 ##########################    
-    def createBehaviourSpecificStateObject(self):
-        """This object will be set to an agent state's 'behaviourSpecificState' property when
+    def getBehaviourSpecificAttributesForAgent(self, agent):
+        """This object will be set to an agent state's 'behaviourAttributes' property when
         a behaviour is first assigned to the agent.
-        Subclasses should implement this method and return an appropriate data container object
-        if their operation requires the agent objects to carry bespoke information.
+        For each behaviourBaseObject subclass, if the operation of the behaviour requires the
+        agent objects to carry bespoke per-agent information, then the getNewDataBlobForAgent 
+        method (within it's corresponding **attributesBaseObject** subclass) should be implemented to return an 
+        appropriate data container object.
         """
-        return None
+        return self.attributes.getNewDataBlobForAgent(agent)
 
 ##########################
     def _clampMovementIfNecessary(self, agent, desiredAcceleration, maxAcceleration, maxVelocity, maxTurnRate, maxTurnAngleRateOfChange, maxTurnVelocity):

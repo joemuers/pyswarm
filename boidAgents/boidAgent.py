@@ -1,14 +1,13 @@
 from boidBaseObject import BoidBaseObject
-
-import boidAttributes
 from boidTools import util
 
 import boidVectors.vector3 as bv3
 import boidAgentState as bas
+import boidResources.colours as brc
 
 
 class BoidAgent(BoidBaseObject):
-    """Represents single boid instance.   
+    """Represents single agent instance.   
     Logic concerning agent's behaviour is contained within this class. (Internally,
     data concerning position, heading, neighbourhood & so on is in the boidAgentState 
     container).
@@ -44,11 +43,11 @@ class BoidAgent(BoidBaseObject):
         
     """
 
-    def __init__(self, particleId, startingBehaviour):
-        self.state = bas.BoidAgentState(int(particleId))
+    def __init__(self, particleId, attributesController, behaviourController):
+        self.state = bas.BoidAgentState(int(particleId), attributesController)
         
         self._currentBehaviour = None
-        self.setNewBehaviour(startingBehaviour)
+        self.setNewBehaviour(behaviourController.defaultBehaviour)
         self._pendingBehaviour = None
         self._pendingBehavoirCountdown = -1
         
@@ -59,6 +58,8 @@ class BoidAgent(BoidBaseObject):
 
         self._stickinessScale = 0.0
         self._stickinessChanged = False
+        
+        self.debugColour = brc.DefaultColour
         
 
 ##################### 
@@ -139,7 +140,8 @@ class BoidAgent(BoidBaseObject):
         """Note that, to cancel pending behaviour, you can pass: behaviour == None, incubationPeriod == -1."""
         if(incubationPeriod == 0 and self._currentBehaviour is not behaviour):
             self._currentBehaviour = behaviour
-            self.state.behaviourSpecificState = behaviour.createBehaviourSpecificStateObject()
+            self.state.behaviourAttributes = behaviour.getBehaviourSpecificAttributesForAgent(self)
+            behaviour.onAgentUpdated(self)  # TODO - should this be here??
         elif(incubationPeriod != 0 and self._pendingBehaviour is not behaviour):
             self._pendingBehaviour = behaviour
             self._pendingBehavoirCountdown = incubationPeriod
@@ -159,6 +161,10 @@ class BoidAgent(BoidBaseObject):
         self.state.updateCurrentVectors(position, velocity)
         self._needsBehaviourCalculation = True         
         self._needsBehaviourCommit = False
+        
+        self.debugColour = brc.DefaultColour
+        
+        self._currentBehaviour.onAgentUpdated(self)
            
 ###########################
     def calculateDesiredBehaviour(self, otherAgentsList, forceUpdate=False, checkForPendingBehaviour=True):
@@ -175,7 +181,7 @@ class BoidAgent(BoidBaseObject):
 ##############################
     def _jump(self):
         if(self.isTouchingGround):
-            self._desiredAcceleration.y += boidAttributes.JumpAcceleration()
+            self._desiredAcceleration.y += self.state.movementAttributes.jumpAcceleration
             self.state.notifyJump()
             self._needsBehaviourCommit = True
             return True

@@ -1,19 +1,7 @@
 import random
 import weakref
-import pymel.core as pm
 
 
-
-
-def MakeFrameLayout(title, makeCollapsable=True):
-    frame = pm.frameLayout(title)
-    if(makeCollapsable):
-        frame.setCollapsable(True)
-    return frame
-
-def SetAsChildToPrevious(*args):
-    for _ in range(len(args)):
-        pm.setParent("..")
 
 #####################
 
@@ -26,10 +14,13 @@ class SingleAttributeDelegate(object):
 ####################################
 
 
+
+##################################################### 
 class _SingleAttributeBaseObject(object):
+    """Base class for attribute types."""
     
-    def __init__(self, attributeName, value, randomizerName=None, randomizerValue=0, delegate=None):
-        self._attributeName = attributeName
+    def __init__(self, attributeLabel, value, delegate=None):
+        self._attributeLabel = attributeLabel
         self._value = value
         
         if(delegate is None):
@@ -38,104 +29,32 @@ class _SingleAttributeBaseObject(object):
             raise TypeError("Delegate is of type %s" % type(delegate))
         else:
             self._delegate = weakref.ref(delegate)
-            
-        self._randomizerName = randomizerName
-        self._randomizerValue = randomizerValue
-        self._randomizerUiField = None
-        self._randomizerUiSlider = None
- 
+        
+        self.updateUiCommand = None
+        self.uiEnableMethod = None
+
 #####################   
     def _getValue(self):
-        if(self._randomizerValue == 0):
-            return self._value
-        else:
-            diff = self._randomizerValue * self._value
-            return self.getValueFromInput(self._value + random.uniform(-diff, diff))
+        return self._value
     def _setValue(self, value):
         newValue = self.getValueFromInput(value)
-        if(newValue != self._value):
+        if(newValue != self.value):
             self._value = newValue
             
             self._updateInputUiComponents()
             self._updateDelegate()
+            print("set %s=%s" % (self._attributeLabel, newValue))
     value = property(_getValue, _setValue)
 
 #####################    
-    def _getRandomizerValue(self):
-        return self._randomizerValue
-    def _setRandomizerValue(self, value):
-        newValue = float(value)
-        if(newValue < 0 or 1 < newValue):
-            raise ValueError("Randomizer value must be between 0 and 1 (got %s)" % value)
-        else:
-            self._randomizerValue = newValue
-
-            self._updateRandomizerUiComponents()
-            self._updateDelegate()
-    randomizerValue = property(_getRandomizerValue, _setRandomizerValue)
-
-#####################
-    def _getHasRandomizer(self):
-        return (self.randomizerName is not None)
-    hasRandomizer = property(_getHasRandomizer)
+    def _getDelegate(self):
+        return self._delegate() if(self._delegate is not None) else None
+    delegate = property(_getDelegate)
 
 #####################    
-    def _getHasRandomizerUiRow(self):
-        return (self._randomizerUiField is not None and self._randomizerUiSlider is not None)
-    hasRandomizerUiRow = property(_getHasRandomizerUiRow)
-
-#####################    
-    def _getAttributeName(self):
-        return self._attributeName
-    attributeName = property(_getAttributeName)
-
-#####################    
-    def _getRandomizerName(self):
-        return self._randomizerName
-    randomizerName = property(_getRandomizerName)
-
-#####################     
-    def makeRowLayout(self, title, minValue=None, maxValue=None):
-        raise NotImplemented
-
-#####################     
-    def makeRandomizerRowLayout(self):
-        if(self.hasRandomizer):
-            rowLayout = self._standardRowLayout()
-            
-            pm.text("Randomize")
-            
-            self._randomizerUiField = pm.floatField(min=0.0, max=1.0, precision=2, value=self.randomizerValue)
-            self._randomizerUiField.changeCommand(lambda *args: self._setRandomizerValue(self._randomizerUiField.getValue()))
-            
-            self._randomizerUiSlider = pm.floatSlider(min=0.0, max=1.0, value=self.randomizerValue)
-            self._randomizerUiSlider.dragCommand(lambda *args: self._randomizerUiField.setValue(self._randomizerUiSlider.getValue()))
-            self._randomizerUiSlider.changeCommand(lambda *args: self._setRandomizerValue(self._randomizerUiField.getValue()))
-            
-            return rowLayout
-        else:
-            raise RuntimeError("Request for randomizer rowLayout on attribute with no randomizer.")
- 
-#####################         
-    def makeFrameLayout(self, title, fieldTitle, minValue=None, maxValue=None):
-        frameLayout = MakeFrameLayout(title)
-        
-        attributeRow = self.makeRowLayout(fieldTitle, minValue, maxValue)
-        SetAsChildToPrevious(attributeRow)
-        if(self.hasRandomizer):
-            randomizerRow = self.makeRandomizerRowLayout()
-            SetAsChildToPrevious(randomizerRow)
-        return frameLayout
-
-#####################    
-    def _standardRowLayout(self, numColumns=3):
-        if(numColumns == 3):
-            return pm.rowLayout(numberOfColumns=3, columnWidth3=(120, 50, 150), columnAlign=(1, 'right'), 
-                                columnAttach=[(1, 'both', 0), (2, 'both', 0), (3, 'both', 10)])
-        elif(numColumns == 2):
-            return pm.rowLayout(numberOfColumns=2, columnWidth2=(170, 150), columnAlign=(1, 'right'), 
-                                columnAttach=[(1, 'both', 0), (2, 'both', 0)])
-            
+    def _getAttributeLabel(self):
+        return self._attributeLabel
+    attributeLabel = property(_getAttributeLabel)
 
 #####################    
     def getValueFromInput(self, inputValue):
@@ -143,14 +62,13 @@ class _SingleAttributeBaseObject(object):
     
 #####################    
     def _updateInputUiComponents(self):
-        # override if necessary...
-        pass
-
-#####################
-    def _updateRandomizerUiComponents(self):
-        if(self.hasRandomizerUiRow):
-            self._randomizerUiField.setValue(self._randomizerValue)
-            self._randomizerUiSlider.setValue(self._randomizerValue)
+        if(self.updateUiCommand is not None):
+            self.updateUiCommand(self.value)
+            
+#####################        
+    def setEnabled(self, enabled):
+        if(self.uiEnableMethod is not None):
+            self.uiEnableMethod(enabled)
 
 #####################            
     def _updateDelegate(self):
@@ -161,129 +79,207 @@ class _SingleAttributeBaseObject(object):
 ######################################
 
 
+
+##################################################### 
 class IntAttribute(_SingleAttributeBaseObject):
     
-    def __init__(self, attributeName, value, randomizerName=None, randomizerValue=0, delegate=None):
-        super(IntAttribute, self).__init__(attributeName, value, randomizerName, randomizerValue, delegate)
+    def __init__(self, attributeLabel, value, delegate=None, minimumValue=None, maximumValue=None):
+        super(IntAttribute, self).__init__(attributeLabel, value, delegate)
         
-        self._inputUiField = None
-        self._inputUiSlider = None
+        self._minimumValue = minimumValue
+        self._maximumValue = maximumValue
+ 
+#####################        
+    def _getMinimumValue(self):
+        return self._minimumValue
+    minimumValue = property(_getMinimumValue)
 
 #####################    
+    def _getMaximumValue(self):
+        return self._maximumValue
+    maximumValue = property(_getMaximumValue)
+ 
+#####################    
+    def _getValue(self):
+        return self._value
+    def _setValue(self, value):
+        newValue = self.getValueFromInput(value)
+        if((self.minimumValue is not None and newValue < self.minimumValue) or 
+           (self.maximumValue is not None and self.maximumValue < newValue)):
+            self._updateInputUiComponents()
+            raise ValueError("Value (%s) is out of bounds, range=%s to %s" % (value, self.minimumValue, self.maximumValue))
+        else:
+            super(IntAttribute, self)._setValue(newValue)
+    value = property(_getValue, _setValue)
+
+#####################   
     def getValueFromInput(self, inputValue):
         return int(inputValue)
-
-#####################    
-    def _getHasInputUiRow(self):
-        return (self._inputUiField is not None and self._inputUiSlider is not None)
-    hasInputUiRow = property(_getHasInputUiRow)
-
-#####################    
-    def _updateInputUiComponents(self):
-        if(self.hasInputUiRow):
-            newValue = self._value
-            self._inputUiField.setValue(newValue)
-            if(self._inputUiSlider.getMaxValue() < newValue):
-                self._inputUiSlider.setMaxValue(2 * newValue)
-            elif(newValue < self._inputUiSlider.getMinValue()):
-                self._inputUiSlider.setMinValue(2 * newValue)
-            self._inputUiSlider.setValue(newValue)
-
-#####################    
-    def makeRowLayout(self, text, minValue=None, maxValue=None, makeSlider=True):
-        rowLayout = self._standardRowLayout()
-        
-        pm.text(text)
-        
-        kwargs = { "value" : self._value }
-        if(minValue is not None):
-            kwargs["min"] = minValue
-        if(maxValue is not  None):
-            kwargs["max"] = maxValue
-        self._inputUiField = pm.intField(**kwargs)
-        self._inputUiField.changeCommand(lambda *args: self._setValue(self._inputUiField.getValue()))
-        
-        if(makeSlider):
-            if(maxValue is None):
-                kwargs["max"] = self._value * 2
-            self._inputUiSlider = pm.intSlider(**kwargs)
-            self._inputUiSlider.dragCommand(lambda *args: self._inputUiField.setValue(self._inputUiSlider.getValue()))
-            self._inputUiSlider.changeCommand(lambda *args: self._setValue(self._inputUiSlider.getValue()))
-        
-        return rowLayout
 
 # END OF CLASS - IntAttribute
 ######################################
 
 
+
+##################################################### 
 class FloatAttribute(IntAttribute):
-       
+            
     def getValueFromInput(self, inputValue):
         return float(inputValue)
-            
-#####################
-    def makeRowLayout(self, text, minValue=None, maxValue=None, makeSlider=True):
-        rowLayout = self._standardRowLayout()
-        
-        pm.text(text)
-        
-        kwargs = { "value" : self._value, "precision" : 3 }
-        if(minValue is not None):
-            kwargs["min"] = minValue
-        if(maxValue is not  None):
-            kwargs["max"] = maxValue
-        self._inputUiField = pm.floatField(**kwargs)
-        self._inputUiField.changeCommand(lambda *args: self._setValue(self._inputUiField.getValue()))
-        
-        if(makeSlider):
-            kwargs.pop("precision")
-            
-            if(maxValue is None):
-                kwargs["max"] = self._value * 2
-            self._inputUiSlider = pm.floatSlider(**kwargs)
-            self._inputUiSlider.dragCommand(lambda *args: self._inputUiField.setValue(self._inputUiSlider.getValue()))
-            self._inputUiSlider.changeCommand(lambda *args: self._setValue(self._inputUiSlider.getValue()))
-        
-        return rowLayout
 
 # END OF CLASS - FloatAttribute
 ######################################
 
-        
-class BoolAttribute(_SingleAttributeBaseObject):
+
+
+##################################################### 
+class RandomizerAttribute(FloatAttribute):
     
-    def __init__(self, attributeName, value, randomizerName=None, randomizerValue=0, delegate=None):
-        if(randomizerName is not None or randomizerValue != 0):
-            raise ValueError("Random values not applicable to boolean attributes")
-        else:
-            super(BoolAttribute, self).__init__(attributeName, value, randomizerName, randomizerValue, delegate)
+    #static variables
+    _intToRandomLookup = []
+    _previousState = None
+    
+    @staticmethod
+    def _RandomValueForInt(intKey):
+        if(not RandomizerAttribute._intToRandomLookup):
+            random.seed(0)
+        elif(RandomizerAttribute._previousState is not None):
+            random.setstate(RandomizerAttribute._previousState)
+            RandomizerAttribute._previousState = None
             
-            self._uiCheckbox = None
+        while(len(RandomizerAttribute._intToRandomLookup) <= intKey):
+            RandomizerAttribute._intToRandomLookup.append(random.uniform(-1.0, 1.0))
+            
+        return RandomizerAttribute._intToRandomLookup[intKey]
+
+#####################    
+    def __init__(self, parentAttribute):
+        if(type(parentAttribute) != IntAttribute and type(parentAttribute) != FloatAttribute):
+            raise TypeError("Attempt to create randomizer for non-valueType attribute")
+        elif(parentAttribute._delegate is None):
+            print("WARNING - delegate attribute for randomized attribute \'%s\' is None" % parentAttribute.attributeLabel)
+        
+        super(RandomizerAttribute, self).__init__(parentAttribute.attributeLabel + " Randomize", 0, parentAttribute.delegate, 0.0, 1.0)
+        self._parentAttribute = parentAttribute
+        
+#####################         
+    def _clampIfNecessary(self, returnValue):
+        if(self._parentAttribute._minimumValue is not None and returnValue < self._parentAttribute.minimumValue):
+            return self._parentAttribute.minimumValue
+        elif(self._parentAttribute._maximumValue is not None and returnValue > self._parentAttribute.maximumValue):
+            return self._parentAttribute.maximumValue
+        else:
+            return returnValue
+        
+#####################         
+    def _getRandomizedValue(self):
+        if(self.value != 0):
+            if(RandomizerAttribute._intToRandomLookup and RandomizerAttribute._previousState is not None):
+                RandomizerAttribute._previousState = random.getstate()
+                
+            diff = self._parentAttribute.value * self.value
+            result = self._parentAttribute.getValueFromInput(self._parentAttribute.value + random.uniform(-diff, diff))
+            
+            return self._clampIfNecessary(result)
+        else:
+            return self._parentAttribute.value
+    randomizedValue = property(_getRandomizedValue)
+
+#####################    
+    def getRandomizedValueForIntegerId(self, integerId):
+        if(self.value != 0):
+            diff = self._parentAttribute.value * self.value * RandomizerAttribute._RandomValueForInt(integerId)
+            result = self._parentAttribute.getValueFromInput(self._parentAttribute.value + diff)
+            
+            return self._clampIfNecessary(result)
+        else:
+            return self._parentAttribute.value
+    
+#####################            
+    def _updateDelegate(self):
+        super(RandomizerAttribute, self)._updateDelegate()
+        self._parentAttribute._updateDelegate()  
+
+# END OF CLASS - RandomizerAttribute
+######################################    
+
+
+
+##################################################### 
+class RandomizeController(_SingleAttributeBaseObject):
+    __OptionStrings__ = ["Off", "By Agent ID", "Pure Random"]
+    __Off__, __ById__, __PureRandom__ = range(3)
+    
+    @staticmethod
+    def StringForOption(option):
+        return RandomizeController.__OptionStrings__[option]
+    @staticmethod
+    def OptionForString(optionString):
+        return RandomizeController.__OptionStrings__.index(optionString)
+
+#####################     
+    def __init__(self, parentAttribute):
+        if(type(parentAttribute) != IntAttribute and type(parentAttribute) != FloatAttribute):
+            raise TypeError("Attempt to create randomizeController for non-valueType attribute")
+        elif(parentAttribute.delegate is None):
+            print("WARNING - delegate attribute for randomized attribute \'%s\' is None" % parentAttribute.attributeLabel)
+
+        super(RandomizeController, self).__init__(parentAttribute.attributeLabel + " Input", 
+                                                  RandomizeController.__Off__, 
+                                                  parentAttribute.delegate)
+        
+        self._randomizerAttribute = RandomizerAttribute(parentAttribute)
+        self._parentAttribute = parentAttribute
+        
+#####################
+    def _getValue(self):
+        return RandomizeController.StringForOption(self._value)
+    def _setValue(self, value):
+        super(RandomizeController, self)._setValue(value)
+    value = property(_getValue, _setValue)   
+ 
+#####################   
+    def getValueFromInput(self, inputValue):
+        return RandomizeController.OptionForString(inputValue) 
+    
+    def _updateInputUiComponents(self):
+        super(RandomizeController, self)._updateInputUiComponents()
+        self._randomizerAttribute.setEnabled(self._value != RandomizeController.__Off__)
+ 
+#####################        
+    def valueForIntegerId(self, integerId):
+        if(self._value == RandomizeController.__Off__):
+            return self._parentAttribute.value
+        elif(self._value == RandomizeController.__ById__):
+            return self._randomizerAttribute.getRandomizedValueForIntegerId(integerId)
+        elif(self._value == RandomizeController.__PureRandom__):
+            return self._randomizerAttribute.randomizedValue
+        else:
+            raise RuntimeError("Selected has unrecognized enum value: %s" % self._value)
+        
+#####################            
+    def _updateDelegate(self):
+        super(RandomizeController, self)._updateDelegate()
+        self._parentAttribute._updateDelegate()  
+
+# END OF CLASS - RandomizeController
+######################################
+
+
+
+#####################################################        
+class BoolAttribute(_SingleAttributeBaseObject):
     
     def getValueFromInput(self, inputValue):
         return bool(inputValue)
-    
-    def _updateInputUiComponents(self):
-        if(self._uiCheckbox is not None):
-            self._uiCheckbox.setValue(self.value)
-    
-    def makeCheckboxComponent(self, text):
-        self._uiCheckbox = pm.checkBox(label=text, value=self.value)
-        self._uiCheckbox.changeCommand(lambda *args: self._setValue(self._uiCheckbox.getValue()))
-        
-        return self._uiCheckbox
 
 # END OF CLASS - BoolAttribute
 ######################################
 
-        
+
+
+#####################################################         
 class StringAttribute(_SingleAttributeBaseObject):
-    
-    def __init__(self, attributeName, value, randomizerName=None, randomizerValue=0, delegate=None):
-        if(randomizerName is not None or randomizerValue != 0):
-            raise ValueError("Random values not applicable to string attributes")
-        else:
-            super(StringAttribute, self).__init__(attributeName, value, randomizerName, randomizerValue, delegate)
     
     def getValueFromInput(self, inputValue):
         return str(inputValue)

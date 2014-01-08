@@ -1,9 +1,10 @@
 from boidBaseObject import BoidBaseObject
 
-import boidAttributes
 import boidVectors.vector3 as bv3
 
 
+
+#############################################
 class BoidAgentState(BoidBaseObject):
     """Internal to BoidAgent, i.e. each BoidAgent instance "has" a boidAgentState member.  
     Essentially just a data container with information on the corresponding agent, regarding:
@@ -20,7 +21,7 @@ class BoidAgentState(BoidBaseObject):
         - "touchingGround" = True if agent is not jumping/falling, False otherwise.
     """
     
-    def __init__(self, particleId):
+    def __init__(self, particleId, attributesController):
         self._particleId = particleId
         self._position = bv3.Vector3()
         self._velocity = bv3.Vector3()
@@ -44,7 +45,10 @@ class BoidAgentState(BoidBaseObject):
         self._needsFullListsRebuild = True 
         self._needsAveragesRecalc = False
         
-        self.behaviourSpecificState = None  # data 'blob' for client behaviours to store instance-level data - not used internally
+        self._movementAttributes = attributesController.agentMovementAttributes.getNewDataBlobForAgent(self)
+        self._perceptionAttributes = attributesController.agentPerceptionAttributes.getNewDataBlobForAgent(self)
+        self.behaviourAttributes = None  # data 'blob' for client behaviours to store instance-level data - not used internally
+        self._globalAttributes = attributesController.globalAttributes
         
 ###################        
     def __str__(self):
@@ -63,7 +67,7 @@ class BoidAgentState(BoidBaseObject):
         return ("id=%d, avP=%s, avV=:(hdgH=%d, hdgV=%d, spd=%.2f), avCP=%s, nextRbld=%d, bhvr=%s, nr=%s, cr=%s, col=%s" % 
                 (self._particleId, self._avPosition, 
                  self._avVelocity.degreeHeadingHorizontal(), self._avVelocity.degreeHeadingVertical(), self._avVelocity.magnitude(), 
-                 self._avCrowdedPos, self._framesUntilNextRebuild, self.behaviourSpecificState,
+                 self._avCrowdedPos, self._framesUntilNextRebuild, self.behaviourAttributes,
                  ''.join(nearStringsList), ''.join(crowdStringsList), ''.join(collisionStringsList)))       
     
 #####################
@@ -131,6 +135,14 @@ class BoidAgentState(BoidBaseObject):
         return self._collisionList
     collisionList = property(_getCollisionList)
     
+    def _getMovementAttributes(self):
+        return self._movementAttributes
+    movementAttributes = property(_getMovementAttributes)
+    
+    def _getPerceptionAttributes(self):
+        return self._perceptionAttributes
+    perceptionAttributes = property(_getPerceptionAttributes)
+    
 #####################           
     def updateCurrentVectors(self, position, velocity):
         """Updates internal state from corresponding vectors."""
@@ -138,12 +150,12 @@ class BoidAgentState(BoidBaseObject):
         self._acceleration = velocity - self._velocity
         self._velocity.resetToVector(velocity)
         
-        if(self._acceleration.y < boidAttributes.AccelerationPerFrameDueToGravity()):
+        if(self._acceleration.y < self._globalAttributes.accelerationDueToGravity):
             self._isTouchingGround = False
         else:
             self._isTouchingGround = True
         
-        self._onFrameUpdate()
+        self._onFrameUpdated()
 
 #################################
     def withinCrudeRadiusOfPoint(self, otherPosition, radius):
@@ -201,7 +213,7 @@ class BoidAgentState(BoidBaseObject):
         self._needsAveragesRecalc = True
         
 ##############################        
-    def _onFrameUpdate(self):
+    def _onFrameUpdated(self):
         """Resets stats of nearby, crowded and collided agents."""
         if(self._framesUntilNextRebuild <= 0 or not self.nearbyList):
             self._resetListsAndAverages()
@@ -210,25 +222,31 @@ class BoidAgentState(BoidBaseObject):
             self._resetAverages()
         
 ##############################
-    def updateRegionalStatsIfNecessary(self, parentAgent, otherAgents, neighbourhoodSize, crowdedRegionSize, 
-                                       collisionRegionSize, blindRegionAngle, forwardRegionAngle, forceUpdate=False):
+    def updateRegionalStatsIfNecessary(self, parentAgent, otherAgents, forceUpdate=False):
         """Builds up nearby, crowded and collided lists (if needed), recalculates averages for each.
         @param otherAgents List: list of other agents, all of which will be checked for proximity.
         @param neighbourhoodSize Float: distance below which other agents considered to be "nearby".
         @param crowdedRegionSize Float: ditto with "crowded".
         @param collisionRegionSize Float: ditto with "collided".
         """
+        
+        
+        
         if(forceUpdate):
             self._framesUntilNextRebuild = 0
-            self._onFrameUpdate()
+            self._onFrameUpdated()
         
         if(self._needsFullListsRebuild):
-            self._recalculateListsAndAverages(parentAgent, otherAgents, neighbourhoodSize,
-                                              crowdedRegionSize, collisionRegionSize, blindRegionAngle, forwardRegionAngle)
+            self._recalculateListsAndAverages(parentAgent, otherAgents, 
+                                              self.perceptionAttributes.neighbourhoodSize,
+                                              self.perceptionAttributes.nearRegionSize, 
+                                              self.perceptionAttributes.collisionRegionSize, 
+                                              self.perceptionAttributes.blindRegionAngle, 
+                                              self.perceptionAttributes.forwardVisionAngle)
             self._needsFullListsRebuild = False
             self._needsAveragesRecalc = False
             
-            self._framesUntilNextRebuild = boidAttributes.ListRebuildFrequency() if not self.isCrowded else 0
+            self._framesUntilNextRebuild = self._globalAttributes.listRebuildFrequency if not self.isCrowded else 0
             
         elif(self._needsAveragesRecalc):
             self._recalculateAverages()
