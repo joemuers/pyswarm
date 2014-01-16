@@ -34,7 +34,14 @@ class DataBlobBaseObject(object):
 ########################################
 class AttributesBaseObject(at.SingleAttributeDelegate):
     
-    def __init__(self):
+    @classmethod
+    def DefaultSectionTitle(cls):
+        raise NotImplemented("Method should return default title for each subclass.")
+        return ""
+
+#####################    
+    def __init__(self, sectionTitle):
+        self._sectionTitle = sectionTitle
         self._dataBlobs = []
         self._listeners = []
         self._inBulkUpdate = False
@@ -47,27 +54,38 @@ class AttributesBaseObject(at.SingleAttributeDelegate):
     def _createDataBlobForAgent(self, agent):
         raise NotImplemented
     
-#     def _updateDataBlob(self, dataBlob):
-#         raise NotImplemented
-    
+#####################
     def _updateDataBlobWithAttribute(self, dataBlob, attribute):
         raise NotImplemented
+
+#####################    
+    def onFrameUpdated(self):
+        """Called each time the Maya scene moves to a new frame.
+        Implement in subclasses if any updates are needed.
+        """
+        pass
+
+#####################     
+    def onBehaviourListUpdated(self, behaviourIDsList, defaultBehaviourId):
+        """Called whenever a behaviour is added or deleted.
+        Implement in subclasses if required."""
+        pass
         
 #####################        
     def getDefaultsFromConfigReader(self, configReader):
         self._inBulkUpdate = True
         
-        print("Reading default values for section \"%s\"..." % self.sectionTitle())
+        print("Reading default values for section \"%s\"..." % self.DefaultSectionTitle())
         
         attributeLookup = {}
         for attributeName in dir(self):
             attribute = getattr(self, attributeName)
-            if(issubclass(type(attribute), at._SingleAttributeBaseObject)):
+            if(issubclass(type(attribute), at._SingleAttributeBaseObject) and not attribute.excludeFromDefaults):
                 attributeLookup[attribute.attributeLabel] = attribute
         
         attributeReadCount = 0
         try:
-            for attributeLabel, attributeValueStr in configReader.items(self.sectionTitle()):
+            for attributeLabel, attributeValueStr in configReader.items(self.DefaultSectionTitle()):
                 try:
                     attributeLookup[attributeLabel].value = attributeValueStr
                     attributeReadCount += 1
@@ -80,8 +98,6 @@ class AttributesBaseObject(at.SingleAttributeDelegate):
                 
         self._inBulkUpdate = False
         
-#         for blobRef in self._dataBlobs:
-#             self._updateDataBlob(blobRef())
         self._notifyListeners(None)
         
         return (attributeReadCount > 0 and attributeReadCount == len(attributeLookup))
@@ -91,18 +107,18 @@ class AttributesBaseObject(at.SingleAttributeDelegate):
         print("Saving default values for section \"%s\"..." % self.sectionTitle())
         
         try:
-            if(configWriter.has_section(self.sectionTitle())):
-                configWriter.remove_section(self.sectionTitle())
+            if(configWriter.has_section(self.DefaultSectionTitle())):
+                configWriter.remove_section(self.DefaultSectionTitle())
                 print("Replacing previous values...")
             
-            configWriter.add_section(self.sectionTitle())
+            configWriter.add_section(self.DefaultSectionTitle())
         except Exception as e:
             print("ERROR - %s" % e)
         else:
             for attributeName in dir(self):
                 attribute = getattr(self, attributeName)
                 
-                if(issubclass(type(attribute), at._SingleAttributeBaseObject)):
+                if(issubclass(type(attribute), at._SingleAttributeBaseObject) and not attribute.excludeFromDefaults):
                     try:
                         configWriter.set(self.sectionTitle(), attribute.attributeLabel, attribute.value)
                         print("Changed default attribute value: %s = %s" % (attribute.attributeLabel, attribute.value))
@@ -111,7 +127,7 @@ class AttributesBaseObject(at.SingleAttributeDelegate):
 
 #####################    
     def sectionTitle(self):
-        raise NotImplemented
+        return self._sectionTitle
 
 #####################     
     def getNewDataBlobForAgent(self, agent):
@@ -135,8 +151,8 @@ class AttributesBaseObject(at.SingleAttributeDelegate):
 
 #####################    
     def addListener(self, listener):
-        if(type(listener) != AttributesListener):
-            raise TypeError
+        if(not isinstance(listener, AttributesListener)):
+            raise TypeError("Tried to add listener %s of type %s" % (listener, type(listener)))
         else:
             self._listeners.append(weakref.ref(listener, self._removeDeadListenerReference))
 
@@ -160,7 +176,7 @@ class AttributesBaseObject(at.SingleAttributeDelegate):
                 listenerRef().onAttributeChanged(self, changedAttributeName)
 
 #####################            
-    def _onAttributeChanged(self, changedAttribute): # overridden SingleAttributeDelegate method
+    def onValueChanged(self, changedAttribute): # overridden SingleAttributeDelegate method
 #         if(not self._inBulkUpdate):
         for blobRef in self._dataBlobs:
             self._updateDataBlobWithAttribute(blobRef(), changedAttribute)

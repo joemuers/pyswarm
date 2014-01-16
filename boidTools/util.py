@@ -1,11 +1,12 @@
 import boidVectors.vector3 as bv3
 
 import pymel.core as pm
-import pymel.core.nodetypes as pmn  # Eclipse doesn't like pm.nodetypes for some reason...
+import pymel.core.nodetypes as pmn  # Eclipse doesn't like pm.nodetypes for some reason... (perhaps an issue with the Pymel predefinitions?)
 import logging
 
 
 
+######################################
 def PackageName():
     return "JMSwarm"
 
@@ -13,34 +14,178 @@ def PackageName():
 __utilLogger__ = logging.getLogger(PackageName())
 
 def LogDebug(message, prefix=None):
-    __utilLogger__.debug("%s %s" % (prefix, message) if(prefix is not None) else message)
+    __utilLogger__.debug(("%s %s" % (prefix, message)) if(prefix is not None) else message)
     
 def LogInfo(message, prefix=None):
-    __utilLogger__.info("%s %s" % (prefix, message) if(prefix is not None) else message)
+    __utilLogger__.info(("%s %s" % (prefix, message)) if(prefix is not None) else message)
     
 def LogWarning(message, prefix=None):
-    __utilLogger__.warning("%s %s" % (prefix, message) if(prefix is not None) else message)
+    __utilLogger__.warning(("%s %s" % (prefix, message)) if(prefix is not None) else message)
     
 def LogError(message, prefix=None):
-    __utilLogger__.error("%s %s" % (prefix, message) if(prefix is not None) else message)
+    __utilLogger__.error(("%s %s" % (prefix, message)) if(prefix is not None) else message)
+
+######################################  
+def InitVal(value, defaultValue):
+    return value if value is not None else defaultValue
+
+######################################
+
+
+
+######################################
+__DeferredEvaluations__ = []
+__ModuleHandle__ = "__SPECIAL_UTIL_IMPORT_FOR_DEFERRED_EVALUATION__"
+__DeferredEvaluationString__ = ("%s._MakeDeferredEvaluations()" % __ModuleHandle__)
+
+def _MakeDeferredEvaluations():    
+    for commandTuple in __DeferredEvaluations__:
+        command = commandTuple[0]
+        arguments = commandTuple[1]
+        keywords = commandTuple[2]
+        
+        command(*arguments, **keywords)
+    
+    del __DeferredEvaluations__[:]
+
+######################################
+def EvalDeferred(boundMethod, *args, **kwargs):
+    """This nasty little piece of hackery is necessary because the Pymel version of evalDeferred is not
+    usable from a object-oriented environment - all you get is a string literal to be executed
+    from within the main module. 
+    As such, this is the only way to provided the same functionality for bound methods from within
+    modules and classes (Method adds this module to main, then evaluates bound methods via _MakeDeferredEvaluations).
+    """
+    if(__name__ == "__main__"):
+        raise RuntimeError("This version of EvalDeferred is not designed to be run from within the Script Editor.")
+    else:
+        if(not __DeferredEvaluations__):
+            importString = ("if(\"%s\" not in globals()): globals()[\"%s\"] = \
+__import__(\"%s\", globals(), locals(), [\"%s\"], -1)" % 
+                            (__ModuleHandle__, __ModuleHandle__, __name__, __name__))
+            pm.evalDeferred(importString)
+            pm.evalDeferred(__DeferredEvaluationString__)
+    
+        __DeferredEvaluations__.append((boundMethod, args, kwargs))
+    
+######################################
+
     
 
 ######################################
-def PymelObjectFromObjectName(objectName):
-    return pm.PyNode(objectName)
+def PymelObjectFromObjectName(objectName, bypassTransformNodes=True):
+    """Converts Maya object string to a Pymel object, if necessary.
+    If the object is already a Pymel object, no action is taken.
+    """
+    if(isinstance(objectName, pm.PyNode)):
+        return _GetPymelObjectWithType(objectName, None) if(bypassTransformNodes) else objectName 
+    else:
+        value = pm.PyNode(objectName)
+        return _GetPymelObjectWithType(value, None) if(bypassTransformNodes) else value 
+    
+######################################
+def GetSelectedParticleShapeNode(particleShapeName=None):
+    selectionList = pm.ls(selection=True)
+    for selectedObject in selectionList:
+        result = _GetPymelObjectWithType(selectedObject, pmn.NParticle)
+        if(result is not None and 
+           (particleShapeName is None or result.name() == particleShapeName)):
+            return result
+
+    return None
 
 ######################################
-def BoidVector3FromPymelLocator(locator):
+def GetSelectedParticles(particleShapeName):
+    selectedParticleShape = GetSelectedParticleShapeNode(particleShapeName)
+    if(selectedParticleShape is not None):
+        return ParticleIdsListForParticleShape(particleShapeName)
+    else:
+        selectionList = pm.ls(selection=True)
+        returnList = []
+        for selectedObject in selectionList:
+            if(isinstance(selectedObject, pm.general.ParticleComponent)):
+                candidateName = selectedObject.name().split(".pt[")[0]
+                if(candidateName == particleShapeName):
+                    for index in selectedObject.indicesIter():
+                        returnList.append(index)
+        
+        return returnList
+    
+######################################
+def SelectParticlesInList(particleIds, particleShapeName):
+    def _addToSelection(rangeStart, rangeEnd, particleShapeName):
+        indexSpecifier = (str(rangeStart) if(rangeStart == rangeEnd) else ("%d:%d" % (rangeStart, rangeEnd)))
+        pm.select(("%s.pt[%s]" % (particleShapeName, indexSpecifier)), add=True)
+    
+    pm.select(clear=True)
+    rangeStart = -1
+    rangeEnd = -1
+    for particleId in sorted(particleIds):
+        if(rangeStart == -1):
+            rangeStart = particleId
+            rangeEnd = particleId
+        elif(particleId == rangeEnd + 1):
+            rangeEnd = particleId
+        else:
+            _addToSelection(rangeStart, rangeEnd, particleShapeName)
+            rangeStart = particleId
+            rangeEnd = particleId
+    
+    if(rangeStart != -1):
+        _addToSelection(rangeStart, rangeEnd, particleShapeName)
+
+######################################
+def GetSelectedLocators():
+    selectionList = pm.ls(selection=True)
+    returnList = []
+    
+    for selectedObject in selectionList:
+        result = _GetPymelObjectWithType(selectedObject, pmn.Locator)
+        if(result is not None):
+            returnList.append(result)
+    
+    return returnList
+
+######################################
+def _GetPymelObjectWithType(pymelObject, pymelType):
+    """Checks given object is of correct type.
+    Will inspect the corresponding shape node if a transform node is given.
+    """
+    if(pymelType is not None and isinstance(pymelObject, pymelType)):
+        return pymelObject
+    elif(isinstance(pymelObject, pmn.Transform)):
+        shapeNode = pymelObject.getShape()
+        if((pymelType is None and isinstance(pymelObject, pm.PyNode)) or 
+           isinstance(shapeNode, pymelType)):
+            return shapeNode
+    elif(pymelType is None and isinstance(pymelObject, pm.PyNode)):
+        return pymelObject
+
+    return None
+
+######################################
+def GetNucleusSpaceScale():
+    nucleus = pm.ls(pm.mel.getActiveNucleusNode(False, True))[0]
+    return nucleus.attr('spaceScale').get()
+
+######################################
+
+
+
+######################################
+def Vector3FromLocator(locator):
     if(isinstance(locator, pmn.Locator)):
         coOrdsString = locator.getPosition()
         coOrds = coOrdsString.split()
         return bv3.Vector3(float(coOrds[0]), float(coOrds[1]), float(coOrds[2]))     
+    elif(isinstance(locator, str)):
+        return Vector3FromLocator(PymelObjectFromObjectName(locator))
     else:
         return None
     
-def BoidVectorOrderedPairFromPymelLocators(locatorA, locatorB):
-    lowerBoundsVector = BoidVector3FromPymelLocator(locatorA)
-    upperBoundsVector = BoidVector3FromPymelLocator(locatorB)
+def Vector3OrderedPairFromLocators(locatorA, locatorB):
+    lowerBoundsVector = Vector3FromLocator(locatorA)
+    upperBoundsVector = Vector3FromLocator(locatorB)
     
     if(lowerBoundsVector.x > upperBoundsVector.x):
         lowerBoundsVector.x, upperBoundsVector.x = upperBoundsVector.x, lowerBoundsVector.x
@@ -52,22 +197,22 @@ def BoidVectorOrderedPairFromPymelLocators(locatorA, locatorB):
     return (lowerBoundsVector, upperBoundsVector)
 
 ######################################    
-def PymelPointFromBoidVector3(boidVectors):
-    return pm.datatypes.Point(boidVectors.x, boidVectors.y, boidVectors.z)
+def PymelPointFromVector3(vector3):
+    return pm.datatypes.Point(vector3.x, vector3.y, vector3.z)
 
-def BoidVector3FromPymelPoint(point):
+def Vector3FromPymelPoint(point):
     return bv3.Vector3(point.x, point.y, point.z)
 
 ######################################
-def BoidVector3FromPymelVector(pymelVector):
+def Vector3FromPymelVector(pymelVector):
     return bv3.Vector3(pymelVector.x, pymelVector.y, pymelVector.z)
 
-def PymelVectorFromBoidVector3(boidVectors):
-    return pm.datatypes.Vector(boidVectors.x, boidVectors.y, boidVectors.z)
+def PymelVectorFromVector3(vector3):
+    return pm.datatypes.Vector(vector3.x, vector3.y, vector3.z)
 
 ######################################
 def ParticleIdsListForParticleShape(particleShapeName):
-    return pm.getParticleAttr(particleShapeName + ".pt[:]", at='particleId', a=True)
+    return map(int, pm.getParticleAttr(particleShapeName + ".pt[:]", at='particleId', a=True))
 
 ######################################
 def ParticlePositionsListForParticleShape(particleShapeName):

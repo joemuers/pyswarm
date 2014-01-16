@@ -164,6 +164,15 @@ class Vector3(BoidBaseObject):
             self._z = value
     z = property(_get_z, _set_z)
     v = property(_get_z, _set_z) # for compatibility with Vector2
+
+#######################
+    def _getValueAsTuple(self):
+        return (self.x, self.y, self.z)
+    def _setValueAsTuple(self, value):
+        self.x = value[0]
+        self.y = value[1]
+        self.z = value[2]
+    valueAsTuple = property(_getValueAsTuple, _setValueAsTuple)
     
 #######################
     def add(self, otherVector, ignoreVertical=False):

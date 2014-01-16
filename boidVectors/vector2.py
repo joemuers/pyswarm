@@ -87,6 +87,14 @@ class Vector2(BoidBaseObject):
             self._v = value
     v = property(_get_v, _set_v)
     
+#######################
+    def _getValueAsTuple(self):
+        return (self.u, self.v)
+    def _setValueAsTuple(self, value):
+        self.u = value[0]
+        self.v = value[1]
+    valueAsTuple = property(_getValueAsTuple, _setValueAsTuple)
+    
 #######################     
     def isNull(self):
         return (self._u == 0 and self._v == 0)

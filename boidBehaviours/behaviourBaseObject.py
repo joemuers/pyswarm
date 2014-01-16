@@ -1,43 +1,54 @@
-import boidBaseObject as bbo
+from boidBaseObject import BoidBaseObject
 
 import boidVectors.vector3 as bv3
 
+import weakref
 
 
-class BoidBehaviourDelegate(object):
-    """Client objects can subclass BoidBehaviourDelegate and pass the corresponding object
+
+class BehaviourDelegate(object):
+    """Client objects can subclass BehaviourDelegate and pass the corresponding object
     to the behaviourBaseObject if they require a notification when behaviour completes."""
     
-    def onBehaviourEndedForAgent(self, agent, behaviour):
+    def onBehaviourEndedForAgent(self, agent, behaviour, followOnBehaviourID):
         raise NotImplementedError
 
 ###################################
 
-class BehaviourBaseObject(bbo.BoidBaseObject):
+class BehaviourBaseObject(BoidBaseObject):
     
-    def __init__(self, delegate=None):
-        if(delegate is not None and not isinstance(delegate, BoidBehaviourDelegate)): 
+    def __init__(self, attributes, delegate=None):
+        if(delegate is not None and not isinstance(delegate, BehaviourDelegate)): 
             raise TypeError
         else:
-            self._delegate = delegate
-            self._attributes = self._createBehaviourAttributes()
+            self._delegate = weakref.ref(delegate)
+            self._attributes = attributes.sectionTitle()
 
 ##########################
+    def __str__(self):
+        return ("<Behaviour: \"%s\">" % self.behaviourId)
+
+##########################            
     def _getAttributes(self):
         return self._attributes
     attributes = property(_getAttributes)
     
-##########################            
-    def _createBehaviourAttributes(self):
-        raise NotImplemented
+##########################
+    def _getBehaviourId(self):
+        return self._attributes.sectionTitle()
+    behaviourId = property(_getBehaviourId)
+
+##########################    
+    def delegate(self):
+        return self._delegate() if(self._delegate is not None) else None
  
 ##########################
-    def _notifyDelegateBehaviourEndedForAgent(self, agent):
+    def _notifyDelegateBehaviourEndedForAgent(self, agent, followOnBehaviourID):
         """Should be called by subclasses to notify the delegate (if one exists)
         when an agent has finished the prescribed behaviour pattern.
         """
-        if(self._delegate is not None):
-            self._delegate.onBehaviourEndedForAgent(agent, self)
+        if(self.delegate is not None):
+            self.delegate.onBehaviourEndedForAgent(agent, self, followOnBehaviourID)
   
 ##########################          
     def onFrameUpdated(self):
@@ -85,7 +96,7 @@ class BehaviourBaseObject(bbo.BoidBaseObject):
         desiredTurnAngle = currentVelocity.angleTo(potentialVelocity)
         
         # following block of code will smooth out sudden changes in direction by checking the
-        # rateOfChange (i.e. acceleration) of angular velocity.
+        # rateOfChange (i.e. acceleration) of *angular* velocity.
         if(maxAcceleration **2 > currentVelocity.magnitudeSquared()): # TODO - this first check is fairly arbitrary... 
             previousVelocity = currentVelocity - agent.currentAcceleration
             previousTurnAngle = previousVelocity.angleTo(currentVelocity)

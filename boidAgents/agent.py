@@ -2,11 +2,13 @@ from boidBaseObject import BoidBaseObject
 from boidTools import util
 
 import boidVectors.vector3 as bv3
-import boidAgentState as bas
+import agentState as agt
 import boidResources.colours as brc
 
 
-class BoidAgent(BoidBaseObject):
+
+#####################################
+class Agent(BoidBaseObject):
     """Represents single agent instance.   
     Logic concerning agent's behaviour is contained within this class. (Internally,
     data concerning position, heading, neighbourhood & so on is in the boidAgentState 
@@ -43,13 +45,11 @@ class BoidAgent(BoidBaseObject):
         
     """
 
-    def __init__(self, particleId, attributesController, behaviourController):
-        self.state = bas.BoidAgentState(int(particleId), attributesController)
+    def __init__(self, particleId, attributesController, startingBehaviour, startingAttributes):
+        self.state = agt.AgentState(int(particleId), attributesController)
         
         self._currentBehaviour = None
-        self.setNewBehaviour(behaviourController.defaultBehaviour)
-        self._pendingBehaviour = None
-        self._pendingBehavoirCountdown = -1
+        self.setNewBehaviour(startingBehaviour, startingAttributes)
         
         self._desiredAcceleration = bv3.Vector3()
         self._needsBehaviourCalculation = False # True if position/heading/circumstance has 
@@ -60,12 +60,15 @@ class BoidAgent(BoidBaseObject):
         self._stickinessChanged = False
         
         self.debugColour = brc.DefaultColour
-        
 
 ##################### 
     def __str__(self):
-        return "<%s, stck=%.2f>" % (self.state, self.stickinessScale)
+        return "<%s, stck=%.2f, bhvr=\"%s\">" % (self.state, self.stickinessScale, self.currentBehaviour.behaviourId)
     
+    def _getMetaStr(self):          
+        return ("<%s, desiredAccel=%s>" % (self.state.metaStr, self._desiredAcceleration))
+ 
+#####################   
     def __eq__(self, other):
         return (self.particleId == other.particleId) if(other is not None) else False
     
@@ -80,10 +83,6 @@ class BoidAgent(BoidBaseObject):
     
     def __hash__(self):
         return hash(self.particleId)
-
-#####################
-    def _getMetaStr(self):          
-        return ("<%s, desiredAccel=%s>" % (self.state.metaStr, self._desiredAcceleration))
 
 #####################
     def _getParticleId(self):
@@ -130,30 +129,13 @@ class BoidAgent(BoidBaseObject):
         return self.state.isTouchingGround
     isTouchingGround = property(_getIsTouchingGround)
     
-    def _getHasPendingBehaviour(self):
-        return (self._pendingBehaviour is not None and self._pendingBehavoirCountdown > 0)
-    hasPendingBehaviour = property(_getHasPendingBehaviour)
-    
-
 ##################### 
-    def setNewBehaviour(self, behaviour, incubationPeriod=0):
+    def setNewBehaviour(self, behaviour, behaviourAttributes):
         """Note that, to cancel pending behaviour, you can pass: behaviour == None, incubationPeriod == -1."""
-        if(incubationPeriod == 0 and self._currentBehaviour is not behaviour):
+        if(self._currentBehaviour is not behaviour):
             self._currentBehaviour = behaviour
-            self.state.behaviourAttributes = behaviour.getBehaviourSpecificAttributesForAgent(self)
+            self.state.behaviourAttributes = behaviourAttributes.getNewDataBlobForAgent(self)
             behaviour.onAgentUpdated(self)  # TODO - should this be here??
-        elif(incubationPeriod != 0 and self._pendingBehaviour is not behaviour):
-            self._pendingBehaviour = behaviour
-            self._pendingBehavoirCountdown = incubationPeriod
-            
-#####################            
-    def _switchToPendingBehaviourIfNecessary(self):
-        if(self._pendingBehavoirCountdown > 0):
-            self._pendingBehavoirCountdown -= 1
-            
-            if(self._pendingBehavoirCountdown == 0):
-                self.setNewBehaviour(self._pendingBehaviour)
-                self._pendingBehaviour = None
         
 ##################### 
     def updateCurrentVectors(self, position, velocity):
@@ -167,12 +149,9 @@ class BoidAgent(BoidBaseObject):
         self._currentBehaviour.onAgentUpdated(self)
            
 ###########################
-    def calculateDesiredBehaviour(self, otherAgentsList, forceUpdate=False, checkForPendingBehaviour=True):
+    def calculateDesiredBehaviour(self, otherAgentsList, forceUpdate=False):
         """Calculates desired behaviour and updates desiredAccleration accordingly."""
         if(self._needsBehaviourCalculation or forceUpdate):     
-            if(checkForPendingBehaviour):
-                self._switchToPendingBehaviourIfNecessary()
-            
             self._desiredAcceleration = self._currentBehaviour.getDesiredAccelerationForAgent(self, otherAgentsList)
             
             self._needsBehaviourCalculation = False
@@ -212,6 +191,6 @@ class BoidAgent(BoidBaseObject):
         #pm.particle(particleShapeName, e=True, at="velocityV", id=self._particleId, fv=self._velocity.v)
 
 
-# END OF CLASS - BoidAgent
+# END OF CLASS - Agent
 ################################################################################
 

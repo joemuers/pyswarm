@@ -1,23 +1,33 @@
 import boidAttributes.attributeTypes as at
+import util
 
 import pymel.core as pm
 import sys
 
 
+
 __LEFT_COLUMN_WIDTH__ = 190
 __MIDDLE_COLUMN_WIDTH__ = 75
-__RIGHT_COLUMN_WIDTH__ = 140
+__RIGHT_COLUMN_WIDTH__ = 250
 
 
 
-##########################
+#################################################
+#########           WINDOWS         #############
+#################################################
+
 def WindowExists(windowReference):
     return(windowReference is not None and pm.window(windowReference, exists=True))
 
+#####################
 def MakeWindow(title):
     return pm.window(title, menuBar=True)
 
-####################
+#####################
+def DestroyWindow(windowReference):
+    pm.deleteUI(windowReference, window=True)
+
+#############################
 
 
 
@@ -25,16 +35,44 @@ def MakeWindow(title):
 #########             MENUS         #############
 #################################################
 
+def SetParentMenuLayout(parentMenuLayout):
+    if(not IsCurrentMenuParent(parentMenuLayout)):
+        pm.setParent(parentMenuLayout, menu=True)
+
+#####################        
+def SetAsChildMenuLayout(*childLayouts):
+    for _ in childLayouts:
+        pm.setParent("..", menu=True)
+
+#####################
+def IsCurrentMenuParent(menuControl):
+    return (menuControl == pm.currentMenuParent())
+
+#####################
 def MakeMenu(menuTitle):
     return pm.menu(menuTitle)
     
 #####################    
 def MakeMenuItem(itemLabel, onSelectCommand, annotation=None):
-    newMenuItem = pm.menuItem(label=itemLabel, command=onSelectCommand)
+    newMenuItem = pm.menuItem(label=itemLabel)
+    
+    if(onSelectCommand is not None):
+        newMenuItem.setCommand(onSelectCommand)
     if(annotation is not None):
         newMenuItem.setAnnotation(annotation)
     
     return newMenuItem
+
+#####################
+def MakeMenuItemWithSubMenu(itemLabel, annotation=None):
+    newMenuItem = pm.menuItem(label=itemLabel, subMenu=True)
+    if(annotation is not None):
+        newMenuItem.setAnnotation(annotation)
+    
+    return newMenuItem
+
+def MakeMenuSubItem(itemLabel):
+    return pm.menuItem(label=itemLabel)
 
 #####################
 def MakeMenuSeparator():
@@ -48,9 +86,18 @@ def MakeMenuSeparator():
 #########             LAYOUTS       #############
 #################################################
 
+def SetParentLayout(parentLayout):
+    if(not IsCurrentParent(parentLayout)):
+        pm.setParent(parentLayout)
+
+#####################
 def SetAsChildLayout(*childLayouts):
     for _ in childLayouts:
         pm.setParent("..")
+
+#####################        
+def IsCurrentParent(control):
+    return (control == pm.currentParent())
 
 ##################### 
 def MakeScrollLayout(title):
@@ -80,24 +127,31 @@ def MakeColumnLayout():
     return pm.columnLayout(adjustableColumn=True)
 
 #####################    
-def MakeRowLayout(numColumns, spaced=False):
-    if(spaced):
-        return pm.rowLayout(numberOfColumns=numColumns)
-    elif(numColumns == 3):
+def MakeRowLayout(numColumns, rightColumnWidth=None):
+    if(numColumns == 3):
+        if(rightColumnWidth is None):
+            rightColumnWidth = __RIGHT_COLUMN_WIDTH__
+            
         return pm.rowLayout(numberOfColumns=3, 
-                            columnWidth3=(__LEFT_COLUMN_WIDTH__, __MIDDLE_COLUMN_WIDTH__, __RIGHT_COLUMN_WIDTH__), 
+                            columnWidth3=(__LEFT_COLUMN_WIDTH__, __MIDDLE_COLUMN_WIDTH__, rightColumnWidth), 
                             columnAlign=(1, 'right'), 
                             columnAttach=[(1, 'both', 0), (2, 'both', 0), (3, 'both', 10)], 
                             adjustableColumn=3)
     elif(numColumns == 2):
+        if(rightColumnWidth is None):
+            rightColumnWidth = __MIDDLE_COLUMN_WIDTH__ + __RIGHT_COLUMN_WIDTH__
+            
         return pm.rowLayout(numberOfColumns=2, 
-                            columnWidth2=(__LEFT_COLUMN_WIDTH__, __MIDDLE_COLUMN_WIDTH__), 
+                            columnWidth2=(__LEFT_COLUMN_WIDTH__, rightColumnWidth), 
                             columnAlign=(1, 'right'), 
                             columnAttach=[(1, 'both', 0), (2, 'both', 0)])
     elif(numColumns == 1):
+        if(rightColumnWidth is None):
+            rightColumnWidth = __LEFT_COLUMN_WIDTH__
+            
         return pm.rowLayout(numberOfColumns=1, 
                             columnAlign=(1, 'left'), 
-                            columnAttach=(1, 'left', __LEFT_COLUMN_WIDTH__),
+                            columnAttach=(1, 'left', rightColumnWidth),
                             adjustableColumn=1)
     else:
         raise TypeError  
@@ -120,24 +174,6 @@ def DistributeControlsInFormLayout(formLayout, controls):
         position += stepSize
         
     formLayout.attachForm(controls[-1], 'right', 2)
-        
-#########################  
-def MakeButtonStrip(textCommandTupleList):
-    formLayout = MakeFormLayout()
-    controls = []
-    
-    for buttonTuple in textCommandTupleList:
-        text = buttonTuple[0]
-        command = buttonTuple[1]
-        annotation = buttonTuple[2] if(len(buttonTuple) > 2) else None
-
-        button = MakeButton(text, command, annotation)
-        controls.append(button)
-        
-    DistributeControlsInFormLayout(formLayout, controls)
-    SetAsChildLayout(formLayout)
-    
-    return formLayout
         
 #########################
 
@@ -168,7 +204,7 @@ def MakeSliderGroup(attribute, annotation=None):
                "field" : True,
                "columnWidth3" : (__LEFT_COLUMN_WIDTH__, __MIDDLE_COLUMN_WIDTH__, __RIGHT_COLUMN_WIDTH__),
                "adjustableColumn" : 3,
-               "minValue" : attribute.minimumValue if(attribute.minimumValue is not None) else 0
+               "minValue" : util.InitVal(attribute.minimumValue, 0)
                }
 
     if(isFloatField):
@@ -203,7 +239,7 @@ def MakeFieldGroup(attribute, annotation=None):
         isFloatField = False
         groupCreationMethod = pm.intFieldGrp
     else:
-        raise TypeError("Illegal attribute type for standard input field")
+        raise TypeError("Illegal attribute type for standard input field. Got %s of type %s" % (attribute, type(attribute)))
     
     kwargs = { "label" : attribute.attributeLabel, 
                "value1": attribute.value, 
@@ -231,7 +267,7 @@ def MakeRandomizerGroup(randomizerAttribute, annotation=None):
     return inputGroup
     
 #####################
-def MakeCheckboxGroup(attribute, extraLabel, annotation=None):
+def MakeCheckboxGroup(attribute, extraLabel=None, annotation=None):
     if(type(attribute) != at.BoolAttribute):
         raise TypeError("Attempt to make checkbox group from non-boolean attribute.")
     
@@ -258,7 +294,7 @@ def MakeRandomizeOptionsMenu(randomizerController, annotation=None):
     if(type(randomizerController) != at.RandomizeController):
         raise TypeError("Attempt to make randomizer menu from non-randomizerController attribute.")
     
-    rowLayout = MakeRowLayout(2)
+    rowLayout = MakeRowLayout(2, __MIDDLE_COLUMN_WIDTH__)
     
     MakeText(randomizerController.attributeLabel, annotation)
     
@@ -297,6 +333,56 @@ Pure Random = value offset by random amount every time it is queried."
     
 #####################   
 
+def MakeLocationField(locationAttribute, annotation=None):
+    if(not isinstance(locationAttribute, at.LocationAttribute)):
+        raise TypeError("Attempt to make location field with wrong type (expected:%s, got: %s)" % 
+                        (at.LocationAttribute, type(locationAttribute)))
+    
+    rowLayout = MakeRowLayout(2)
+    MakeText(locationAttribute.attributeLabel, annotation)
+    
+    locationField = pm.floatFieldGrp(numberOfFields=3, precision=3, columnWidth3=(__MIDDLE_COLUMN_WIDTH__, __MIDDLE_COLUMN_WIDTH__, __MIDDLE_COLUMN_WIDTH__),
+                                     value1=locationAttribute.x, value2=locationAttribute.y, value3=locationAttribute.z)
+    locationField.changeCommand(lambda *args: locationAttribute._setValue(locationField.getValue()))
+    locationAttribute.updateUiCommand = (lambda *args: locationField.setValue((locationAttribute.x, locationAttribute.y, locationAttribute.z, 0.0)))
+    locationAttribute.uiEnableMethod = locationField.setEnable
+    if(annotation is not None):
+        locationField.setAnnotation(annotation)
+        
+    SetAsChildLayout(rowLayout)
+    
+    return locationField
+
+#########################
+def MakeStringOptionsField(stringAttribute, optionsListStrings, annotation=None):
+    if(not isinstance(stringAttribute, at.StringAttribute)):
+        raise TypeError("Attempted to make string options (expected:%s, got:%s)" % 
+                        (at.StringAttribute, type(stringAttribute)))
+    elif(stringAttribute.value not in optionsListStrings):
+        raise ValueError("Initial value %s is not in options list." % stringAttribute.value)
+    
+    rowLayout = MakeRowLayout(2, __MIDDLE_COLUMN_WIDTH__)
+    
+    MakeText(stringAttribute.attributeLabel, annotation)
+    
+    optionMenu = pm.optionMenu()
+    menuItemsList = []
+    for option in optionsListStrings:
+        menuItemsList.append(pm.menuItem(label=option))
+    
+    optionMenu.changeCommand(lambda *args: stringAttribute._setValue(optionMenu.getValue()))
+    stringAttribute.updateUiCommand = optionMenu.setValue
+    stringAttribute.uiEnableMethod = optionMenu.setEnable
+    if(annotation is not None):
+        optionMenu.setAnnotation(annotation)
+    
+    SetAsChildLayout(rowLayout)
+    
+    return (optionMenu, menuItemsList)
+    
+#########################
+
+
 
 #################################################
 #########    MISCELLANEOUS ITEMS    #############
@@ -316,7 +402,53 @@ def MakeButton(text, callback, annotation=None):
         button.setAnnotation(annotation)
         
     return button
+
+#######################
+def MakeButtonStrip(textCommandTupleList):
+    formLayout = MakeFormLayout()
+    controls = []
     
+    for buttonTuple in textCommandTupleList:
+        text = buttonTuple[0]
+        command = buttonTuple[1]
+        annotation = buttonTuple[2] if(len(buttonTuple) > 2) else None
+
+        button = MakeButton(text, command, annotation)
+        controls.append(button)
+        
+    DistributeControlsInFormLayout(formLayout, controls)
+    SetAsChildLayout(formLayout)
+    
+    return formLayout
+
+#####################
+def MakeTextInputField(label, placeholderText=None, annotation=None):
+    textField = pm.textFieldGrp(label=label)
+    if(placeholderText is not None):
+        textField.setText(placeholderText)
+    if(annotation is not None):
+        textField.setAnnotation(annotation)
+        
+    return textField
+
+#####################
+def MakeRadioButtonGroup(label, buttonTitlesTuple, onChangeCommand, annotation=None):
+    numberOfButtons = len(buttonTitlesTuple)
+    if(numberOfButtons < 1 or numberOfButtons > 4):
+        raise ValueError("Attempt to create radioButtonGrp with %d buttons (expected 1-4)." % numberOfButtons)
+    
+    buttonKwargs = { "label" : label,
+                     ("labelArray%d" % numberOfButtons) : buttonTitlesTuple,
+                     "numberOfRadioButtons" : numberOfButtons,
+                     "changeCommand" : onChangeCommand,
+                     "select" : 1 }
+    if(annotation is not None):
+        buttonKwargs["annotation"] = annotation
+    
+    buttonGroup = pm.radioButtonGrp(**buttonKwargs)
+    
+    return buttonGroup
+
 #####################
 def MakeSeparator():
     return pm.separator(style='in')
@@ -324,6 +456,10 @@ def MakeSeparator():
 #####################
 def GetUserConfirmation(title, message):
     return pm.confirmBox(title, message, "OK", "Cancel")
+
+#####################
+def DeleteComponent(uiComponent):
+    pm.deleteUI(uiComponent)
 
 
 ####################################################################

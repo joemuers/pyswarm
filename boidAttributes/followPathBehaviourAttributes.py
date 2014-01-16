@@ -1,5 +1,6 @@
 import attributesBaseObject as abo
 import attributeTypes as at
+import boidTools.util as util
 import boidTools.uiBuilder as uib
 
 
@@ -25,9 +26,20 @@ class FollowPathDataBlob(abo.DataBlobBaseObject):
 
 ###########################################
 class FollowPathBehaviourAttributes(abo.AttributesBaseObject):
-    
-    def __init__(self):
-        super(FollowPathBehaviourAttributes, self).__init__()
+
+    @classmethod
+    def DefaultSectionTitle(cls):
+        return "Follow Path Behaviour"
+
+#####################    
+    def __init__(self, sectionTitle, pathCurve=None):
+        super(FollowPathBehaviourAttributes, self).__init__(sectionTitle)
+        
+        self._pathCurve = util.PymelObjectFromObjectName(pathCurve) if(pathCurve is not None) else None
+        self._defaultBehaviourID = "<None>"
+        self._followOnBehaviourIDs = [self._defaultBehaviourID]
+        self._followOnBehaviourMenu = None
+        self._followOnBehaviourMenuItems = None
         
         self._pathDevianceThreshold = at.FloatAttribute("Path Deviance Threshold", 3.0, self)
         self._pathDevianceThreshold_Random = at.RandomizerAttribute(self._pathDevianceThreshold)
@@ -36,10 +48,7 @@ class FollowPathBehaviourAttributes(abo.AttributesBaseObject):
         self._pathInfluenceMagnitude = at.FloatAttribute("Path Influence Magnitude", 0.75, minimumValue=0.0, maximumValue=1.0)
         self._startingTaper = at.FloatAttribute("Starting Taper", 0.5)
         self._endingTaper = at.FloatAttribute("Ending Taper", 2.0)
-
-#####################         
-    def sectionTitle(self):
-        return "Follow Path Behaviour"
+        self._followOnBehaviour = at.StringAttribute("Follow-On Behaviour", self._defaultBehaviourID)
     
 #####################
     def populateUiLayout(self):
@@ -53,10 +62,30 @@ class FollowPathBehaviourAttributes(abo.AttributesBaseObject):
         uib.MakeSeparator()
         uib.MakeSliderGroup(self._startingTaper)
         uib.MakeSliderGroup(self._endingTaper)
+        uib.MakeSeparator()
+        cmdTuple = uib.MakeStringOptionsField(self._followOnBehaviour, self._followOnBehaviourIDs)
+        self._followOnBehaviourMenu, self._followOnBehaviourMenuItems = cmdTuple
         
 #####################
     def _createDataBlobForAgent(self, agent):
         return FollowPathDataBlob(agent)
+ 
+#####################   
+    def onBehaviourListUpdated(self, behaviourIDsList, defaultBehaviourId):
+        if(self._followOnBehaviourMenu is not None):
+            self._defaultBehaviourID = defaultBehaviourId
+            self._followOnBehaviourIDs = filter(lambda nm: nm != self.sectionTitle(), behaviourIDsList)
+            
+            while(self._followOnBehaviourMenuItems):
+                uib.DeleteComponent(self._followOnBehaviourMenuItems.pop())
+            uib.SetParentMenuLayout(self._followOnBehaviourMenu)
+            for behaviourID in self._followOnBehaviourIDs:
+                self._followOnBehaviourMenuItems.append(uib.MakeMenuSubItem(behaviourID))
+                
+            if(self._followOnBehaviour.value not in self._followOnBehaviourIDs):
+                self._followOnBehaviour.value = self._defaultBehaviourID
+            else:
+                self._followOnBehaviour._updateInputUiComponents()
     
 #####################
     def _updateDataBlobWithAttribute(self, dataBlob, attribute):
@@ -64,6 +93,11 @@ class FollowPathBehaviourAttributes(abo.AttributesBaseObject):
             dataBlob.pathDevianceThreshold = self._getPathDevianceThresholdForBlob(dataBlob)
         elif(attribute is self._goalDistanceThreshold):
             dataBlob.goalDistanceThreshold = self._getGoalDistanceThresholdForBlob(dataBlob)
+
+#####################            
+    def _getPathCurve(self):
+        return self._pathCurve
+    pathCurve = property(_getPathCurve)
 
 #####################     
     def _getPathDevianceThresholdForBlob(self, dataBlob):
@@ -85,6 +119,11 @@ class FollowPathBehaviourAttributes(abo.AttributesBaseObject):
     def _getTaperEnd(self):
         return self._endingTaper.value
     taperEnd = property(_getTaperEnd)
+    
+#####################
+    def _getFollowOnBehaviourID(self):
+        return self._followOnBehaviour.value
+    followOnBehaviourID = property(_getFollowOnBehaviourID)
 
     
 # END OF CLASS

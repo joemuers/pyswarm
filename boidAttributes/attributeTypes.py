@@ -1,13 +1,18 @@
+import boidVectors.vector3 as bv3
+import boidTools.util as util
+
+from abc import ABCMeta, abstractmethod
 import random
 import weakref
 
 
 
 #####################
-
 class SingleAttributeDelegate(object):
+    __metaclass__ = ABCMeta
     
-    def _onAttributeChanged(self, attribute):
+    @abstractmethod
+    def onValueChanged(self, attribute):
         raise NotImplemented
 
 # END OF CLASS - SingleAttributeDelegate
@@ -21,23 +26,25 @@ class _SingleAttributeBaseObject(object):
     
     def __init__(self, attributeLabel, value, delegate=None):
         self._attributeLabel = attributeLabel
-        self._value = value
+        self._value = self._getValueFromInput(value)
         
         if(delegate is None):
-            self._delegate = None
-        elif(not hasattr(delegate, "_onAttributeChanged")):
-            raise TypeError("Delegate is of type %s" % type(delegate))
+            self._delegate = None                      # can't use isinstance here, as delegate sometimes doesn't have a type
+        elif(not hasattr(delegate, 'onValueChanged')): # if still within it's __init__ method.
+            raise TypeError("Delegate %s is of type: %s (expected SingleAttributeDelegate)" % (delegate, type(delegate)))
         else:
             self._delegate = weakref.ref(delegate)
         
         self.updateUiCommand = None
         self.uiEnableMethod = None
+        
+        self.excludeFromDefaults = False
 
 #####################   
     def _getValue(self):
         return self._value
     def _setValue(self, value):
-        newValue = self.getValueFromInput(value)
+        newValue = self._getValueFromInput(value)
         if(newValue != self.value):
             self._value = newValue
             
@@ -57,7 +64,7 @@ class _SingleAttributeBaseObject(object):
     attributeLabel = property(_getAttributeLabel)
 
 #####################    
-    def getValueFromInput(self, inputValue):
+    def _getValueFromInput(self, inputValue):
         raise NotImplemented("Unrecognised attribute type")
     
 #####################    
@@ -73,7 +80,7 @@ class _SingleAttributeBaseObject(object):
 #####################            
     def _updateDelegate(self):
         if(self._delegate is not None):
-            self._delegate()._onAttributeChanged(self)   
+            self._delegate().onValueChanged(self)   
     
 # END OF CLASS - _SingleAttributeBaseObject
 ######################################
@@ -103,7 +110,7 @@ class IntAttribute(_SingleAttributeBaseObject):
     def _getValue(self):
         return self._value
     def _setValue(self, value):
-        newValue = self.getValueFromInput(value)
+        newValue = self._getValueFromInput(value)
         if((self.minimumValue is not None and newValue < self.minimumValue) or 
            (self.maximumValue is not None and self.maximumValue < newValue)):
             self._updateInputUiComponents()
@@ -113,7 +120,7 @@ class IntAttribute(_SingleAttributeBaseObject):
     value = property(_getValue, _setValue)
 
 #####################   
-    def getValueFromInput(self, inputValue):
+    def _getValueFromInput(self, inputValue):
         return int(inputValue)
 
 # END OF CLASS - IntAttribute
@@ -124,7 +131,7 @@ class IntAttribute(_SingleAttributeBaseObject):
 ##################################################### 
 class FloatAttribute(IntAttribute):
             
-    def getValueFromInput(self, inputValue):
+    def _getValueFromInput(self, inputValue):
         return float(inputValue)
 
 # END OF CLASS - FloatAttribute
@@ -178,7 +185,7 @@ class RandomizerAttribute(FloatAttribute):
                 RandomizerAttribute._previousState = random.getstate()
                 
             diff = self._parentAttribute.value * self.value
-            result = self._parentAttribute.getValueFromInput(self._parentAttribute.value + random.uniform(-diff, diff))
+            result = self._parentAttribute._getValueFromInput(self._parentAttribute.value + random.uniform(-diff, diff))
             
             return self._clampIfNecessary(result)
         else:
@@ -189,7 +196,7 @@ class RandomizerAttribute(FloatAttribute):
     def getRandomizedValueForIntegerId(self, integerId):
         if(self.value != 0):
             diff = self._parentAttribute.value * self.value * RandomizerAttribute._RandomValueForInt(integerId)
-            result = self._parentAttribute.getValueFromInput(self._parentAttribute.value + diff)
+            result = self._parentAttribute._getValueFromInput(self._parentAttribute.value + diff)
             
             return self._clampIfNecessary(result)
         else:
@@ -225,7 +232,7 @@ class RandomizeController(_SingleAttributeBaseObject):
             print("WARNING - delegate attribute for randomized attribute \'%s\' is None" % parentAttribute.attributeLabel)
 
         super(RandomizeController, self).__init__(parentAttribute.attributeLabel + " Input", 
-                                                  RandomizeController.__Off__, 
+                                                  RandomizeController.StringForOption(RandomizeController.__Off__), 
                                                   parentAttribute.delegate)
         
         self._randomizerAttribute = RandomizerAttribute(parentAttribute)
@@ -239,7 +246,7 @@ class RandomizeController(_SingleAttributeBaseObject):
     value = property(_getValue, _setValue)   
  
 #####################   
-    def getValueFromInput(self, inputValue):
+    def _getValueFromInput(self, inputValue):
         return RandomizeController.OptionForString(inputValue) 
     
     def _updateInputUiComponents(self):
@@ -270,7 +277,7 @@ class RandomizeController(_SingleAttributeBaseObject):
 #####################################################        
 class BoolAttribute(_SingleAttributeBaseObject):
     
-    def getValueFromInput(self, inputValue):
+    def _getValueFromInput(self, inputValue):
         return bool(inputValue)
 
 # END OF CLASS - BoolAttribute
@@ -278,10 +285,75 @@ class BoolAttribute(_SingleAttributeBaseObject):
 
 
 
+#####################################################
+class LocationAttribute(_SingleAttributeBaseObject):
+    """Recommended that the verifyLocatorIfNecessary method is called periodically
+    to ensure that the current value is updated with the current position of
+    the locator (if one is currently bound to the attribute).
+    """
+    
+    def __init__(self, attributeLabel, value, delegate=None):
+        super(LocationAttribute, self).__init__(attributeLabel, value, delegate)
+        
+        self._boundLocator = None
+
+#####################        
+    def verifyLocatorIfNecessary(self):
+        """Recommended that this method is periodically called to ensure attribute
+        is correctly updated with any changes in the bound locator's location.
+        """
+        if(self._boundLocator is not None):
+            self.value = self._boundLocator
+
+#####################            
+    def clearBoundLocator(self):
+        self._boundLocator = None
+
+#####################      
+    def _getX(self):
+        return self._value.x      
+    def _setX(self, xValue):
+        self.value = (xValue, self._value.y, self._value.z)
+    x = property(_getX, _setX)
+
+    def _getY(self):
+        return self._value.y        
+    def _setY(self, yValue):
+        self.value = (self._value.x, yValue, self._value.z)
+    y = property(_getY, _setY)
+        
+    def _getZ(self):
+        return self._value.z
+    def _setZ(self, zValue):
+        self.value = (self._value.x, self._value.y, zValue)
+    z = property(_getZ, _setZ)
+
+#####################    
+    def _getValueFromInput(self, inputValue):
+        result = util.Vector3FromLocator(inputValue)
+        if(result is not None):
+            self._boundLocator = inputValue
+        else:
+            self._boundLocator = None
+            
+            if(isinstance(inputValue, bv3.Vector3)):
+                result = inputValue
+            elif(isinstance(inputValue, list) or isinstance(inputValue, tuple)):
+                result = bv3.Vector3(inputValue[0], inputValue[1], inputValue[2])
+            else:
+                raise TypeError("Location input value received value %s, of type: %s" % (inputValue, type(inputValue)))
+        
+        return result
+
+# END OF CLASS - LocationAttribute
+######################################
+
+
+
 #####################################################         
 class StringAttribute(_SingleAttributeBaseObject):
     
-    def getValueFromInput(self, inputValue):
+    def _getValueFromInput(self, inputValue):
         return str(inputValue)
     
 # END OF CLASS - StringAttribute

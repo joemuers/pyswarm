@@ -5,8 +5,8 @@ import boidVectors.vector3 as bv3
 
 
 #############################################
-class BoidAgentState(BoidBaseObject):
-    """Internal to BoidAgent, i.e. each BoidAgent instance "has" a boidAgentState member.  
+class AgentState(BoidBaseObject):
+    """Internal to Agent, i.e. each Agent instance "has" a boidAgentState member.  
     Essentially just a data container with information on the corresponding agent, regarding:
         - current position
         - current heading/acceleration
@@ -54,8 +54,8 @@ class BoidAgentState(BoidBaseObject):
     def __str__(self):
         return ("id=%d, pos=%s, vel:(hdgH=%d, hdgV=%d, spd=%.2f), acln:(hdgH=%d, hdgV=%d, spd=%.2f), TG=%s" % 
                 (self._particleId, self._position, 
-                 self._velocity.degreeHeadingHorizontal(), self._velocity.degreeHeadingVertical(), self._velocity.magnitude(),
-                 self._acceleration.degreeHeadingHorizontal(), self._acceleration.degreeHeadingVertical(), self._acceleration.magnitude(),
+                 self._velocity.degreeHeading(), self._velocity.degreeHeadingVertical(), self._velocity.magnitude(),
+                 self._acceleration.degreeHeading(), self._acceleration.degreeHeadingVertical(), self._acceleration.magnitude(),
                  "Y" if(self._isTouchingGround) else "N"))
     
 ################### 
@@ -64,9 +64,9 @@ class BoidAgentState(BoidBaseObject):
         crowdStringsList = [("%d," % crowdingAgent.particleId) for crowdingAgent in self.crowdedList]
         collisionStringsList = [("%d," % collidingAgent.particleId) for collidingAgent in self.collisionList]
         
-        return ("id=%d, avP=%s, avV=:(hdgH=%d, hdgV=%d, spd=%.2f), avCP=%s, nextRbld=%d, bhvr=%s, nr=%s, cr=%s, col=%s" % 
+        return ("id=%d, avP=%s, avV=:(hdgH=%d, hdgV=%d, spd=%.2f), avCP=%s, nextRbld=%d\n\t\tbhvrAtrbts=%s, nr=%s, cr=%s, col=%s" % 
                 (self._particleId, self._avPosition, 
-                 self._avVelocity.degreeHeadingHorizontal(), self._avVelocity.degreeHeadingVertical(), self._avVelocity.magnitude(), 
+                 self._avVelocity.degreeHeading(), self._avVelocity.degreeHeadingVertical(), self._avVelocity.magnitude(), 
                  self._avCrowdedPos, self._framesUntilNextRebuild, self.behaviourAttributes,
                  ''.join(nearStringsList), ''.join(crowdStringsList), ''.join(collisionStringsList)))       
     
@@ -271,8 +271,8 @@ class BoidAgentState(BoidBaseObject):
     
     @staticmethod
     def _calculateWeighting(distanceVector, angle, forwardAngle, blindAngle):
-        return (BoidAgentState._getWeightingInverseSquareDistance(distanceVector) +
-                BoidAgentState._getWeightingAngular(angle, forwardAngle, blindAngle)) 
+        return (AgentState._getWeightingInverseSquareDistance(distanceVector) +
+                AgentState._getWeightingAngular(angle, forwardAngle, blindAngle)) 
     
 ##############################
     def _recalculateListsAndAverages(self, parentAgent, otherAgents, neighbourhoodSize, 

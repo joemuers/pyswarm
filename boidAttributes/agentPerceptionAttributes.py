@@ -30,9 +30,14 @@ class PerceptionAttributesDataBlob(abo.DataBlobBaseObject):
 
 ##########################################
 class AgentPerceptionAttributes(abo.AttributesBaseObject):
-    
+ 
+    @classmethod
+    def DefaultSectionTitle(cls):
+        return "Agent Awareness"
+ 
+ #####################   
     def __init__(self):
-        super(AgentPerceptionAttributes, self).__init__()
+        super(AgentPerceptionAttributes, self).__init__(AgentPerceptionAttributes.DefaultSectionTitle())
         
         self._neighbourhoodSize = at.FloatAttribute("Neighbourhood Size", 4.0, self)
         self._neighbourhoodSize_Random = at.RandomizerAttribute(self._neighbourhoodSize)
@@ -45,10 +50,6 @@ class AgentPerceptionAttributes(abo.AttributesBaseObject):
         self._blindRegionAngle_Random = at.RandomizerAttribute(self._blindRegionAngle)
         self._forwardVisionAngle = at.IntAttribute("Forward Vision Angle", 90, self, maximumValue=359)
         self._forwardVisionAngle_Random = at.RandomizerAttribute(self._forwardVisionAngle)   
-
-#####################    
-    def sectionTitle(self):
-        return "Agent Awareness"
 
 ##################### 
     def populateUiLayout(self):
@@ -67,7 +68,7 @@ class AgentPerceptionAttributes(abo.AttributesBaseObject):
         uib.MakeRandomizerGroup(self._blindRegionAngle_Random)
         uib.MakeSeparator()
         uib.MakeSliderGroup(self._forwardVisionAngle)
-        uib.MakeRandomizerGroup(self._blindRegionAngle_Random)
+        uib.MakeRandomizerGroup(self._forwardVisionAngle_Random)
         
 #####################        
     def _createDataBlobForAgent(self, agent):

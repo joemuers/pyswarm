@@ -31,8 +31,13 @@ class MovementAttributesDataBlob(abo.DataBlobBaseObject):
 ##########################################
 class AgentMovementAttributes(abo.AttributesBaseObject):
     
+    @classmethod
+    def DefaultSectionTitle(cls):
+        return "Agent Movement"
+    
+######################
     def __init__(self):
-        super(AgentMovementAttributes, self).__init__()
+        super(AgentMovementAttributes, self).__init__(AgentMovementAttributes.DefaultSectionTitle())
         
         self._maxVelocity = at.FloatAttribute("Max Velocity", 5.0, self)
         self._maxVelocity_Random = at.RandomizeController(self._maxVelocity)
@@ -50,15 +55,12 @@ class AgentMovementAttributes(abo.AttributesBaseObject):
         
         self._jumpAcceleration = at.FloatAttribute("Jump Acceleration", 65, self)
         self._jumpAcceleration_Random = at.RandomizeController(self._jumpAcceleration)
-        
-##################### 
-    def sectionTitle(self): 
-        return "Agent Movement"
 
 #####################     
     def populateUiLayout(self):
         
         speedFrameLayout = uib.MakeFrameLayout("Speed")
+        
         uib.MakeSliderGroup(self._maxVelocity, self._getMaxVelocityForBlob.__doc__)
         uib.MakeRandomizerFields(self._maxVelocity_Random)
         uib.MakeSeparator()
@@ -87,18 +89,7 @@ class AgentMovementAttributes(abo.AttributesBaseObject):
 #####################
     def _createDataBlobForAgent(self, agent):
         return MovementAttributesDataBlob(agent)
-
-# #####################        
-#     def _updateDataBlob(self, dataBlob):
-#         agentId = dataBlob.agentId
-#         
-#         dataBlob.maxVelocity = self._getMaxVelocityForId(agentId)
-#         dataBlob.preferredVelocity = self._getPreferredVelocityForId(agentId)
-#         dataBlob.maxAcceleration = self._getMaxAccelerationForId(agentId)
-#         dataBlob.maxTurnRate = self._getMaxTurnRateForId(agentId)
-#         dataBlob.preferredTurnVelocity = self._getPreferredTurnVelocityForId(agentId)
-#         dataBlob.jumpAcceleration = self._getJumpAccelerationForId(agentId)
-        
+       
 #####################        
     def _updateDataBlobWithAttribute(self, dataBlob, attribute):
         if(attribute is self._maxVelocity):

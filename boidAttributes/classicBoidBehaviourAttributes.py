@@ -26,17 +26,18 @@ class ClassicBoidDataBlob(abo.DataBlobBaseObject):
 ###########################################
 class ClassicBoidBehaviourAttributes(abo.AttributesBaseObject):
     
-    def __init__(self):
-        super(ClassicBoidBehaviourAttributes, self).__init__()
+    @classmethod
+    def DefaultSectionTitle(cls):
+        return "Classic Boid Behaviour"
+    
+#####################    
+    def __init__(self, sectionTitle):
+        super(ClassicBoidBehaviourAttributes, self).__init__(sectionTitle)
         
         self._alignmentDirectionThreshold = at.IntAttribute("Alignment Threshold", 30, self, maximumValue=359)
         self._alignmentDirectionThreshold_Random = at.RandomizerAttribute(self._alignmentDirectionThreshold)
         self._cohesionPositionThreshold = at.FloatAttribute("Cohesion Threshold", 1.9, self)
         self._cohesionPositionThreshold_Random = at.RandomizerAttribute(self._cohesionPositionThreshold)
-
-#####################         
-    def sectionTitle(self):
-        return "Classic Boid Behaviour"
     
 #####################
     def populateUiLayout(self):

@@ -11,6 +11,10 @@ import random
 ######################
 def AgentBehaviourIsClassicBoid(agent):
     return (type(agent.state.behaviourAttributes) == cbba.ClassicBoidDataBlob)
+
+######################
+def AttributesAreClassicBoid(attributes):
+    return isinstance(attributes, cbba.ClassicBoidBehaviourAttributes)
     
 ######################
 
@@ -19,28 +23,13 @@ def AgentBehaviourIsClassicBoid(agent):
 #######################################
 class ClassicBoid(BehaviourBaseObject):
     
-    def __init__(self, attributesController, negativeGridBounds, positiveGridBounds):
-        super(ClassicBoid, self).__init__()
+    def __init__(self, classicBoidAttributes, attributesController):
+        super(ClassicBoid, self).__init__(classicBoidAttributes)
         
         self._movementAttributes = attributesController.agentMovementAttributes
-        
-        self._negativeGridBounds = negativeGridBounds
-        self._positiveGridBounds = positiveGridBounds
+        self._globalAttributes = attributesController.globalAttributes
         
         self._doNotClampMovement = False
-
-######################       
-    def __str__(self):
-        return ("CLASSIC BOID - %s" % super(ClassicBoid, self).__str__())
- 
-######################   
-    def _createBehaviourAttributes(self):
-        return cbba.ClassicBoidBehaviourAttributes()
-
-######################    
-    def onFrameUpdated(self):
-        # TODO - re-check bounding locators...
-        pass
         
 ######################         
     def getDesiredAccelerationForAgent(self, agent, nearbyAgentsList):
@@ -89,23 +78,25 @@ class ClassicBoid(BehaviourBaseObject):
 ######################         
     def _avoidMapEdgeBehaviour(self, agent, desiredAcceleration):
         madeChanges = False
-        if(self._negativeGridBounds is not None and self._positiveGridBounds is not None):
-            movementAttributes = agent.state.movementAttributes
-            
-            if(agent.currentPosition.x < self._negativeGridBounds.u and agent.currentVelocity.x < movementAttributes.maxVelocity):
-                desiredAcceleration.x += movementAttributes.maxAcceleration 
-                madeChanges = True
-            elif(self._positiveGridBounds.u < agent.currentPosition.x and -(movementAttributes.maxVelocity) < agent.currentVelocity.x):
-                desiredAcceleration.x -= movementAttributes.maxAcceleration
-                madeChanges = True
-            
-            if(agent.currentPosition.z < self._negativeGridBounds.v and agent.currentVelocity.z < movementAttributes.maxVelocity):
-                desiredAcceleration.z += movementAttributes.maxAcceleration 
-                madeChanges = True
-            elif(self._positiveGridBounds.v < agent.currentPosition.z and -(movementAttributes.maxVelocity) < agent.currentVelocity.z):
-                desiredAcceleration.z -= movementAttributes.maxAcceleration
-                madeChanges = True
         
+        lowerGridBounds = self._globalAttributes.lowerBounds
+        upperGridBounds = self._globalAttributes.upperBounds
+        movementAttributes = agent.state.movementAttributes
+        
+        if(agent.currentPosition.x < lowerGridBounds.u and agent.currentVelocity.x < movementAttributes.maxVelocity):
+            desiredAcceleration.x += movementAttributes.maxAcceleration 
+            madeChanges = True
+        elif(upperGridBounds.u < agent.currentPosition.x and -(movementAttributes.maxVelocity) < agent.currentVelocity.x):
+            desiredAcceleration.x -= movementAttributes.maxAcceleration
+            madeChanges = True
+        
+        if(agent.currentPosition.z < lowerGridBounds.v and agent.currentVelocity.z < movementAttributes.maxVelocity):
+            desiredAcceleration.z += movementAttributes.maxAcceleration 
+            madeChanges = True
+        elif(upperGridBounds.v < agent.currentPosition.z and -(movementAttributes.maxVelocity) < agent.currentVelocity.z):
+            desiredAcceleration.z -= movementAttributes.maxAcceleration
+            madeChanges = True
+    
         return madeChanges
         
 ######################                  
