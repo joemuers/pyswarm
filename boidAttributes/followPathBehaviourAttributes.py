@@ -25,7 +25,7 @@ class FollowPathDataBlob(abo.DataBlobBaseObject):
 
 
 ###########################################
-class FollowPathBehaviourAttributes(abo.AttributesBaseObject):
+class FollowPathBehaviourAttributes(abo.AttributesBaseObject, abo.FollowOnBehaviourAttributeInterface):
 
     @classmethod
     def DefaultSectionTitle(cls):
@@ -36,35 +36,29 @@ class FollowPathBehaviourAttributes(abo.AttributesBaseObject):
         super(FollowPathBehaviourAttributes, self).__init__(sectionTitle)
         
         self._pathCurve = util.PymelObjectFromObjectName(pathCurve) if(pathCurve is not None) else None
-        self._defaultBehaviourID = "<None>"
-        self._followOnBehaviourIDs = [self._defaultBehaviourID]
-        self._followOnBehaviourMenu = None
-        self._followOnBehaviourMenuItems = None
         
         self._pathDevianceThreshold = at.FloatAttribute("Path Deviance Threshold", 3.0, self)
-        self._pathDevianceThreshold_Random = at.RandomizerAttribute(self._pathDevianceThreshold)
+        self._pathDevianceThreshold_Random = at.RandomizeController(self._pathDevianceThreshold)
         self._goalDistanceThreshold = at.FloatAttribute("Goal Distance Threshold", 1.0, self)
-        self._goalDistanceThreshold_Random = at.RandomizerAttribute(self._goalDistanceThreshold)
+        self._goalDistanceThreshold_Random = at.RandomizeController(self._goalDistanceThreshold)
         self._pathInfluenceMagnitude = at.FloatAttribute("Path Influence Magnitude", 0.75, minimumValue=0.0, maximumValue=1.0)
         self._startingTaper = at.FloatAttribute("Starting Taper", 0.5)
         self._endingTaper = at.FloatAttribute("Ending Taper", 2.0)
-        self._followOnBehaviour = at.StringAttribute("Follow-On Behaviour", self._defaultBehaviourID)
     
 #####################
     def populateUiLayout(self):
         uib.MakeSliderGroup(self._pathDevianceThreshold)
-        uib.MakeRandomizerGroup(self._pathDevianceThreshold_Random)
+        uib.MakeRandomizerFields(self._pathDevianceThreshold_Random)
         uib.MakeSeparator()
         uib.MakeSliderGroup(self._goalDistanceThreshold)
-        uib.MakeRandomizerGroup(self._goalDistanceThreshold_Random)
+        uib.MakeRandomizerFields(self._goalDistanceThreshold_Random)
         uib.MakeSeparator()
         uib.MakeSliderGroup(self._pathInfluenceMagnitude)
         uib.MakeSeparator()
         uib.MakeSliderGroup(self._startingTaper)
         uib.MakeSliderGroup(self._endingTaper)
         uib.MakeSeparator()
-        cmdTuple = uib.MakeStringOptionsField(self._followOnBehaviour, self._followOnBehaviourIDs)
-        self._followOnBehaviourMenu, self._followOnBehaviourMenuItems = cmdTuple
+        self._makeFollowOnBehaviourOptionGroup()
         
 #####################
     def _createDataBlobForAgent(self, agent):
@@ -72,20 +66,7 @@ class FollowPathBehaviourAttributes(abo.AttributesBaseObject):
  
 #####################   
     def onBehaviourListUpdated(self, behaviourIDsList, defaultBehaviourId):
-        if(self._followOnBehaviourMenu is not None):
-            self._defaultBehaviourID = defaultBehaviourId
-            self._followOnBehaviourIDs = filter(lambda nm: nm != self.sectionTitle(), behaviourIDsList)
-            
-            while(self._followOnBehaviourMenuItems):
-                uib.DeleteComponent(self._followOnBehaviourMenuItems.pop())
-            uib.SetParentMenuLayout(self._followOnBehaviourMenu)
-            for behaviourID in self._followOnBehaviourIDs:
-                self._followOnBehaviourMenuItems.append(uib.MakeMenuSubItem(behaviourID))
-                
-            if(self._followOnBehaviour.value not in self._followOnBehaviourIDs):
-                self._followOnBehaviour.value = self._defaultBehaviourID
-            else:
-                self._followOnBehaviour._updateInputUiComponents()
+        self._updateFollowOnBehaviourOptions(behaviourIDsList, defaultBehaviourId)
     
 #####################
     def _updateDataBlobWithAttribute(self, dataBlob, attribute):
@@ -101,10 +82,10 @@ class FollowPathBehaviourAttributes(abo.AttributesBaseObject):
 
 #####################     
     def _getPathDevianceThresholdForBlob(self, dataBlob):
-        return self._pathDevianceThreshold_Random.getRandomizedValueForIntegerId(dataBlob.agentId)
+        return self._pathDevianceThreshold_Random.valueForIntegerId(dataBlob.agentId)
      
     def _getGoalDistanceThresholdForBlob(self, dataBlob):
-        return self._goalDistanceThreshold_Random.getRandomizedValueForIntegerId(dataBlob.agentId)
+        return self._goalDistanceThreshold_Random.valueForIntegerId(dataBlob.agentId)
 
 #####################     
     def _getPathInfluenceMagnitude(self):
@@ -119,7 +100,7 @@ class FollowPathBehaviourAttributes(abo.AttributesBaseObject):
     def _getTaperEnd(self):
         return self._endingTaper.value
     taperEnd = property(_getTaperEnd)
-    
+
 #####################
     def _getFollowOnBehaviourID(self):
         return self._followOnBehaviour.value

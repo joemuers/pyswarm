@@ -35,19 +35,19 @@ class ClassicBoidBehaviourAttributes(abo.AttributesBaseObject):
         super(ClassicBoidBehaviourAttributes, self).__init__(sectionTitle)
         
         self._alignmentDirectionThreshold = at.IntAttribute("Alignment Threshold", 30, self, maximumValue=359)
-        self._alignmentDirectionThreshold_Random = at.RandomizerAttribute(self._alignmentDirectionThreshold)
+        self._alignmentDirectionThreshold_Random = at.RandomizeController(self._alignmentDirectionThreshold)
         self._cohesionPositionThreshold = at.FloatAttribute("Cohesion Threshold", 1.9, self)
-        self._cohesionPositionThreshold_Random = at.RandomizerAttribute(self._cohesionPositionThreshold)
+        self._cohesionPositionThreshold_Random = at.RandomizeController(self._cohesionPositionThreshold)
     
 #####################
     def populateUiLayout(self):
         uib.MakeSliderGroup(self._alignmentDirectionThreshold)
-        uib.MakeRandomizerGroup(self._alignmentDirectionThreshold_Random)
+        uib.MakeRandomizerFields(self._alignmentDirectionThreshold_Random)
         
         uib.MakeSeparator()
         
         uib.MakeSliderGroup(self._cohesionPositionThreshold)
-        uib.MakeRandomizerGroup(self._cohesionPositionThreshold_Random)
+        uib.MakeRandomizerFields(self._cohesionPositionThreshold_Random)
         
 #####################
     def _createDataBlobForAgent(self, agent):
@@ -62,10 +62,10 @@ class ClassicBoidBehaviourAttributes(abo.AttributesBaseObject):
 
 #####################         
     def _getAlignmentDirectionThresholdForBlob(self, dataBlob):
-        return self._alignmentDirectionThreshold_Random.getRandomizedValueForIntegerId(dataBlob.agentId)
+        return self._alignmentDirectionThreshold_Random.valueForIntegerId(dataBlob.agentId)
         
     def _getCohesionPositionThresholdForBlob(self, dataBlob):
-        return self._cohesionPositionThreshold_Random.getRandomizedValueForIntegerId(dataBlob.agentId)
+        return self._cohesionPositionThreshold_Random.valueForIntegerId(dataBlob.agentId)
 
 # END OF CLASS
 ##############################    

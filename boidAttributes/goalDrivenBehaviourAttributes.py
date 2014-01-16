@@ -53,7 +53,7 @@ class GoalDrivenDataBlob(abo.DataBlobBaseObject):
 
 
 ###########################################
-class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject):
+class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject, abo.FollowOnBehaviourAttributeInterface):
 
     @classmethod
     def DefaultSectionTitle(cls):
@@ -67,11 +67,6 @@ class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject):
             pyramidBaseVector = util.Vector3FromLocator(basePyramidGoalHeight)
             if(pyramidBaseVector is not None):
                 basePyramidGoalHeight = pyramidBaseVector.y
-                
-        self._defaultBehaviourID = "<None>"
-        self._followOnBehaviourIDs = [self._defaultBehaviourID]
-        self._followOnBehaviourMenu = None
-        self._followOnBehaviourMenuItems = None
         
         self._wallLipGoal = at.LocationAttribute("Wall Lip Goal", util.InitVal(wallLipGoal, (0, 5, 0)), self)
         basePyramidLocation = (self._wallLipGoal.x, util.InitVal(basePyramidGoalHeight, 0), self._wallLipGoal.z)
@@ -83,18 +78,17 @@ class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject):
         
         self._useInfectionSpread = at.BoolAttribute("Use Infection Spread", False)
         self._incubationPeriod = at.IntAttribute("Incubation Period", 10, self)
-        self._incubationPeriod_Random = at.RandomizerAttribute(self._incubationPeriod)
+        self._incubationPeriod_Random = at.RandomizeController(self._incubationPeriod)
         self._goalChaseSpeed = at.FloatAttribute("Goal Chase Speed", 10, self)
-        self._goalChaseSpeed_Random = at.RandomizerAttribute(self._goalChaseSpeed)
+        self._goalChaseSpeed_Random = at.RandomizeController(self._goalChaseSpeed)
         
         self._pyramidJoinAtDistance = at.FloatAttribute("Join-At Distance", 0.5, self)
-        self._pyramidJoinAtDistance_Random = at.RandomizerAttribute(self._pyramidJoinAtDistance)
+        self._pyramidJoinAtDistance_Random = at.RandomizeController(self._pyramidJoinAtDistance)
         self._pyramidJumpOnDistance = at.FloatAttribute("Jump-On-At Distance", 1, self)
-        self._pyramidJumpOnDistance_Random = at.RandomizerAttribute(self._pyramidJumpOnDistance)
+        self._pyramidJumpOnDistance_Random = at.RandomizeController(self._pyramidJumpOnDistance)
         self._pyramidJumpOnProbability = at.FloatAttribute("Jump-On Probability", 0.1, self, minimumValue=0, maximumValue=1)
         self._pyramidPushUpwardsForce = at.FloatAttribute("Push-Upwards Force", 22)
         self._pyramidPushInwardsForce = at.FloatAttribute("Push-Inwards Force", 15)
-        self._followOnBehaviour = at.StringAttribute("Follow-On Behaviour", self._defaultBehaviourID)
 
 #####################
     def populateUiLayout(self):
@@ -107,18 +101,18 @@ class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject):
         goalChaseFrameLayout = uib.MakeFrameLayout("Goal-Chase Stage")
         uib.MakeCheckboxGroup(self._useInfectionSpread)
         uib.MakeSliderGroup(self._incubationPeriod)
-        uib.MakeRandomizerGroup(self._incubationPeriod_Random)
+        uib.MakeRandomizerFields(self._incubationPeriod_Random)
         uib.MakeSeparator()
         uib.MakeSliderGroup(self._goalChaseSpeed)
-        uib.MakeRandomizerGroup(self._goalChaseSpeed_Random)
+        uib.MakeRandomizerFields(self._goalChaseSpeed_Random)
         uib.SetAsChildLayout(goalChaseFrameLayout)
         
         pyramidJoinFrameLayout = uib.MakeFrameLayout("Pyramid-Join Stage")
         uib.MakeSliderGroup(self._pyramidJoinAtDistance)
-        uib.MakeRandomizerGroup(self._pyramidJoinAtDistance_Random)
+        uib.MakeRandomizerFields(self._pyramidJoinAtDistance_Random)
         uib.MakeSeparator()
         uib.MakeSliderGroup(self._pyramidJumpOnDistance)
-        uib.MakeRandomizerGroup(self._pyramidJumpOnDistance_Random)
+        uib.MakeRandomizerFields(self._pyramidJumpOnDistance_Random)
         uib.MakeSeparator()
         uib.MakeSliderGroup(self._pyramidJumpOnProbability)
         uib.MakeSeparator()
@@ -127,8 +121,7 @@ class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject):
         uib.SetAsChildLayout(pyramidJoinFrameLayout)
 
         finalStageFrameLayout = uib.MakeFrameLayout("Final Stage")
-        cmdTuple = uib.MakeStringOptionsField(self._followOnBehaviour, self._followOnBehaviourIDs)
-        self._followOnBehaviourMenu, self._followOnBehaviourMenuItems = cmdTuple
+        self._makeFollowOnBehaviourOptionGroup()
         uib.SetAsChildLayout(finalStageFrameLayout)
         
 #####################
@@ -137,20 +130,7 @@ class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject):
     
 #####################   
     def onBehaviourListUpdated(self, behaviourIDsList, defaultBehaviourId):
-        if(self._followOnBehaviourMenu is not None):
-            self._defaultBehaviourID = defaultBehaviourId
-            self._followOnBehaviourIDs = filter(lambda nm: nm != self.sectionTitle(), behaviourIDsList)
-            
-            while(self._followOnBehaviourMenuItems):
-                uib.DeleteComponent(self._followOnBehaviourMenuItems.pop())
-            uib.SetParentMenuLayout(self._followOnBehaviourMenu)
-            for behaviourID in self._followOnBehaviourIDs:
-                self._followOnBehaviourMenuItems.append(uib.MakeMenuSubItem(behaviourID))
-                
-            if(self._followOnBehaviour.value not in self._followOnBehaviourIDs):
-                self._followOnBehaviour.value = self._defaultBehaviourID
-            else:
-                self._followOnBehaviour._updateInputUiComponents()
+        self._updateFollowOnBehaviourOptions(behaviourIDsList, defaultBehaviourId)
     
 #####################
     def onFrameUpdated(self):
@@ -179,16 +159,16 @@ class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject):
 
 #####################     
     def _getBehaviourIncubationPeriodForBlob(self, dataBlob):
-        return self._behaviourIncubationPeriod_Random.getRandomizedValueForIntegerId(dataBlob.agentId)
+        return self._behaviourIncubationPeriod_Random.valueForIntegerId(dataBlob.agentId)
      
     def _getGoalChaseSpeedForBlob(self, dataBlob):
-        return self._goalChaseSpeed_Random.getRandomizedValueForIntegerId(dataBlob.agentId)
+        return self._goalChaseSpeed_Random.valueForIntegerId(dataBlob.agentId)
     
     def _getPyramidJoinAtDistanceForBlob(self, dataBlob):
-        return self._pyramidJoinAtDistance_Random.getRandomizedValueForIntegerId(dataBlob.agentId)
+        return self._pyramidJoinAtDistance_Random.valueForIntegerId(dataBlob.agentId)
    
     def _getPyramidJumpOnDistanceForBlob(self, dataBlob):
-        return self._pyramidJumpOnDistance_Random.getRandomizedValueForIntegerId(dataBlob.agentId)
+        return self._pyramidJumpOnDistance_Random.valueForIntegerId(dataBlob.agentId)
 
 ##################### 
     def _getBasePyramidGoal(self):

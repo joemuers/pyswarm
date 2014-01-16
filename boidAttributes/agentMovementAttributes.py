@@ -58,9 +58,7 @@ class AgentMovementAttributes(abo.AttributesBaseObject):
 
 #####################     
     def populateUiLayout(self):
-        
         speedFrameLayout = uib.MakeFrameLayout("Speed")
-        
         uib.MakeSliderGroup(self._maxVelocity, self._getMaxVelocityForBlob.__doc__)
         uib.MakeRandomizerFields(self._maxVelocity_Random)
         uib.MakeSeparator()
@@ -83,8 +81,10 @@ class AgentMovementAttributes(abo.AttributesBaseObject):
         uib.MakeRandomizerFields(self._preferredTurnVelocity_Random)
         uib.SetAsChildLayout(turnFrameLayout)
         
+        miscellaneousFrameLayout = uib.MakeFrameLayout("Misc.")
         uib.MakeSliderGroup(self._jumpAcceleration)
         uib.MakeRandomizerFields(self._jumpAcceleration_Random)
+        uib.SetAsChildLayout(miscellaneousFrameLayout)
         
 #####################
     def _createDataBlobForAgent(self, agent):

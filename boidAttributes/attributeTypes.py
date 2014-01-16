@@ -246,6 +246,11 @@ class RandomizeController(_SingleAttributeBaseObject):
     value = property(_getValue, _setValue)   
  
 #####################   
+    def _getRandomizeMultiplierValue(self):
+        return self._randomizerAttribute.value
+    randomizeMultiplierAttribute = property(_getRandomizeMultiplierValue)
+ 
+#####################   
     def _getValueFromInput(self, inputValue):
         return RandomizeController.OptionForString(inputValue) 
     

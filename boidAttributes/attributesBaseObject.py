@@ -1,4 +1,5 @@
 import attributeTypes as at
+import boidTools.uiBuilder as uib
 
 import weakref
 
@@ -32,6 +33,46 @@ class DataBlobBaseObject(object):
 
 
 ########################################
+class FollowOnBehaviourAttributeInterface(object):
+    
+    def __init__(self, *args, **kwargs):
+        super(FollowOnBehaviourAttributeInterface, self).__init__(*args, **kwargs)
+        
+        self._defaultBehaviourID = "<None>"
+        self._followOnBehaviourIDs = [self._defaultBehaviourID]
+        self._followOnBehaviourMenu = None
+        self._followOnBehaviourMenuItems = None
+        
+        self._followOnBehaviour = at.StringAttribute("Follow-On Behaviour", self._defaultBehaviourID)
+
+#####################        
+    def _makeFollowOnBehaviourOptionGroup(self):
+        cmdTuple = uib.MakeStringOptionsField(self._followOnBehaviour, self._followOnBehaviourIDs)
+        self._followOnBehaviourMenu, self._followOnBehaviourMenuItems = cmdTuple
+
+#####################
+    def _updateFollowOnBehaviourOptions(self, behaviourIDsList, defaultBehaviourId):
+        if(self._followOnBehaviourMenu is not None):
+            self._defaultBehaviourID = defaultBehaviourId
+            self._followOnBehaviourIDs = filter(lambda nm: nm != self.sectionTitle(), behaviourIDsList)
+            
+            while(self._followOnBehaviourMenuItems):
+                uib.DeleteComponent(self._followOnBehaviourMenuItems.pop())
+            uib.SetParentMenuLayout(self._followOnBehaviourMenu)
+            for behaviourID in self._followOnBehaviourIDs:
+                self._followOnBehaviourMenuItems.append(uib.MakeMenuSubItem(behaviourID))
+                
+            if(self._followOnBehaviour.value not in self._followOnBehaviourIDs):
+                self._followOnBehaviour.value = self._defaultBehaviourID
+            else:
+                self._followOnBehaviour._updateInputUiComponents()
+                
+# END OF CLASS - FollowOnBehaviourAtrributeInterface
+########################################
+
+
+
+########################################
 class AttributesBaseObject(at.SingleAttributeDelegate):
     
     @classmethod
@@ -41,6 +82,8 @@ class AttributesBaseObject(at.SingleAttributeDelegate):
 
 #####################    
     def __init__(self, sectionTitle):
+        super(AttributesBaseObject, self).__init__()
+        
         self._sectionTitle = sectionTitle
         self._dataBlobs = []
         self._listeners = []

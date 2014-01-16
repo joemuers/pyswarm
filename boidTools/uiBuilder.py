@@ -10,6 +10,8 @@ __LEFT_COLUMN_WIDTH__ = 190
 __MIDDLE_COLUMN_WIDTH__ = 75
 __RIGHT_COLUMN_WIDTH__ = 250
 
+__OPTIONS_MENUS_WIDTH__ = 130
+
 
 
 #################################################
@@ -127,34 +129,29 @@ def MakeColumnLayout():
     return pm.columnLayout(adjustableColumn=True)
 
 #####################    
-def MakeRowLayout(numColumns, rightColumnWidth=None):
+def MakeRowLayout(numColumns, 
+                  leftColumnWidth=__LEFT_COLUMN_WIDTH__, 
+                  middleColumnWidth=__MIDDLE_COLUMN_WIDTH__, 
+                  rightColumnWidth=__RIGHT_COLUMN_WIDTH__):
+    
     if(numColumns == 3):
-        if(rightColumnWidth is None):
-            rightColumnWidth = __RIGHT_COLUMN_WIDTH__
-            
         return pm.rowLayout(numberOfColumns=3, 
-                            columnWidth3=(__LEFT_COLUMN_WIDTH__, __MIDDLE_COLUMN_WIDTH__, rightColumnWidth), 
+                            columnWidth3=(leftColumnWidth, middleColumnWidth, rightColumnWidth), 
                             columnAlign=(1, 'right'), 
                             columnAttach=[(1, 'both', 0), (2, 'both', 0), (3, 'both', 10)], 
                             adjustableColumn=3)
     elif(numColumns == 2):
-        if(rightColumnWidth is None):
-            rightColumnWidth = __MIDDLE_COLUMN_WIDTH__ + __RIGHT_COLUMN_WIDTH__
-            
         return pm.rowLayout(numberOfColumns=2, 
-                            columnWidth2=(__LEFT_COLUMN_WIDTH__, rightColumnWidth), 
+                            columnWidth2=(leftColumnWidth, rightColumnWidth), 
                             columnAlign=(1, 'right'), 
                             columnAttach=[(1, 'both', 0), (2, 'both', 0)])
     elif(numColumns == 1):
-        if(rightColumnWidth is None):
-            rightColumnWidth = __LEFT_COLUMN_WIDTH__
-            
         return pm.rowLayout(numberOfColumns=1, 
                             columnAlign=(1, 'left'), 
-                            columnAttach=(1, 'left', rightColumnWidth),
+                            columnAttach=(1, 'left', leftColumnWidth),
                             adjustableColumn=1)
     else:
-        raise TypeError  
+        raise ValueError  
     
 #########################
 def MakeFormLayout():
@@ -271,7 +268,7 @@ def MakeCheckboxGroup(attribute, extraLabel=None, annotation=None):
     if(type(attribute) != at.BoolAttribute):
         raise TypeError("Attempt to make checkbox group from non-boolean attribute.")
     
-    rowLayout = MakeRowLayout(2 if(extraLabel is not None) else 1)
+    rowLayout = MakeRowLayout(2 if(extraLabel is not None) else 1, rightColumnWidth=__MIDDLE_COLUMN_WIDTH__ + __RIGHT_COLUMN_WIDTH__)
     
     boxLabel = attribute.attributeLabel
     if(extraLabel is not None):
@@ -294,7 +291,7 @@ def MakeRandomizeOptionsMenu(randomizerController, annotation=None):
     if(type(randomizerController) != at.RandomizeController):
         raise TypeError("Attempt to make randomizer menu from non-randomizerController attribute.")
     
-    rowLayout = MakeRowLayout(2, __MIDDLE_COLUMN_WIDTH__)
+    rowLayout = MakeRowLayout(2, rightColumnWidth=__OPTIONS_MENUS_WIDTH__)
     
     MakeText(randomizerController.attributeLabel, annotation)
     
@@ -338,7 +335,7 @@ def MakeLocationField(locationAttribute, annotation=None):
         raise TypeError("Attempt to make location field with wrong type (expected:%s, got: %s)" % 
                         (at.LocationAttribute, type(locationAttribute)))
     
-    rowLayout = MakeRowLayout(2)
+    rowLayout = MakeRowLayout(2, rightColumnWidth=__MIDDLE_COLUMN_WIDTH__ + __RIGHT_COLUMN_WIDTH__)
     MakeText(locationAttribute.attributeLabel, annotation)
     
     locationField = pm.floatFieldGrp(numberOfFields=3, precision=3, columnWidth3=(__MIDDLE_COLUMN_WIDTH__, __MIDDLE_COLUMN_WIDTH__, __MIDDLE_COLUMN_WIDTH__),
@@ -361,7 +358,7 @@ def MakeStringOptionsField(stringAttribute, optionsListStrings, annotation=None)
     elif(stringAttribute.value not in optionsListStrings):
         raise ValueError("Initial value %s is not in options list." % stringAttribute.value)
     
-    rowLayout = MakeRowLayout(2, __MIDDLE_COLUMN_WIDTH__)
+    rowLayout = MakeRowLayout(2, rightColumnWidth=__OPTIONS_MENUS_WIDTH__)
     
     MakeText(stringAttribute.attributeLabel, annotation)
     
@@ -380,8 +377,23 @@ def MakeStringOptionsField(stringAttribute, optionsListStrings, annotation=None)
     
     return (optionMenu, menuItemsList)
     
-#########################
-
+# #########################
+# def MakeObjectSelectorField(stringAttribute, object=None, annotation=None):
+#     if(not isinstance(stringAttribute, at.StringAttribute)):
+#         raise TypeError("Attempted to make object selector (expected:%s, got:%s)" % 
+#                         (at.StringAttribute, type(stringAttribute)))
+#     
+#     rowLayout = MakeRowLayout(3)
+#     
+#     MakeText(stringAttribute.attributeLabel, annotation)
+#     
+#     nameField = pm.nameField(enable=False)
+#     if(object is not None):
+#         nameField.setObject(object)
+#     if(annotation is not None):
+#         nameField.setAnnotation(annotation)
+#         
+#     
 
 
 #################################################

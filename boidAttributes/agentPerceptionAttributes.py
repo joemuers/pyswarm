@@ -35,40 +35,43 @@ class AgentPerceptionAttributes(abo.AttributesBaseObject):
     def DefaultSectionTitle(cls):
         return "Agent Awareness"
  
- #####################   
+#####################   
     def __init__(self):
         super(AgentPerceptionAttributes, self).__init__(AgentPerceptionAttributes.DefaultSectionTitle())
         
         self._neighbourhoodSize = at.FloatAttribute("Neighbourhood Size", 4.0, self)
-        self._neighbourhoodSize_Random = at.RandomizerAttribute(self._neighbourhoodSize)
+        self._neighbourhoodSize_Random = at.RandomizeController(self._neighbourhoodSize)
         self._nearRegionSize = at.FloatAttribute("Near Region Size", 1.0, self)
-        self._nearRegionSize_Random = at.RandomizerAttribute(self._nearRegionSize)
+        self._nearRegionSize_Random = at.RandomizeController(self._nearRegionSize)
         self._collisionRegionSize = at.FloatAttribute("Collision Region Size", 0.1, self)
-        self._collisionRegionSize_Random = at.RandomizerAttribute(self._collisionRegionSize)
+        self._collisionRegionSize_Random = at.RandomizeController(self._collisionRegionSize)
         
         self._blindRegionAngle = at.IntAttribute("Blind Region Angle", 110, self, maximumValue=359)
-        self._blindRegionAngle_Random = at.RandomizerAttribute(self._blindRegionAngle)
+        self._blindRegionAngle_Random = at.RandomizeController(self._blindRegionAngle)
         self._forwardVisionAngle = at.IntAttribute("Forward Vision Angle", 90, self, maximumValue=359)
-        self._forwardVisionAngle_Random = at.RandomizerAttribute(self._forwardVisionAngle)   
+        self._forwardVisionAngle_Random = at.RandomizeController(self._forwardVisionAngle)   
 
 ##################### 
     def populateUiLayout(self):
+        regionSizeFrame = uib.MakeFrameLayout("Region Size")
         
         uib.MakeSliderGroup(self._neighbourhoodSize)
-        uib.MakeRandomizerGroup(self._neighbourhoodSize_Random)
+        uib.MakeRandomizerFields(self._neighbourhoodSize_Random)
         uib.MakeSeparator()
         uib.MakeSliderGroup(self._nearRegionSize)
-        uib.MakeRandomizerGroup(self._nearRegionSize_Random)
+        uib.MakeRandomizerFields(self._nearRegionSize_Random)
         uib.MakeSeparator()
         uib.MakeSliderGroup(self._collisionRegionSize)
-        uib.MakeRandomizerGroup(self._collisionRegionSize_Random)
-        uib.MakeSeparator()
+        uib.MakeRandomizerFields(self._collisionRegionSize_Random)
+        uib.SetAsChildLayout(regionSizeFrame)
         
+        fieldOfVisionFrame = uib.MakeFrameLayout("Field of Vision")
         uib.MakeSliderGroup(self._blindRegionAngle)
-        uib.MakeRandomizerGroup(self._blindRegionAngle_Random)
+        uib.MakeRandomizerFields(self._blindRegionAngle_Random)
         uib.MakeSeparator()
         uib.MakeSliderGroup(self._forwardVisionAngle)
-        uib.MakeRandomizerGroup(self._forwardVisionAngle_Random)
+        uib.MakeRandomizerFields(self._forwardVisionAngle_Random)
+        uib.SetAsChildLayout(fieldOfVisionFrame)
         
 #####################        
     def _createDataBlobForAgent(self, agent):
@@ -89,24 +92,25 @@ class AgentPerceptionAttributes(abo.AttributesBaseObject):
 
 #####################         
     def _getMaxNeighbourhoodSize(self):
-        return self._neighbourhoodSize.value + (self._neighbourhoodSize.value * self._neighbourhoodSize_Random.value)
+        return (self._neighbourhoodSize.value + 
+                (self._neighbourhoodSize.value * self._neighbourhoodSize_Random.randomizeMultiplierAttribute))
     maxNeighbourhoodSize = property(_getMaxNeighbourhoodSize)
 
 #####################
     def _getNeighbourhoodSizeForBlob(self, dataBlob):
-        return self._neighbourhoodSize_Random.getRandomizedValueForIntegerId(dataBlob.agentId)
+        return self._neighbourhoodSize_Random.valueForIntegerId(dataBlob.agentId)
     
     def _getNearRegionSizeForBlob(self, dataBlob):
-        return self._nearRegionSize_Random.getRandomizedValueForIntegerId(dataBlob.agentId)
+        return self._nearRegionSize_Random.valueForIntegerId(dataBlob.agentId)
     
     def _getCollisionRegionSizeForBlob(self, dataBlob):
-        return self._collisionRegionSize_Random.getRandomizedValueForIntegerId(dataBlob.agentId)
+        return self._collisionRegionSize_Random.valueForIntegerId(dataBlob.agentId)
         
     def _getBlindRegionAngleForBlob(self, dataBlob):
-        return self._blindRegionAngle_Random.getRandomizedValueForIntegerId(dataBlob.agentId)
+        return self._blindRegionAngle_Random.valueForIntegerId(dataBlob.agentId)
     
     def _getForwardVisionAngleForBlob(self, dataBlob):
-        return self._forwardVisionAngle_Random.getRandomizedValueForIntegerId(dataBlob.agentId)
+        return self._forwardVisionAngle_Random.valueForIntegerId(dataBlob.agentId)
 
 # END OF CLASS
 ###############################    

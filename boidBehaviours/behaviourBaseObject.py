@@ -21,8 +21,8 @@ class BehaviourBaseObject(BoidBaseObject):
         if(delegate is not None and not isinstance(delegate, BehaviourDelegate)): 
             raise TypeError
         else:
-            self._delegate = weakref.ref(delegate)
-            self._attributes = attributes.sectionTitle()
+            self._delegate = weakref.ref(delegate) if(delegate is not None) else None
+            self._attributes = attributes
 
 ##########################
     def __str__(self):
