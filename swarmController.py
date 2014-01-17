@@ -100,7 +100,8 @@ class SwarmController(BoidBaseObject, bat.AttributesControllerDelegate):
         self._behavioursController = bbc.BehavioursController(self._attributesController, self._agentsController)
         self._agentsController._buildParticleList()
         
-        self._agentSelectionWindow = asw.AgentSelectionWindow(self._agentsController)
+        self._behaviourAssignmentSelectionWindow = asw.AgentSelectionWindow(self._agentsController)
+        self._leaderAgentsSelectionWindow = asw.AgentSelectionWindow(self._agentsController)
         
         self._runHeadless = False
         self.showUI()
@@ -137,6 +138,14 @@ class SwarmController(BoidBaseObject, bat.AttributesControllerDelegate):
 #############################            
     def hideUI(self):
         self._attributesController.hideUI()
+ 
+#############################       
+    def refreshInternals(self):
+        self._attributesController.onFrameUpdated()
+        self._behavioursController.onFrameUpdated()
+        self._agentsController.refreshInternals()
+        
+        util.LogInfo("Refreshed internal state...")
         
 #############################        
     def onFrameUpdated(self):
@@ -177,8 +186,8 @@ class SwarmController(BoidBaseObject, bat.AttributesControllerDelegate):
         behaviour = self._behavioursController.behaviourForAttributes(behaviourAttributes)
         currentSelection = self._agentsController.getAgentsFollowingBehaviour(behaviour)
         
-        self._agentSelectionWindow.dataBlob = behaviourAttributes
-        self._agentSelectionWindow.show("Assign agents to \"%s\"" % behaviourAttributes.sectionTitle(), 
+        self._behaviourAssignmentSelectionWindow.dataBlob = behaviourAttributes
+        self._behaviourAssignmentSelectionWindow.show("Assign agents to \"%s\"" % behaviourAttributes.sectionTitle(), 
                                         currentSelection, self._onAgentSelectionCompleted)
 
 #############################        
@@ -191,6 +200,18 @@ class SwarmController(BoidBaseObject, bat.AttributesControllerDelegate):
         
         particleIds = map(lambda agent: agent.particleId, currentSelection)
         util.SelectParticlesInList(particleIds, self.particleShapeName)    
+        
+#############################
+    def requestedLeaderSelectForBehaviour(self, behaviourAttributes, isChangeSelectionRequest):
+        behaviour = self._behavioursController.behaviourForAttributes(behaviourAttributes)
+        currentSelection = behaviour.allLeaders()
+        if(isChangeSelectionRequest):
+            self._leaderAgentsSelectionWindow.dataBlob = behaviourAttributes
+            self._leaderAgentsSelectionWindow.show("Select leader agents for \"%s\"" % behaviourAttributes.sectionTitle(),
+                                               currentSelection, self._onAgentSelectionCompleted)
+        else:
+            particleIds = map(lambda agent: agent.particleId, currentSelection)
+            util.SelectParticlesInList(particleIds, self.particleShapeName)
 
 #############################        
     def onBehaviourAttributesDeleted(self, deletedAttributes):
@@ -206,12 +227,21 @@ class SwarmController(BoidBaseObject, bat.AttributesControllerDelegate):
         util.EvalDeferred(RemoveSwarmInstance, self)
         
 #############################        
-    def _onAgentSelectionCompleted(self, selectedAgentsList, selectionDisplayString):
-        attributes = self._agentSelectionWindow.dataBlob
-        behaviour = self._behavioursController.behaviourForAttributes(attributes)
-        
-        self._agentsController.makeAgentsFollowBehaviour(selectedAgentsList, behaviour, attributes)
-        self._agentSelectionWindow.dataBlob = None
+    def _onAgentSelectionCompleted(self, selectionWindow, selectedAgentsList, selectionDisplayString):
+        if(selectionWindow is self._behaviourAssignmentSelectionWindow):
+            attributes = self._behaviourAssignmentSelectionWindow.dataBlob
+            behaviour = self._behavioursController.behaviourForAttributes(attributes)
+            
+            self._agentsController.makeAgentsFollowBehaviour(selectedAgentsList, behaviour, attributes)
+            self._behaviourAssignmentSelectionWindow.dataBlob = None
+        elif(selectionWindow is self._leaderAgentsSelectionWindow):
+            attributes = self._leaderAgentsSelectionWindow.dataBlob
+            behaviour = self._behavioursController.behaviourForAttributes(attributes)
+            
+            for agent in selectedAgentsList:
+                behaviour.makeLeader(agent)
+            attributes.setLeadersAgentsTextDisplay(selectionDisplayString)
+            self._leaderAgentsSelectionWindow.dataBlob = None
         
 
 # END OF CLASS 

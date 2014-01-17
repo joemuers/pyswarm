@@ -3,6 +3,13 @@ from boidBaseObject import BoidBaseObject
 import random as rand
 import math as mth
 
+
+
+def IsVector2(otherVector):
+    return type(otherVector) == Vector2
+
+
+
 __MAGNITUDE_UNDEFINED__ = -1.0
 
 class Vector2(BoidBaseObject):
@@ -60,13 +67,13 @@ class Vector2(BoidBaseObject):
         return self
 
     def __eq__(self, other):
-        return self.u == other.u and self.v == other.v
+        return IsVector2(other) and self.u == other.u and self.v == other.v
     
     def __lt__(self, other):
-        return self.magnitudeSquared() < other.magnitudeSquared()
+        return IsVector2(other) and self.magnitudeSquared() < other.magnitudeSquared()
     
     def __gt__(self, other):
-        return self.magnitudeSquared() > other.magnitudeSquared()
+        return not IsVector2(other) or self.magnitudeSquared() > other.magnitudeSquared()
 
 ####################### 
     def _get_u(self):

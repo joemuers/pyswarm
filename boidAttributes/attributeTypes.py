@@ -1,3 +1,5 @@
+from boidBaseObject import BoidBaseObject
+
 import boidVectors.vector3 as bv3
 import boidTools.util as util
 
@@ -21,7 +23,7 @@ class SingleAttributeDelegate(object):
 
 
 ##################################################### 
-class _SingleAttributeBaseObject(object):
+class _SingleAttributeBaseObject(BoidBaseObject):
     """Base class for attribute types."""
     
     def __init__(self, attributeLabel, value, delegate=None):
@@ -40,6 +42,15 @@ class _SingleAttributeBaseObject(object):
         
         self.excludeFromDefaults = False
 
+#####################         
+    def __str__(self):
+        return str(self.value)
+
+    def _getMetaStr(self):
+        return ("<label=%s, delegate=%s, exclude=%s, updateUi=%s, uiEnable=%s>" %
+                (self._attributeLabel, self.delegate, self.excludeFromDefaults,
+                 self.updateUiCommand, self.uiEnableMethod))
+        
 #####################   
     def _getValue(self):
         return self._value
@@ -65,6 +76,7 @@ class _SingleAttributeBaseObject(object):
 
 #####################    
     def _getValueFromInput(self, inputValue):
+        """Must be able to handle both string and 'normal' object representations."""
         raise NotImplemented("Unrecognised attribute type")
     
 #####################    
@@ -76,6 +88,8 @@ class _SingleAttributeBaseObject(object):
     def setEnabled(self, enabled):
         if(self.uiEnableMethod is not None):
             self.uiEnableMethod(enabled)
+        else:
+            util.LogWarning("uiEnableMethod not defined for attribute %s, ignoring..." % self._attributeLabel)
 
 #####################            
     def _updateDelegate(self):
@@ -91,10 +105,15 @@ class _SingleAttributeBaseObject(object):
 class IntAttribute(_SingleAttributeBaseObject):
     
     def __init__(self, attributeLabel, value, delegate=None, minimumValue=None, maximumValue=None):
-        super(IntAttribute, self).__init__(attributeLabel, value, delegate)
-        
         self._minimumValue = minimumValue
         self._maximumValue = maximumValue
+        
+        super(IntAttribute, self).__init__(attributeLabel, value, delegate)
+        
+#####################        
+    def _getMetaStr(self):
+        return ("%s minVal=%s, maxVal=%s" % 
+                (super(IntAttribute, self)._getMetaStr(), self._minimumValue, self._maximumValue))
  
 #####################        
     def _getMinimumValue(self):
@@ -253,10 +272,15 @@ class RandomizeController(_SingleAttributeBaseObject):
 #####################   
     def _getValueFromInput(self, inputValue):
         return RandomizeController.OptionForString(inputValue) 
-    
+
+#####################    
     def _updateInputUiComponents(self):
         super(RandomizeController, self)._updateInputUiComponents()
         self._randomizerAttribute.setEnabled(self._value != RandomizeController.__Off__)
+        
+    def setEnabled(self, enabled):
+        super(RandomizeController, self).setEnabled(enabled)
+        self._randomizerAttribute.setEnabled(enabled and self._value != RandomizeController.__Off__)
  
 #####################        
     def valueForIntegerId(self, integerId):
@@ -290,29 +314,108 @@ class BoolAttribute(_SingleAttributeBaseObject):
 
 
 
+
+#####################################################         
+class StringAttribute(_SingleAttributeBaseObject):
+    
+    def _getValueFromInput(self, inputValue):
+        return str(inputValue)
+    
+# END OF CLASS - StringAttribute
+######################################
+
+
+
 #####################################################
-class LocationAttribute(_SingleAttributeBaseObject):
+class MayaObjectAttribute(_SingleAttributeBaseObject):
+    
+    def __init__(self, *args, **kwargs):
+        self.objectType = None
+        self.allowNoneType = True
+        
+        super(MayaObjectAttribute, self).__init__(*args, **kwargs)
+
+#####################        
+    def _getMetaStr(self):
+        return ("%s, objType=%s" % (super(MayaObjectAttribute, self)._getMetaStr(), self.objectType))
+
+#####################     
+    def getRawAttribute(self):
+        return self._value
+
+#####################    
+    def _getValueFromInput(self, inputValue):
+        if(inputValue is None or inputValue == str(None)):
+            if(self.allowNoneType):
+                return None
+            else:
+                raise ValueError("Got <None> type for attribute %s" % self.attributeLabel)
+        else:
+            returnValue = util.PymelObjectFromObjectName(inputValue, bypassTransformNodes=False) 
+            
+            if(returnValue is None):
+                raise TypeError("Got none-Pymel type: %s for attribute %s" % (type(returnValue), self.attributeLabel))
+            elif(self.objectType == None):
+                self.objectType = type(returnValue)
+            elif(not isinstance(returnValue, self.objectType)):
+                raise TypeError("Got type: %s for attribute %s (expected %s)" % 
+                                (type(returnValue), self.attributeLabel, self.objectType))
+            
+            return returnValue
+    
+# END OF CLASS - MayaObjectAttribute
+#######################################
+
+
+
+#####################################################
+class LocationAttribute(MayaObjectAttribute):
     """Recommended that the verifyLocatorIfNecessary method is called periodically
     to ensure that the current value is updated with the current position of
     the locator (if one is currently bound to the attribute).
     """
     
-    def __init__(self, attributeLabel, value, delegate=None):
-        super(LocationAttribute, self).__init__(attributeLabel, value, delegate)
-        
+    def __init__(self, *args, **kwargs):
         self._boundLocator = None
+        
+        super(LocationAttribute, self).__init__(*args, **kwargs)
+
+#####################        
+    def _getMetaStr(self):
+        return ("%s, boundLctr=%s" % (super(LocationAttribute, self)._getMetaStr(), self._boundLocator))
+ 
+#####################        
+    def _getObjectType(self):
+        return util.GetLocatorType()
+    def _setObjectType(self, value):
+        pass
+    objectType = property(_getObjectType, _setObjectType)
+    
+    def _getAllowNoneType(self):
+        return True
+    def _setAllowNoneType(self, value):
+        pass
+    allowNoneType = property(_getAllowNoneType, _setAllowNoneType)
+    
+    def getRawAttribute(self):
+        return self._boundLocator
+    
+#####################    
+    def _getHasBoundLocator(self):
+        return self._boundLocator is not None
+    hasBoundLocator = property(_getHasBoundLocator)
 
 #####################        
     def verifyLocatorIfNecessary(self):
         """Recommended that this method is periodically called to ensure attribute
         is correctly updated with any changes in the bound locator's location.
         """
-        if(self._boundLocator is not None):
+        if(self.hasBoundLocator):
             self.value = self._boundLocator
 
 #####################            
     def clearBoundLocator(self):
-        self._boundLocator = None
+        self.value = None
 
 #####################      
     def _getX(self):
@@ -334,32 +437,30 @@ class LocationAttribute(_SingleAttributeBaseObject):
     z = property(_getZ, _setZ)
 
 #####################    
+    def _updateInputUiComponents(self):
+        super(LocationAttribute, self)._updateInputUiComponents()
+        self.setEnabled(not self.hasBoundLocator)
+
+#####################    
     def _getValueFromInput(self, inputValue):
         result = util.Vector3FromLocator(inputValue)
         if(result is not None):
             self._boundLocator = inputValue
         else:
-            self._boundLocator = None
-            
-            if(isinstance(inputValue, bv3.Vector3)):
-                result = inputValue
-            elif(isinstance(inputValue, list) or isinstance(inputValue, tuple)):
-                result = bv3.Vector3(inputValue[0], inputValue[1], inputValue[2])
+            if(inputValue is None):
+                result = self._value
+                if(self.hasBoundLocator):
+                    self._boundLocator = None
+                    self._updateInputUiComponents() # do this here as it will be skipped by the normal mechanism
             else:
-                raise TypeError("Location input value received value %s, of type: %s" % (inputValue, type(inputValue)))
-        
+                self._boundLocator = None
+                if(isinstance(inputValue, bv3.Vector3)):
+                    result = inputValue
+                elif(isinstance(inputValue, list) or isinstance(inputValue, tuple)):
+                    result = bv3.Vector3(inputValue[0], inputValue[1], inputValue[2])
+                else:
+                    raise TypeError("Location input value received value %s, of type: %s" % (inputValue, type(inputValue)))
         return result
 
 # END OF CLASS - LocationAttribute
-######################################
-
-
-
-#####################################################         
-class StringAttribute(_SingleAttributeBaseObject):
-    
-    def _getValueFromInput(self, inputValue):
-        return str(inputValue)
-    
-# END OF CLASS - StringAttribute
 ######################################

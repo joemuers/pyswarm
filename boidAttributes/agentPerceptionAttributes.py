@@ -54,6 +54,7 @@ class AgentPerceptionAttributes(abo.AttributesBaseObject):
 ##################### 
     def populateUiLayout(self):
         regionSizeFrame = uib.MakeFrameLayout("Region Size")
+        columnLayout = uib.MakeColumnLayout()
         
         uib.MakeSliderGroup(self._neighbourhoodSize)
         uib.MakeRandomizerFields(self._neighbourhoodSize_Random)
@@ -63,15 +64,16 @@ class AgentPerceptionAttributes(abo.AttributesBaseObject):
         uib.MakeSeparator()
         uib.MakeSliderGroup(self._collisionRegionSize)
         uib.MakeRandomizerFields(self._collisionRegionSize_Random)
-        uib.SetAsChildLayout(regionSizeFrame)
+        uib.SetAsChildLayout(columnLayout, regionSizeFrame)
         
         fieldOfVisionFrame = uib.MakeFrameLayout("Field of Vision")
+        columnLayout = uib.MakeColumnLayout()
         uib.MakeSliderGroup(self._blindRegionAngle)
         uib.MakeRandomizerFields(self._blindRegionAngle_Random)
         uib.MakeSeparator()
         uib.MakeSliderGroup(self._forwardVisionAngle)
         uib.MakeRandomizerFields(self._forwardVisionAngle_Random)
-        uib.SetAsChildLayout(fieldOfVisionFrame)
+        uib.SetAsChildLayout(columnLayout, fieldOfVisionFrame)
         
 #####################        
     def _createDataBlobForAgent(self, agent):

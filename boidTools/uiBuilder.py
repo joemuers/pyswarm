@@ -3,14 +3,17 @@ import util
 
 import pymel.core as pm
 import sys
+from boidAttributes.attributeTypes import LocationAttribute, MayaObjectAttribute
+
 
 
 
 __LEFT_COLUMN_WIDTH__ = 190
 __MIDDLE_COLUMN_WIDTH__ = 75
-__RIGHT_COLUMN_WIDTH__ = 250
+__RIGHT_COLUMN_WIDTH__ = 235
+__FOURTH_COLUMN_WIDTH__ = 23
 
-__OPTIONS_MENUS_WIDTH__ = 130
+__OPTIONS_MENUS_WIDTH__ = 100
 
 
 
@@ -22,8 +25,11 @@ def WindowExists(windowReference):
     return(windowReference is not None and pm.window(windowReference, exists=True))
 
 #####################
-def MakeWindow(title):
-    return pm.window(title, menuBar=True)
+def MakeWindow(title, widthHeight=None):
+    if(widthHeight is None):
+        return pm.window(title, menuBar=True)
+    else:
+        return pm.window(title, menuBar=True, widthHeight=widthHeight)
 
 #####################
 def DestroyWindow(windowReference):
@@ -132,24 +138,46 @@ def MakeColumnLayout():
 def MakeRowLayout(numColumns, 
                   leftColumnWidth=__LEFT_COLUMN_WIDTH__, 
                   middleColumnWidth=__MIDDLE_COLUMN_WIDTH__, 
-                  rightColumnWidth=__RIGHT_COLUMN_WIDTH__):
+                  rightColumnWidth=__RIGHT_COLUMN_WIDTH__,
+                  makeAdjustable=True):
     
+    if(numColumns == 4):
+        layout = pm.rowLayout(numberOfColumns=4, 
+                              columnWidth4=(leftColumnWidth, middleColumnWidth, 
+                                            rightColumnWidth - __FOURTH_COLUMN_WIDTH__, __FOURTH_COLUMN_WIDTH__), 
+                              columnAlign=(1, 'right'), 
+                              columnAttach=[(1, 'both', 0), (2, 'both', 0), (3, 'both', 0), (4, 'right', 10)])
+        if(makeAdjustable):
+            layout.adjustableColumn(3)
+        
+        return layout
     if(numColumns == 3):
-        return pm.rowLayout(numberOfColumns=3, 
-                            columnWidth3=(leftColumnWidth, middleColumnWidth, rightColumnWidth), 
-                            columnAlign=(1, 'right'), 
-                            columnAttach=[(1, 'both', 0), (2, 'both', 0), (3, 'both', 10)], 
-                            adjustableColumn=3)
+        layout = pm.rowLayout(numberOfColumns=3, 
+                              columnWidth3=(leftColumnWidth, middleColumnWidth, rightColumnWidth), 
+                              columnAlign=(1, 'right'), 
+                              columnAttach=[(1, 'both', 0), (2, 'both', 0), (3, 'both', 0)])
+        if(makeAdjustable):
+            layout.adjustableColumn(3)
+        
+        return layout
     elif(numColumns == 2):
-        return pm.rowLayout(numberOfColumns=2, 
-                            columnWidth2=(leftColumnWidth, rightColumnWidth), 
-                            columnAlign=(1, 'right'), 
-                            columnAttach=[(1, 'both', 0), (2, 'both', 0)])
+        layout = pm.rowLayout(numberOfColumns=2, 
+                              columnWidth2=(leftColumnWidth, rightColumnWidth), 
+                              columnAlign=(1, 'right'), 
+                              columnAttach=[(1, 'both', 0), (2, 'both', 0)])
+        if(makeAdjustable):
+            layout.adjustableColumn(2)
+            
+        return layout
     elif(numColumns == 1):
-        return pm.rowLayout(numberOfColumns=1, 
-                            columnAlign=(1, 'left'), 
-                            columnAttach=(1, 'left', leftColumnWidth),
-                            adjustableColumn=1)
+        layout = pm.rowLayout(numberOfColumns=1, 
+                              columnAlign=(1, 'left'), 
+                              columnAttach=(1, 'left', leftColumnWidth))
+        
+        if(makeAdjustable):
+            layout.adjustableColumn(1)
+            
+        return layout
     else:
         raise ValueError  
     
@@ -291,7 +319,7 @@ def MakeRandomizeOptionsMenu(randomizerController, annotation=None):
     if(type(randomizerController) != at.RandomizeController):
         raise TypeError("Attempt to make randomizer menu from non-randomizerController attribute.")
     
-    rowLayout = MakeRowLayout(2, rightColumnWidth=__OPTIONS_MENUS_WIDTH__)
+    rowLayout = MakeRowLayout(2, rightColumnWidth=__OPTIONS_MENUS_WIDTH__, makeAdjustable=False)
     
     MakeText(randomizerController.attributeLabel, annotation)
     
@@ -328,28 +356,6 @@ Pure Random = value offset by random amount every time it is queried."
     
     return (optionsMenuRowLayout, randomizerSliderGroup)
     
-#####################   
-
-def MakeLocationField(locationAttribute, annotation=None):
-    if(not isinstance(locationAttribute, at.LocationAttribute)):
-        raise TypeError("Attempt to make location field with wrong type (expected:%s, got: %s)" % 
-                        (at.LocationAttribute, type(locationAttribute)))
-    
-    rowLayout = MakeRowLayout(2, rightColumnWidth=__MIDDLE_COLUMN_WIDTH__ + __RIGHT_COLUMN_WIDTH__)
-    MakeText(locationAttribute.attributeLabel, annotation)
-    
-    locationField = pm.floatFieldGrp(numberOfFields=3, precision=3, columnWidth3=(__MIDDLE_COLUMN_WIDTH__, __MIDDLE_COLUMN_WIDTH__, __MIDDLE_COLUMN_WIDTH__),
-                                     value1=locationAttribute.x, value2=locationAttribute.y, value3=locationAttribute.z)
-    locationField.changeCommand(lambda *args: locationAttribute._setValue(locationField.getValue()))
-    locationAttribute.updateUiCommand = (lambda *args: locationField.setValue((locationAttribute.x, locationAttribute.y, locationAttribute.z, 0.0)))
-    locationAttribute.uiEnableMethod = locationField.setEnable
-    if(annotation is not None):
-        locationField.setAnnotation(annotation)
-        
-    SetAsChildLayout(rowLayout)
-    
-    return locationField
-
 #########################
 def MakeStringOptionsField(stringAttribute, optionsListStrings, annotation=None):
     if(not isinstance(stringAttribute, at.StringAttribute)):
@@ -358,7 +364,7 @@ def MakeStringOptionsField(stringAttribute, optionsListStrings, annotation=None)
     elif(stringAttribute.value not in optionsListStrings):
         raise ValueError("Initial value %s is not in options list." % stringAttribute.value)
     
-    rowLayout = MakeRowLayout(2, rightColumnWidth=__OPTIONS_MENUS_WIDTH__)
+    rowLayout = MakeRowLayout(2, rightColumnWidth=__OPTIONS_MENUS_WIDTH__ + 45, makeAdjustable=False)
     
     MakeText(stringAttribute.attributeLabel, annotation)
     
@@ -377,23 +383,119 @@ def MakeStringOptionsField(stringAttribute, optionsListStrings, annotation=None)
     
     return (optionMenu, menuItemsList)
     
-# #########################
-# def MakeObjectSelectorField(stringAttribute, object=None, annotation=None):
-#     if(not isinstance(stringAttribute, at.StringAttribute)):
-#         raise TypeError("Attempted to make object selector (expected:%s, got:%s)" % 
-#                         (at.StringAttribute, type(stringAttribute)))
-#     
-#     rowLayout = MakeRowLayout(3)
-#     
-#     MakeText(stringAttribute.attributeLabel, annotation)
-#     
-#     nameField = pm.nameField(enable=False)
-#     if(object is not None):
-#         nameField.setObject(object)
-#     if(annotation is not None):
-#         nameField.setAnnotation(annotation)
-#         
-#     
+#########################
+def MakeObjectSelectorField(objectAttribute, annotation=None):
+    if(not isinstance(objectAttribute, at.MayaObjectAttribute)):
+        raise TypeError("Attempted to make object selector (expected:%s, got:%s)" % 
+                        (at.MayaObjectAttribute, type(objectAttribute)))
+     
+    rowLayout = MakeRowLayout(2)
+     
+    MakeText(objectAttribute.attributeLabel, annotation)
+    
+    nameField = pm.textFieldButtonGrp(editable=False, buttonLabel="...", 
+                                      adjustableColumn=1, columnWidth2=(150, 50))
+    if(annotation is not None):
+        nameField.setAnnotation(annotation)
+        
+    objectAttribute.updateUiCommand = (lambda val: nameField.setText(val.name() if(val is not None) else "<None>"))
+    objectAttribute._updateInputUiComponents()
+    nameField.buttonCommand(lambda *args: _MakeObjectSelectionList(objectAttribute)) 
+
+    SetAsChildLayout(rowLayout)
+    
+    return rowLayout
+
+#########################
+def _MakeObjectSelectionList(objectAttribute):
+    objectAttribute._updateInputUiComponents()
+    
+    allowNone = objectAttribute.allowNoneType
+    
+    objectType = objectAttribute.objectType
+    objectList = [None] if(allowNone) else []
+    objectNamesList = ["<None>"] if(allowNone) else []
+    
+    objectList.extend(util.GetObjectsInSceneOfType(objectAttribute.objectType))
+    objectNamesList.extend(map(lambda obj: obj.name(), objectList[1:] if(allowNone) else objectList))
+    
+    windowHandle = ("Select %s" % objectType.__name__)
+    if(WindowExists(windowHandle)):
+        DestroyWindow(windowHandle)
+
+    window = pm.window(windowHandle)
+    pm.paneLayout()
+    
+    def _onObjectSelect(objectAttribute, objectList, objectNamesList, objectMenu):
+        index = objectNamesList.index(objectMenu.getSelectItem()[0])
+        objectAttribute.value = objectList[index]
+    
+    objectMenu = pm.iconTextScrollList(allowMultiSelection=False, append=objectNamesList)
+
+    if(objectAttribute.getRawAttribute() in objectList):
+        objectMenu.setSelectItem(objectNamesList[objectList.index(objectAttribute.getRawAttribute())])
+    
+    objectMenu.selectCommand(lambda *args: _onObjectSelect(objectAttribute, objectList, objectNamesList, objectMenu))
+    
+    window.show()
+    
+#####################   
+def MakeLocationField(locationAttribute, withButton=False, annotation=None):
+    if(not isinstance(locationAttribute, at.LocationAttribute)):
+        raise TypeError("Attempt to make location field with wrong type (expected:%s, got: %s)" % 
+                        (at.LocationAttribute, type(locationAttribute)))
+    
+    if(not withButton):
+        rowLayout = MakeRowLayout(2, rightColumnWidth=__MIDDLE_COLUMN_WIDTH__ + __RIGHT_COLUMN_WIDTH__)
+    else:
+        rowLayout = MakeRowLayout(3, middleColumnWidth=__RIGHT_COLUMN_WIDTH__, 
+                                  rightColumnWidth=__FOURTH_COLUMN_WIDTH__, makeAdjustable=False)
+        
+    MakeText(locationAttribute.attributeLabel, annotation)
+    
+    locationField = pm.floatFieldGrp(numberOfFields=3, precision=3, columnWidth3=(__MIDDLE_COLUMN_WIDTH__, __MIDDLE_COLUMN_WIDTH__, __MIDDLE_COLUMN_WIDTH__),
+                                     value1=locationAttribute.x, value2=locationAttribute.y, value3=locationAttribute.z)
+    locationField.changeCommand(lambda *args: locationAttribute._setValue(locationField.getValue()))
+    locationAttribute.updateUiCommand = (lambda *args: locationField.setValue((locationAttribute.x, locationAttribute.y, locationAttribute.z, 0.0)))
+    locationAttribute.uiEnableMethod = locationField.setEnable
+    if(annotation is not None):
+        locationField.setAnnotation(annotation)
+        
+    if(withButton):
+        button = pm.button(label="...", annotation=("Select/clear locator for %s" % LocationAttribute.attributeLabel), 
+                           width=__FOURTH_COLUMN_WIDTH__)
+        button.setCommand(lambda *args: _MakeObjectSelectionList(locationAttribute))
+        
+    SetAsChildLayout(rowLayout)
+    
+    return locationField
+
+#########################
+def MakePassiveTextField(stringAttribute, buttonCallback, annotation=None):
+    if(not isinstance(stringAttribute, at.StringAttribute)):
+        raise TypeError("Attempted to make text field (expected:%s, got:%s)" % 
+                        (at.StringAttribute, type(stringAttribute)))
+    
+    rowLayout = MakeRowLayout(2)
+    
+    MakeText(stringAttribute.attributeLabel, annotation)
+
+    textField = pm.textFieldButtonGrp(editable=False, text=stringAttribute.value,
+                                      buttonLabel="...", buttonCommand=buttonCallback,
+                                      adjustableColumn=1, columnWidth2=(130, __MIDDLE_COLUMN_WIDTH__))
+    if(annotation is not None):
+        textField.setAnnotation(annotation)
+    
+    stringAttribute.updateUiCommand = textField.setText
+    stringAttribute.uiEnableMethod = textField.setEnableButton
+    
+    SetAsChildLayout(rowLayout)
+    
+    return rowLayout
+    
+    
+#########################
+
 
 
 #################################################
@@ -416,6 +518,26 @@ def MakeButton(text, callback, annotation=None):
     return button
 
 #######################
+def MakeButtonStandalone(label, callback, extraLabel=None, annotation=None):
+    if(extraLabel is None):
+        rowLayout = MakeRowLayout(1, makeAdjustable=False)
+        button = MakeButton(label, callback, annotation)
+        button.setWidth(__OPTIONS_MENUS_WIDTH__ - 10)
+        
+        SetAsChildLayout(rowLayout)
+        
+        return rowLayout
+    else:
+        rowLayout = MakeRowLayout(2, rightColumnWidth=__OPTIONS_MENUS_WIDTH__, makeAdjustable=False)
+        MakeText(extraLabel, annotation)
+        button = MakeButton(label, callback, annotation)
+        button.setWidth(__OPTIONS_MENUS_WIDTH__ - 10)
+        
+        SetAsChildLayout(rowLayout)
+        
+        return rowLayout
+
+#######################
 def MakeButtonStrip(textCommandTupleList):
     formLayout = MakeFormLayout()
     controls = []
@@ -434,8 +556,12 @@ def MakeButtonStrip(textCommandTupleList):
     return formLayout
 
 #####################
-def MakeTextInputField(label, placeholderText=None, annotation=None):
-    textField = pm.textFieldGrp(label=label)
+def MakeTextInputField(label, placeholderText=None, leftColumnWidth=__LEFT_COLUMN_WIDTH__, annotation=None):
+    textField = pm.textFieldGrp(label=label, 
+                                adjustableColumn=2, 
+                                columnWidth=(1, leftColumnWidth),
+                                columnAttach2=('both', 'both'),
+                                columnOffset2=(0, 10))
     if(placeholderText is not None):
         textField.setText(placeholderText)
     if(annotation is not None):
@@ -444,7 +570,8 @@ def MakeTextInputField(label, placeholderText=None, annotation=None):
     return textField
 
 #####################
-def MakeRadioButtonGroup(label, buttonTitlesTuple, onChangeCommand, annotation=None):
+def MakeRadioButtonGroup(label, buttonTitlesTuple, onChangeCommand, 
+                         leftColumnWidth=__LEFT_COLUMN_WIDTH__, annotation=None):
     numberOfButtons = len(buttonTitlesTuple)
     if(numberOfButtons < 1 or numberOfButtons > 4):
         raise ValueError("Attempt to create radioButtonGrp with %d buttons (expected 1-4)." % numberOfButtons)
@@ -453,11 +580,16 @@ def MakeRadioButtonGroup(label, buttonTitlesTuple, onChangeCommand, annotation=N
                      ("labelArray%d" % numberOfButtons) : buttonTitlesTuple,
                      "numberOfRadioButtons" : numberOfButtons,
                      "changeCommand" : onChangeCommand,
+                     "columnAttach" : (2, "left", 10),
                      "select" : 1 }
     if(annotation is not None):
         buttonKwargs["annotation"] = annotation
     
     buttonGroup = pm.radioButtonGrp(**buttonKwargs)
+    
+    buttonGroup.columnWidth((1, leftColumnWidth))
+    for index in xrange(numberOfButtons):
+        buttonGroup.columnWidth((index + 2, 90))
     
     return buttonGroup
 

@@ -87,7 +87,7 @@ def PymelObjectFromObjectName(objectName, bypassTransformNodes=True):
 def GetSelectedParticleShapeNode(particleShapeName=None):
     selectionList = pm.ls(selection=True)
     for selectedObject in selectionList:
-        result = _GetPymelObjectWithType(selectedObject, pmn.NParticle)
+        result = _GetPymelObjectWithType(selectedObject, GetParticleType())
         if(result is not None and 
            (particleShapeName is None or result.name() == particleShapeName)):
             return result
@@ -140,12 +140,16 @@ def GetSelectedLocators():
     returnList = []
     
     for selectedObject in selectionList:
-        result = _GetPymelObjectWithType(selectedObject, pmn.Locator)
+        result = _GetPymelObjectWithType(selectedObject, GetLocatorType())
         if(result is not None):
             returnList.append(result)
     
     return returnList
 
+######################################
+def GetObjectsInSceneOfType(pymelType):
+    return [pymelObject for pymelObject in pm.ls() if(isinstance(pymelObject, pymelType))]
+    
 ######################################
 def _GetPymelObjectWithType(pymelObject, pymelType):
     """Checks given object is of correct type.
@@ -167,6 +171,16 @@ def _GetPymelObjectWithType(pymelObject, pymelType):
 def GetNucleusSpaceScale():
     nucleus = pm.ls(pm.mel.getActiveNucleusNode(False, True))[0]
     return nucleus.attr('spaceScale').get()
+
+######################################
+def GetLocatorType():
+    return pmn.Locator
+
+def GetParticleType():
+    return pmn.NParticle
+
+def GetCurveType():
+    return pmn.NurbsCurve
 
 ######################################
 

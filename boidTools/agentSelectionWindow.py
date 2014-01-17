@@ -76,15 +76,19 @@ class AgentSelectionWindow(BoidBaseObject):
         self._currentlySelectedList = currentlySelectedAgentsList[:] # important to take a copy here - avoids modifying the original prematurely
         self._maxIdValue = sorted(self._idToAgentLookup.keys())[-1]
         
-        self._window = uib.MakeWindow(windowTitle)
+        self._window = uib.MakeWindow(windowTitle, (450,80))
         borderLayout = uib.MakeBorderingLayout()
         columnLayout = uib.MakeColumnLayout()
         
-        self._textInput = uib.MakeTextInputField("Agent IDs:", self.getSelectionString(), _TextFieldAnnotation_)
+        self._textInput = uib.MakeTextInputField("Agent IDs:", 
+                                                 self.getSelectionString(), 
+                                                 leftColumnWidth=100, 
+                                                 annotation=_TextFieldAnnotation_)
         self._radioButtons = uib.MakeRadioButtonGroup("Selection Method:", 
                                                       AgentSelectionWindow.__SelectionOptionStrings__[1:], 
                                                       self._onRadioButtonChange,
-                                                      _RadioButtonsAnnotation_)
+                                                      leftColumnWidth=100,
+                                                      annotation=_RadioButtonsAnnotation_)
         self._radioButtons.setSelect(AgentSelectionWindow.__textInputSelection__)
         self._selectedOption = AgentSelectionWindow.__textInputSelection__
         
@@ -98,12 +102,14 @@ class AgentSelectionWindow(BoidBaseObject):
 #####################
     def getSelectionString(self):        
         if(self._currentlySelectedList):
+            ####
             def _appendToStringArray(stringArray, rangeStart, rangeEnd):
                 if(stringArray): stringArray.append(", ")
                 if(rangeStart == rangeEnd):
                     stringArray.append("%d" % rangeStart)
                 else:
                     stringArray.append("%d-%d" % (rangeStart, rangeEnd))
+            ####
             
             rangeStart = -1
             rangeEnd = -1
@@ -128,9 +134,10 @@ class AgentSelectionWindow(BoidBaseObject):
         
 #####################    
     def _updateSelectionFromStringIfNecessary(self):
+        ######
         def _strip(string):
             return string.strip()
-        ######
+        
         def _getRangeFromSubTokens(subTokens, upperBounds):
             if(len(subTokens) == 1):
                 if(subTokens[0] == '*'): return (0, upperBounds)
@@ -146,7 +153,7 @@ class AgentSelectionWindow(BoidBaseObject):
                 elif(subTokens[1].isdigit()): return (rangeStart, int(subTokens[1]))
                 else: raise ValueError
         ######
-            
+        
         if(self._selectedOption == AgentSelectionWindow.__textInputSelection__):
             try:
                 newSelection = set()
@@ -199,7 +206,7 @@ class AgentSelectionWindow(BoidBaseObject):
     def _okButtonWasPressed(self, *args):
         if(self._updateSelectionFromStringIfNecessary()):
             self._updateSelectionFromSceneIfNecessary()
-            self._selectionMadeCommand(self._currentlySelectedList, self.getSelectionString())
+            self._selectionMadeCommand(self, self._currentlySelectedList, self.getSelectionString())
         else:
             util.LogError("Invalid input - selection not changed")
             

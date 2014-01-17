@@ -60,7 +60,7 @@ class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject, abo.FollowOnBehavi
         return "Goal-Driven Behaviour"
     
 #####################    
-    def __init__(self, sectionTitle, wallLipGoal=None, basePyramidGoalHeight=None, finalGoal=None):
+    def __init__(self, sectionTitle, leaderSelectCallback, wallLipGoal=None, basePyramidGoalHeight=None, finalGoal=None):
         super(GoalDrivenBehaviourAttributes, self).__init__(sectionTitle)
         
         if(basePyramidGoalHeight is not None and type(basePyramidGoalHeight) != float):
@@ -76,7 +76,10 @@ class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject, abo.FollowOnBehavi
         self._basePyramidGoal.excludeFromDefaults = True
         self._finalGoal.excludeFromDefaults = True
         
-        self._useInfectionSpread = at.BoolAttribute("Use Infection Spread", False)
+        self._useInfectionSpread = at.BoolAttribute("Use Infection Spread", False, self)
+        self._leadersText = at.StringAttribute("Leader Agents", "")
+        self._leaderSelectDelegateCallback = leaderSelectCallback
+        self._selectCurrentLeadersButtonEnable = None
         self._incubationPeriod = at.IntAttribute("Incubation Period", 10, self)
         self._incubationPeriod_Random = at.RandomizeController(self._incubationPeriod)
         self._goalChaseSpeed = at.FloatAttribute("Goal Chase Speed", 10, self)
@@ -89,25 +92,30 @@ class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject, abo.FollowOnBehavi
         self._pyramidJumpOnProbability = at.FloatAttribute("Jump-On Probability", 0.1, self, minimumValue=0, maximumValue=1)
         self._pyramidPushUpwardsForce = at.FloatAttribute("Push-Upwards Force", 22)
         self._pyramidPushInwardsForce = at.FloatAttribute("Push-Inwards Force", 15)
-
+        
 #####################
     def populateUiLayout(self):
-        uib.MakeLocationField(self._wallLipGoal)
+        uib.MakeLocationField(self._wallLipGoal, True)
         basePyramidGoalField = uib.MakeLocationField(self._basePyramidGoal)
         basePyramidGoalField.setEnable1(False)
         basePyramidGoalField.setEnable3(False)
-        uib.MakeLocationField(self._finalGoal)
+        uib.MakeLocationField(self._finalGoal, True)
         
         goalChaseFrameLayout = uib.MakeFrameLayout("Goal-Chase Stage")
+        columnLayout = uib.MakeColumnLayout()
         uib.MakeCheckboxGroup(self._useInfectionSpread)
+        uib.MakePassiveTextField(self._leadersText, self._leaderSelectRequestUiCallback)
+        selectButtonRow = uib.MakeButtonStandalone("Scene Select", self._leaderGetSelectionRequestUiCallback)
+        self._selectCurrentLeadersButtonEnable = selectButtonRow.setEnable
         uib.MakeSliderGroup(self._incubationPeriod)
         uib.MakeRandomizerFields(self._incubationPeriod_Random)
         uib.MakeSeparator()
         uib.MakeSliderGroup(self._goalChaseSpeed)
         uib.MakeRandomizerFields(self._goalChaseSpeed_Random)
-        uib.SetAsChildLayout(goalChaseFrameLayout)
+        uib.SetAsChildLayout(columnLayout, goalChaseFrameLayout)
         
         pyramidJoinFrameLayout = uib.MakeFrameLayout("Pyramid-Join Stage")
+        columnLayout = uib.MakeColumnLayout()
         uib.MakeSliderGroup(self._pyramidJoinAtDistance)
         uib.MakeRandomizerFields(self._pyramidJoinAtDistance_Random)
         uib.MakeSeparator()
@@ -118,11 +126,12 @@ class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject, abo.FollowOnBehavi
         uib.MakeSeparator()
         uib.MakeSliderGroup(self._pyramidPushUpwardsForce)
         uib.MakeSliderGroup(self._pyramidPushInwardsForce)
-        uib.SetAsChildLayout(pyramidJoinFrameLayout)
+        uib.SetAsChildLayout(columnLayout, pyramidJoinFrameLayout)
 
         finalStageFrameLayout = uib.MakeFrameLayout("Final Stage")
+        columnLayout = uib.MakeColumnLayout()
         self._makeFollowOnBehaviourOptionGroup()
-        uib.SetAsChildLayout(finalStageFrameLayout)
+        uib.SetAsChildLayout(columnLayout, finalStageFrameLayout)
         
 #####################
     def _createDataBlobForAgent(self, agent):
@@ -145,6 +154,22 @@ class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject, abo.FollowOnBehavi
         if(changedAttribute is self._wallLipGoal):
             self._basePyramidGoal.x = self._wallLipGoal.x
             self._basePyramidGoal.z = self._wallLipGoal.z
+        elif(changedAttribute is self._useInfectionSpread):
+            self._leadersText.setEnabled(changedAttribute.value)
+            self._incubationPeriod.setEnabled(changedAttribute.value)
+            self._incubationPeriod_Random.setEnabled(changedAttribute.value)
+            self._selectCurrentLeadersButtonEnable(changedAttribute.value)
+
+#####################            
+    def _leaderSelectRequestUiCallback(self, *args):
+        self._leaderSelectDelegateCallback(self, True)
+        
+    def _leaderGetSelectionRequestUiCallback(self, *args):
+        self._leaderSelectDelegateCallback(self, False)
+
+#####################        
+    def setLeadersAgentsTextDisplay(self, text):
+        self._leadersText.value = text
     
 #####################
     def _updateDataBlobWithAttribute(self, dataBlob, attribute):

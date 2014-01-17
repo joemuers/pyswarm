@@ -32,7 +32,13 @@ class AttributesControllerDelegate(object):
     def requestedSelectAgentsWithBehaviour(self, behaviourAttributes, invertSelection):
         raise NotImplemented
     
+    def requestedLeaderSelectForBehaviour(self, behaviourAttributes, isChangeSelectionRequest):
+        raise NotImplemented
+    
     def onBehaviourAttributesDeleted(self, deletedAttributes):
+        raise NotImplemented
+    
+    def refreshInternals(self):
         raise NotImplemented
     
     def requestedQuitSwarmInstance(self):
@@ -113,6 +119,11 @@ class AttributesController(BoidBaseObject):
         
         for attributes in self._behaviourAttributesList:
             attributes.onBehaviourListUpdated(behaviourIDsList, defaultId)
+
+#####################            
+    def _onRequestLeaderSelectForBehaviourAttributes(self, attributes, isChangeSelectionRequest):
+        self.delegate.requestedLeaderSelectForBehaviour(attributes, isChangeSelectionRequest)
+            
         
 #####################       
     def _addNewBehaviour(self, newBehaviourAttributes):
@@ -139,8 +150,8 @@ class AttributesController(BoidBaseObject):
     
     def addGoalDrivenAttributes(self, wallLipGoal, basePyramidGoalHeight, finalGoal):
         sectionTitle = self._titleForAttributesClass(gdba.GoalDrivenBehaviourAttributes)
-        newBehaviourAttributes = gdba.GoalDrivenBehaviourAttributes(sectionTitle, wallLipGoal, 
-                                                                    basePyramidGoalHeight, finalGoal)
+        newBehaviourAttributes = gdba.GoalDrivenBehaviourAttributes(sectionTitle, self._onRequestLeaderSelectForBehaviourAttributes,
+                                                                    wallLipGoal, basePyramidGoalHeight, finalGoal)
         self._addNewBehaviour(newBehaviourAttributes)
         
         return newBehaviourAttributes
@@ -199,6 +210,8 @@ class AttributesController(BoidBaseObject):
         uib.MakeMenu("File")
         uib.MakeMenuItem("Show Debug Logging", self._didSelectShowDebugLogging)
         uib.MakeMenuItem("Hide Debug Logging", self._didSelectHideDebugLogging)
+        uib.MakeMenuSeparator()
+        uib.MakeMenuItem("Refresh Internals", self._didSelectRefreshInternals)
         uib.MakeMenuSeparator()
         uib.MakeMenuItem("Preferences...", self._didSelectShowPreferences)
         uib.MakeMenuSeparator()
@@ -328,6 +341,9 @@ class AttributesController(BoidBaseObject):
         
     def _didSelectHideDebugLogging(self, *args):
         print("Hide BLAH")
+        
+    def _didSelectRefreshInternals(self, *args):
+        self.delegate.refreshInternals()
         
     def _didSelectShowPreferences(self, *args):
         self.globalAttributes.showGlobalPreferencesWindow()

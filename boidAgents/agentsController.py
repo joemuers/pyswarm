@@ -136,6 +136,11 @@ class AgentsController(BoidBaseObject):
         util.SetSingleParticleStickinessScale(self.particleShapeName, particleId, value) # do this right now - otherwise will wait until next frame update
 
 #############################
+    def refreshInternals(self):
+        self._zoneGraph.rebuildMapIfNecessary()
+        self._getAllParticlesInfo()
+        
+#############################
     def onFrameUpdated(self):       
         """Performs one full iteration of updating all boidAgent behaviour.
         Should be called from Maya once per frame update.

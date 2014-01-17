@@ -39,9 +39,10 @@ class BehaviourBaseObject(BoidBaseObject):
     behaviourId = property(_getBehaviourId)
 
 ##########################    
-    def delegate(self):
+    def _getDelegate(self):
         return self._delegate() if(self._delegate is not None) else None
- 
+    delegate = property(_getDelegate)
+    
 ##########################
     def _notifyDelegateBehaviourEndedForAgent(self, agent, followOnBehaviourID):
         """Should be called by subclasses to notify the delegate (if one exists)

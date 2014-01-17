@@ -4,6 +4,7 @@ from boidResources import colours
 import boidAttributes.goalDrivenBehaviourAttributes as gdba
 import boidVectors.vector2 as bv2
 import boidVectors.vector3 as bv3
+import boidTools.util as util
 
 import random
 
@@ -79,7 +80,7 @@ class GoalDriven(BehaviourBaseObject):
         
         self._baseToFinalDirection = bv3.Vector3() # direction vector from baseLocator to finalLocator
         
-        self._leaders = []
+        self._leaders = set()
         self._basePyramidDistanceLookup = {}
         
         self._normalBehaviour = normalBehaviourInstance
@@ -102,11 +103,12 @@ class GoalDriven(BehaviourBaseObject):
         
 #######################        
     def __str__(self):            
-        return ("<%s - pos=%s, lip=%s, final=%s, infect=%s>" % 
+        return ("<%s - pos=%s, lip=%s, final=%s, base->final=%s, infect=%s>" % 
                 (super(GoalDriven, self).__str__(),
                  self.attributes.basePyramidGoal, 
                  self.attributes.wallLipGoal, 
                  self.attributes.finalGoal, 
+                 self._baseToFinalDirection,
                  "Y" if self.attributes.useInfectionSpread else "N"))
     
     def _getMetaStr(self):
@@ -119,13 +121,21 @@ class GoalDriven(BehaviourBaseObject):
                  ''.join(pyramidStringsList)))#, ''.join(atLipStringsList), ''.join(overStringsList)))
         
 ####################### 
-    # TODO - integrate into UI
     def makeLeader(self, agent):
-        if(not agent in self._leaders):
-            self._leaders.append(agent)
+        if(agent.currentBehaviour is not self):
+            self._leaders.add(agent)
+            
+            util.LogWarning("Agent %d made leader for behaviour \"%s\", but is following behaviour \"%s\". Results may not be as-designed." %
+                             (agent.particleId, agent.currentBehaviour.behaviourId, self.behaviourId))
+            return True
+        elif(not agent.state.behaviourAttributes.didArriveAtBasePyramid):
+            self._leaders.add(agent)
             self._setGoalStatusForAgent(agent, gdba.GoalDrivenDataBlob.goalChase)
+            
+            util.LogInfo("Agent %d made leader for behaviour \"%s\"" % (agent.particleId, self.behaviourId))
             return True
         else:
+            util.LogWarning("Agent %d NOT made leader - has already progressed to Pyramid-Join stage." % agent.particleId)
             return False
         
     def unMakeLeader(self, agent):
@@ -137,6 +147,9 @@ class GoalDriven(BehaviourBaseObject):
         
     def agentIsLeader(self, agent):
         return (agent in self._leaders)
+    
+    def allLeaders(self):
+        return list(self._leaders)
         
 #######################
     def getBehaviourSpecificAttributesForAgent(self, agent): # overridden BehaviourBaseObject method
@@ -159,7 +172,7 @@ class GoalDriven(BehaviourBaseObject):
         self._basePyramidDistanceLookup.clear()
         
         # now, re-check goal location in case it's moved within the scene...  
-        self._baseToFinalDirection = self.attributes.wallLipGoal - self.attributes.basePyramidGoal
+        self._baseToFinalDirection = self.attributes.finalGoal - self.attributes.basePyramidGoal
 
 #######################
     def onAgentUpdated(self, agent):
@@ -439,7 +452,7 @@ class GoalDriven(BehaviourBaseObject):
         returnValue = None
         numLeaders = len(self._leaders)
 
-        if(agent.state.behaviourSpecificState.didArriveAtBasePyramid or 
+        if(agent.state.behaviourAttributes.didArriveAtBasePyramid or 
            numLeaders == 0 or self.agentIsLeader(agent)):
             returnValue = self.attributes.basePyramidGoal
         elif(numLeaders == 1):
@@ -483,9 +496,10 @@ class GoalDriven(BehaviourBaseObject):
         if(AgentBehaviourIsGoalDriven(agent)):
             return agent.state.behaviourAttributes.currentStatus
         else:
-            raise TypeError
+            raise TypeError(("Agent %d is following behaviour %s" % (agent.particleId, agent.currentBehaviour.behaviourId)))
             return gdba.GoalDrivenDataBlob._invalid
-    
+
+#######################    
     def _setGoalStatusForAgent(self, agent, status, distanceVector=None):
         if(status != self._goalStatusForAgent(agent)):
             agent.state.behaviourAttributes.currentStatus = status

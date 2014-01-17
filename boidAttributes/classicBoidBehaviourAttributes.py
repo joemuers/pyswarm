@@ -43,11 +43,10 @@ class ClassicBoidBehaviourAttributes(abo.AttributesBaseObject):
     def populateUiLayout(self):
         uib.MakeSliderGroup(self._alignmentDirectionThreshold)
         uib.MakeRandomizerFields(self._alignmentDirectionThreshold_Random)
-        
-        uib.MakeSeparator()
-        
+        uib.MakeSeparator()        
         uib.MakeSliderGroup(self._cohesionPositionThreshold)
         uib.MakeRandomizerFields(self._cohesionPositionThreshold_Random)
+        uib.MakeSeparator()
         
 #####################
     def _createDataBlobForAgent(self, agent):

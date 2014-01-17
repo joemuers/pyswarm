@@ -35,8 +35,9 @@ class FollowPathBehaviourAttributes(abo.AttributesBaseObject, abo.FollowOnBehavi
     def __init__(self, sectionTitle, pathCurve=None):
         super(FollowPathBehaviourAttributes, self).__init__(sectionTitle)
         
-        self._pathCurve = util.PymelObjectFromObjectName(pathCurve) if(pathCurve is not None) else None
-        
+        self._pathCurve = at.MayaObjectAttribute("Path Curve", pathCurve)
+        if(pathCurve is None):
+            self._pathCurve.objectType = util.GetCurveType()
         self._pathDevianceThreshold = at.FloatAttribute("Path Deviance Threshold", 3.0, self)
         self._pathDevianceThreshold_Random = at.RandomizeController(self._pathDevianceThreshold)
         self._goalDistanceThreshold = at.FloatAttribute("Goal Distance Threshold", 1.0, self)
@@ -47,6 +48,8 @@ class FollowPathBehaviourAttributes(abo.AttributesBaseObject, abo.FollowOnBehavi
     
 #####################
     def populateUiLayout(self):
+        uib.MakeObjectSelectorField(self._pathCurve)
+        uib.MakeSeparator()
         uib.MakeSliderGroup(self._pathDevianceThreshold)
         uib.MakeRandomizerFields(self._pathDevianceThreshold_Random)
         uib.MakeSeparator()
@@ -77,7 +80,7 @@ class FollowPathBehaviourAttributes(abo.AttributesBaseObject, abo.FollowOnBehavi
 
 #####################            
     def _getPathCurve(self):
-        return self._pathCurve
+        return self._pathCurve.value
     pathCurve = property(_getPathCurve)
 
 #####################     

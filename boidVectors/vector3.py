@@ -128,13 +128,13 @@ class Vector3(BoidBaseObject):
         return self
 
     def __eq__(self, other):
-        return self.x == other.x and self.y == other.y and self.z == other.z
+        return IsVector3(other) and self.x == other.x and self.y == other.y and self.z == other.z
     
     def __lt__(self, other):
-        return self.magnitudeSquared() < other.magnitudeSquared()
+        return IsVector3(other) and self.magnitudeSquared() < other.magnitudeSquared()
     
     def __gt__(self, other):
-        return self.magnitudeSquared() > other.magnitudeSquared()
+        return not IsVector3(other) or self.magnitudeSquared() > other.magnitudeSquared()
 
 ####################### 
     def _get_x(self):
