@@ -27,6 +27,18 @@ class BehaviourBaseObject(BoidBaseObject):
 ##########################
     def __str__(self):
         return ("<Behaviour: \"%s\">" % self.behaviourId)
+    
+#############################        
+    def __getstate__(self):
+        selfDict = self.__dict__.copy()
+        selfDict["_delegate"] = self.delegate
+        
+        return selfDict
+    
+    def __setstate__(self, selfDict):
+        self.__dict__.update(selfDict)
+        if(self._delegate is not None):
+            self._delegate = weakref.ref(self._delegate)
 
 ##########################            
     def _getAttributes(self):

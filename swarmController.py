@@ -85,9 +85,10 @@ if(__name__ == "__main__"):
 ##########################################
 class SwarmController(BoidBaseObject, bat.AttributesControllerDelegate):
     
-    def __init__(self, particleShapeNode=None, sceneBounds1=None, sceneBounds2=None):
-        if(particleShapeNode is None):
-            particleShapeNode = util.GetSelectedParticleShapeNode()
+    def __init__(self, particleShapeNode, sceneBounds1=None, sceneBounds2=None):
+        if(not isinstance(particleShapeNode, util.GetParticleType())):
+            raise TypeError("Cannot create swarm with this node type (expected %s, got %s)." %
+                            util.GetParticleType(), type(particleShapeNode))
             
         if(sceneBounds1 is None and sceneBounds2 is None):
             locatorsList = util.GetSelectedLocators()
@@ -100,10 +101,13 @@ class SwarmController(BoidBaseObject, bat.AttributesControllerDelegate):
         self._behavioursController = bbc.BehavioursController(self._attributesController, self._agentsController)
         self._agentsController._buildParticleList()
         
+        if(not self._attributesController._checkForPreviousSaveFile()):
+            self._attributesController.restoreDefaultAttributeValuesFromFile()
+        self._attributesController._notifyOnBehavioursListChanged()
+        
         self._behaviourAssignmentSelectionWindow = asw.AgentSelectionWindow(self._agentsController)
         self._leaderAgentsSelectionWindow = asw.AgentSelectionWindow(self._agentsController)
         
-        self._runHeadless = False
         self.showUI()
 
 #############################        
@@ -119,25 +123,19 @@ class SwarmController(BoidBaseObject, bat.AttributesControllerDelegate):
     particleShapeName = property(_getParticleShapeName)
 
 #############################    
-    def _getRunHeadless(self):
-        return self._runHeadless
-    def _setRunHeadless(self, value):
-        if(value and not self._runHeadless):
-            self._runHeadless = value
-            self.showUI()
-        elif(not value and self._runHeadless):
-            self._runHeadless = value
-            self.hideUI()
-    runHeadless = property(_getRunHeadless, _setRunHeadless)
+    def _getAttributesController(self):
+        return self._attributesController
+    attributesController = property(_getAttributesController)
         
 #############################    
     def showUI(self):
-        if(not self.runHeadless):
-            self._attributesController.buildUi(("%s - %s" % (util.PackageName(), self.particleShapeName)))
+        self._attributesController.buildUi(("%s - %s" % (util.PackageName(), self.particleShapeName)))
 
 #############################            
     def hideUI(self):
         self._attributesController.hideUI()
+        self._behaviourAssignmentSelectionWindow.closeWindow()
+        slef._leaderAgentsSelectionWindow.closeWindow()
  
 #############################       
     def refreshInternals(self):

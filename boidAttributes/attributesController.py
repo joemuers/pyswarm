@@ -8,6 +8,7 @@ import goalDrivenBehaviourAttributes as gdba
 import followPathBehaviourAttributes as fpba
 import boidTools.uiBuilder as uib
 import boidTools.util as util
+import boidResources
 
 import os
 import weakref
@@ -15,13 +16,40 @@ import ConfigParser
 
 
 
-# TODO - OS independent filepath
-__DEFAULTS_FILENAME__ = "/../boidResources/boidAttributeDefaults.ini"
+_BEHAVIOURS_LIST_SECTION_NAME_ = "Behaviours List"
+_BEHAVIOURS_LIST_OPTION_NAME_ = "List"
+_BEHAVIOURS_LIST_DELIMITER_ = ","
+
+
+
+##########################################
+def _DefaultsAttributeValuesFilename():
+    filePath = os.path.dirname(boidResources.__file__)
+    return os.path.join(filePath, "attributeValueDefaults.ini")
+
+##########################################
+def _DefaultSaveLocation(particleShapeName):
+    try:
+        filePath = util.GetProjectRootDirectory()
+        if(filePath is not None and filePath):
+            filePath = os.path.join(filePath, "scripts")
+            if(os.path.exists(filePath)):
+                return os.path.join(filePath, ("%s_%s.ini" % (util.PackageName(), particleShapeName)))
+    except:
+        pass
+    
+    util.LogWarning("Could not find \"scripts\" folder in your Maya project database")
+    return os.path.join(util.GetProjectWorkingDirectory(), ("%s_%s.ini" % (util.PackageName(), particleShapeName)))
+    
+##########################################
 
 
 
 ##########################################
 class AttributesControllerDelegate(object):
+    
+    def _getParticleShapeName(self):
+        raise NotImplemented
     
     def onNewBehaviourAttributesAdded(self, newBehaviourAttributes):
         raise NotImplemented
@@ -54,7 +82,7 @@ class AttributesController(BoidBaseObject):
     
     def __init__(self, delegate, sceneBounds1=None, sceneBounds2=None):
         if(not isinstance(delegate, AttributesControllerDelegate)):
-            raise TypeError
+            raise TypeError("Expected subclass of %s, got %s" (AttributesControllerDelegate, type(delegate)))
         else:
             self._delegate = weakref.ref(delegate)
             
@@ -76,10 +104,39 @@ class AttributesController(BoidBaseObject):
             self._assignAgentsToMenu = None
             self._needsUiRebuild = False
             
-            self.readDefaultAttributesFromFile()
-            self._notifyOnBehavioursListChanged()
+            self._preferredSaveLocation = None            
+            
+#             if(not self._checkForPreviousSaveFile()):
+#                 self.readDefaultAttributesFromFile()
+#             self._notifyOnBehavioursListChanged()
 
 #############################        
+    def __str__(self):
+        stringsList = ["Behaviours: "]
+        stringsList.extend([("\"%s\", " % attributes.sectionTitle()) for attributes in self._allSections()])
+        stringsList.append("  (default=\"%s\")" % self.defaultBehaviourAttributes.sectionTitle())
+        
+        return ''.join(stringsList)
+    
+    def _getMetaStr(self):
+        stringsList = ["Values: "]
+        stringsList.extend([("<\t%s\n>\n" % attributes.metaStr) for attributes in self._allSections()])
+        
+        return ''.join(stringsList)
+    
+#############################        
+    def __getstate__(self):
+        selfDict = self.__dict__.copy()
+        selfDict["_delegate"] = self.delegate
+        
+        return selfDict
+    
+    def __setstate__(self, selfDict):
+        self.__dict__.update(selfDict)
+        if(self._delegate is not None):
+            self._delegate = weakref.ref(self._delegate)
+        
+#############################
     def _getDelegate(self):
         return self._delegate() if(self._delegate is not None) else None
     delegate = property(_getDelegate)
@@ -94,6 +151,18 @@ class AttributesController(BoidBaseObject):
         return uib.WindowExists(self._uiWindow)
     uiVisible = property(_getUiVisible)
     
+#####################
+    def _allSections(self):
+        sectionsList = [self.globalAttributes, self.agentMovementAttributes, self.agentPerceptionAttributes] 
+        sectionsList.extend(self._behaviourAttributesList)
+        
+        return sectionsList
+    
+#####################    
+    def onFrameUpdated(self):
+        for attributes in self._allSections():
+            attributes.onFrameUpdated()
+            
 #####################
     def _titleForAttributesClass(self, attributesClass):
         currentMaxIndex = -1
@@ -124,10 +193,9 @@ class AttributesController(BoidBaseObject):
     def _onRequestLeaderSelectForBehaviourAttributes(self, attributes, isChangeSelectionRequest):
         self.delegate.requestedLeaderSelectForBehaviour(attributes, isChangeSelectionRequest)
             
-        
 #####################       
     def _addNewBehaviour(self, newBehaviourAttributes):
-        self.readDefaultAttributesFromFile(newBehaviourAttributes)
+        self.restoreDefaultAttributeValuesFromFile(newBehaviourAttributes)
         self._behaviourAttributesList.append(newBehaviourAttributes)
         
         self._makeDeleteAttributesMenuItem(newBehaviourAttributes)
@@ -140,7 +208,17 @@ class AttributesController(BoidBaseObject):
         self._tabLayout.setSelectTabIndex(self._tabLayout.getNumberOfChildren())
         self._notifyOnBehavioursListChanged()
  
-#####################       
+#####################      
+    def addBehaviourForIdentifier(self, behaviourIdentifier):
+        if(behaviourIdentifier == cbba.ClassicBoidBehaviourAttributes.DefaultSectionTitle()):
+            return self.addClassicBoidAttributes()
+        elif(behaviourIdentifier == gdba.GoalDrivenBehaviourAttributes.DefaultSectionTitle()):
+            return self.addGoalDrivenAttributes()
+        elif(behaviourIdentifier == fpba.FollowPathBehaviourAttributes.DefaultSectionTitle()):
+            return self.addFollowPathAttributes()
+        else:
+            raise ValueError("Unrecognised behaviour identifier \"%s\"" % behaviourIdentifier)
+             
     def addClassicBoidAttributes(self):
         sectionTitle = self._titleForAttributesClass(cbba.ClassicBoidBehaviourAttributes)
         newBehaviourAttributes = cbba.ClassicBoidBehaviourAttributes(sectionTitle)
@@ -148,7 +226,7 @@ class AttributesController(BoidBaseObject):
         
         return newBehaviourAttributes
     
-    def addGoalDrivenAttributes(self, wallLipGoal, basePyramidGoalHeight, finalGoal):
+    def addGoalDrivenAttributes(self, wallLipGoal=None, basePyramidGoalHeight=None, finalGoal=None):
         sectionTitle = self._titleForAttributesClass(gdba.GoalDrivenBehaviourAttributes)
         newBehaviourAttributes = gdba.GoalDrivenBehaviourAttributes(sectionTitle, self._onRequestLeaderSelectForBehaviourAttributes,
                                                                     wallLipGoal, basePyramidGoalHeight, finalGoal)
@@ -156,37 +234,44 @@ class AttributesController(BoidBaseObject):
         
         return newBehaviourAttributes
     
-    def addFollowPathAttributes(self, pathCurve):
+    def addFollowPathAttributes(self, pathCurve=None):
         sectionTitle = self._titleForAttributesClass(fpba.FollowPathBehaviourAttributes)
         newBehaviourAttributes = fpba.FollowPathBehaviourAttributes(sectionTitle, pathCurve)
         self._addNewBehaviour(newBehaviourAttributes)
         
         return newBehaviourAttributes
 
-#####################    
-    def onFrameUpdated(self):
-        for attributes in self._allSections():
-            attributes.onFrameUpdated()
-
 #####################        
     def removeBehaviour(self, behaviourAttributes, getUserConfirmation=False):
         if(not getUserConfirmation or 
            uib.GetUserConfirmation("Remove Behaviour", ("Delete behaviour \"%s\"?" % behaviourAttributes.sectionTitle()))):
             
-            self._behaviourAttributesList.remove(behaviourAttributes)
-            for uiComponent in self._uiComponentToAttributesLookup[behaviourAttributes]:
-                uib.DeleteComponent(uiComponent)
-            del self._uiComponentToAttributesLookup[behaviourAttributes]
-            
-            self.delegate.onBehaviourAttributesDeleted(behaviourAttributes)
-            self._notifyOnBehavioursListChanged()
+            if(behaviourAttributes is self.defaultBehaviourAttributes):
+                raise ValueError("Default behaviour \"%s\" cannot be deleted." % self.defaultBehaviourAttributes.sectionTitle())
+            else:
+                self._behaviourAttributesList.remove(behaviourAttributes)
+                for uiComponent in self._uiComponentToAttributesLookup[behaviourAttributes]:
+                    uib.DeleteComponent(uiComponent)
+                del self._uiComponentToAttributesLookup[behaviourAttributes]
+                
+                self.delegate.onBehaviourAttributesDeleted(behaviourAttributes)
+                self._notifyOnBehavioursListChanged()
+                
+                if(getUserConfirmation):
+                    util.LogInfo("Removed behaviour \"%s\"" % behaviourAttributes.sectionTitle())
 
-#####################
-    def _allSections(self):
-        sectionsList = [self.globalAttributes, self.agentMovementAttributes, self.agentPerceptionAttributes] 
-        sectionsList.extend(self._behaviourAttributesList)
-        
-        return sectionsList
+#####################                
+    def removeAllBehaviours(self, getUserConfirmation=True):
+        if(not getUserConfirmation or
+           uib.GetUserConfirmation("Remove All Behaviours", 
+                                   ("Delete all behaviours (default behaviour \"%s\" will not be deleted)?" 
+                                    % self.defaultBehaviourAttributes.sectionTitle()))):
+            for behaviour in self._behaviourAttributesList:
+                if(behaviour is not self.defaultBehaviourAttributes):
+                    self.removeBehaviour(behaviour, False)
+                    
+            if(getUserConfirmation):
+                util.LogInfo("All non-default behaviours deleted.")
 
 #####################         
     def buildUi(self, windowTitle):
@@ -208,6 +293,12 @@ class AttributesController(BoidBaseObject):
 #####################        
     def _buildUiMenuBar(self):
         uib.MakeMenu("File")
+        uib.MakeMenuItem("Open File...", self._didSelectOpenFile)
+        uib.MakeMenuSeparator()
+        uib.MakeMenuItem("Save", self._didSelectSave)
+        uib.MakeMenuItem("Save As...", self._didSelectSaveAs)
+        uib.MakeMenuSeparator()
+        uib.MakeMenuItem("Make Values Default", self._didSelectMakeValuesDefault)
         uib.MakeMenuItem("Show Debug Logging", self._didSelectShowDebugLogging)
         uib.MakeMenuItem("Hide Debug Logging", self._didSelectHideDebugLogging)
         uib.MakeMenuSeparator()
@@ -231,13 +322,14 @@ class AttributesController(BoidBaseObject):
         for behaviourAttributes in self._behaviourAttributesList:
             self._makeDeleteAttributesMenuItem(behaviourAttributes)
         uib.SetAsChildMenuLayout(self._removeBehaviourMenu)
+        uib.MakeMenuItem("Remove All Behaviours", self.removeAllBehaviours)
         
         uib.MakeMenu("Agents")
         self._selectAgentsWithMenu = uib.MakeMenuItemWithSubMenu("Select Agents With:")
         for behaviourAttributes in self._behaviourAttributesList:
             self._makeSelectAgentsWithBehaviourMenuItem(behaviourAttributes, False)
         uib.SetAsChildMenuLayout(self._selectAgentsWithMenu)
-         
+        
         self._selectAgentsNotWithMenu = uib.MakeMenuItemWithSubMenu("Select Agents Without:")
         for behaviourAttributes in self._behaviourAttributesList:
             self._makeSelectAgentsWithBehaviourMenuItem(behaviourAttributes, True)
@@ -299,8 +391,8 @@ class AttributesController(BoidBaseObject):
         
         uib.SetAsChildLayout(self._tabLayout)
         
-        uib.MakeButtonStrip((("Load Defaults", self._didPressLoadDefaults, self.readDefaultAttributesFromFile.__doc__), 
-                             ("Save As Default", self._didPressSaveAsDefaults, self.writeDefaultValuesToFile.__doc__)))
+        uib.MakeButtonStrip((("Load Defaults", self._didPressLoadDefaults), #self.restoreDefaultAttributeValuesFromFile.__doc__), 
+                             ("Save As Default", self._didPressSaveAsDefaults)))#, self.makeCurrentAttributeValuesDefault.__doc__)))
 
 #####################
     def _makeBehaviourTab(self, behaviourAttributes):
@@ -328,19 +420,31 @@ class AttributesController(BoidBaseObject):
 #####################        
     def _didPressLoadDefaults(self, *args):
         if(uib.GetUserConfirmation("Load Defaults", "Restore all attributes to default values?")):
-            self.readDefaultAttributesFromFile()
+            self.restoreDefaultAttributeValuesFromFile()
  
 #####################   
     def _didPressSaveAsDefaults(self, *args):
         if(uib.GetUserConfirmation("Save Defaults", "Set default attribute values to the current values?")):
-            self.writeDefaultValuesToFile()
+            self.makeCurrentAttributeValuesDefault()
             
 ##################### 
+    def _didSelectOpenFile(self, *args):
+        pass
+    
+    def _didSelectSave(self, *args):
+        pass
+    
+    def _didSelectSaveAs(self, *args):
+        pass
+    
+    def _didSelectMakeValuesDefault(self, *args):
+        pass
+
     def _didSelectShowDebugLogging(self, *args):
-        print("Show BLAH.")
+        util.SetLoggingLevelDebug()
         
     def _didSelectHideDebugLogging(self, *args):
-        print("Hide BLAH")
+        util.SetLoggingLevelInfo()
         
     def _didSelectRefreshInternals(self, *args):
         self.delegate.refreshInternals()
@@ -353,54 +457,122 @@ class AttributesController(BoidBaseObject):
                                             % util.PackageName()))):
             self.delegate.requestedQuitSwarmInstance()
 
+#####################            
+    def _checkForPreviousSaveFile(self):
+        filePath = _DefaultSaveLocation(self.delegate._getParticleShapeName())
+        
+        if(os.path.exists(filePath) and
+           uib.GetUserConfirmation(("Found %s save file: %s" % (util.PackageName(), filePath)), "Use it?")):
+            self.restoreSavedStateFromFile(filePath)
+            return True
+        else:
+            return False
+
 #####################    
-    def readDefaultAttributesFromFile(self, section=None, filePath=None):
-        """Restore attributes to default values from file."""
-        
-        createNewFileIfNeeded = False
+    def restoreSavedStateFromFile(self, filePath=None):
+        isDefaultSaveLocation = False
         if(filePath is None):
-            createNewFileIfNeeded = True
-            filePath = os.path.dirname(__file__) + __DEFAULTS_FILENAME__
-        
+            filePath = util.InitVal(filePath, _DefaultSaveLocation(self.delegate._getParticleShapeName()))
+            isDefaultSaveLocation = True
         configReader = ConfigParser.ConfigParser()
         configReader.optionxform = str  # replacing this method is necessary to make option names case-sensitive
         
         if(configReader.read(filePath)):
-            print("Parsing file \'%s\' for default values..." % filePath)
+            self.removeAllBehaviours(False)
+            
+            behavioursListString = configReader.get(_BEHAVIOURS_LIST_SECTION_NAME_, _BEHAVIOURS_LIST_OPTION_NAME_)
+            for behaviourIdentifier in behavioursListString.split(_BEHAVIOURS_LIST_DELIMITER_):
+                try:
+                    self.addBehaviourForIdentifier(behaviourIdentifier)
+                except ValueError as e:
+                    util.LogError(e)
+            
+            for section in self._allSections():
+                section.getSavedStateFromConfigReader()
+                
+            if(isDefaultSaveLocation):
+                self._preferredSaveLocation = filePath
+            else:
+                self._preferredSaveLocation = None
+        else:
+            raise ValueError("Could not find file %s" % filePath)
+        
+#####################   
+    def restoreDefaultAttributeValuesFromFile(self, section=None):
+        filePath = _DefaultsAttributeValuesFilename()
+        
+        configReader = ConfigParser.ConfigParser()
+        configReader.optionxform = str 
+        
+        if(configReader.read(filePath)):
+            util.LogDebug("Parsing file \'%s\' for default values..." % filePath)
             
             if(section is None):
                 for sectionIterator in self._allSections():
                     sectionIterator.getDefaultsFromConfigReader(configReader)
             elif(not section.getDefaultsFromConfigReader(configReader)):
-                print("Adding new section to default attributes file...")
-                self.writeDefaultValuesToFile(section, filePath)
+                util.LogInfo("Found new behaviour type - adding \"%s\" section to defaults..." % section.sectionTitle())
+                sectionIterator.makeCurrentAttributeValuesDefault(section)
         else:
-            print("Could not read default attributes file: %s" % filePath)
-            if(createNewFileIfNeeded):
-                print("Creating new default attributes file...")
-                self.writeDefaultValuesToFile(section, filePath)
+            util.LogWarning("Could not find default attribute values file %s, creating a new one..." % filePath)
+            self.makeCurrentAttributeValuesDefault()
 
 #####################    
-    def writeDefaultValuesToFile(self, section=None, filePath=None):    
-        """Sets current attribute values as the defualt values."""
-                
-        configWriter = ConfigParser.ConfigParser()
-        configWriter.optionxform = str # replacing this method is necessary to make option names case-sensitive
+    def saveCurrentStateToFile(self, filePath=None):
+        autoCreatedSaveFile = False
         if(filePath is None):
-            filePath = os.path.dirname(__file__) + __DEFAULTS_FILENAME__ 
-        
-        if(section is None):
-            for sectionIterator in self._allSections():
-                sectionIterator.setDefaultsToConfigWriter(configWriter)
+            filePath = _DefaultSaveLocation(self.delegate._getParticleShapeName())
+            autoCreatedSaveFile = not os.path.exists(filePath)
+            self._preferredSaveLocation = None
         else:
-            configWriter.read(filePath)
-            section.setDefaultsToConfigWriter(configWriter)
+            self._preferredSaveLocation = filePath
         
+        configWriter = ConfigParser.ConfigParser()
+        configWriter.optionxform = str
+        
+        configWriter.add_section(_BEHAVIOURS_LIST_SECTION_NAME_)
+        behaviourStrings = [bhvr.DefaultSectionTitle() for bhvr in self._behaviourAttributesList 
+                            if(bhvr is not self.defaultBehaviourAttributes)]
+        configWriter.set(_BEHAVIOURS_LIST_SECTION_NAME_, 
+                         _BEHAVIOURS_LIST_OPTION_NAME_, 
+                         _BEHAVIOURS_LIST_DELIMITER_.join(behaviourStrings))
+                
+        for section in self._allSections():
+            section.setSavedStateWithConfigWriter(configWriter)
+        
+        saveFile = open(filePath, "w")   
+        configWriter.write(saveFile)
+        saveFile.close()
+        
+        util.LogInfo("Saved current attribute values to file %s." % filePath)
+        if(autoCreatedSaveFile):
+            uib.DisplayInfoBox(filePath, "Created new save file:")
+    
+#####################
+    def makeCurrentAttributeValuesDefault(self, section=None):
+        filePath = _DefaultsAttributeValuesFilename()
+        writtenAttributeTypesSet = set()
+        configWriter = ConfigParser.ConfigParser()
+        configWriter.optionxform = str
+        configWriter.read(filePath)
+        
+        if(section is not None):
+            section.setDefaultsToConfigWriter(configWriter)
+        else:
+            for section in self._allSections():
+                sectionType = type(section)
+                if(sectionType not in writtenAttributeTypesSet):
+                    section.setDefaultsToConfigWriter(configWriter)
+                    writtenAttributeTypesSet.add(sectionType)
+                else:
+                    util.LogInfo("Found multiple instances of behaviour type: \"%s\". \
+Default values taken from first instance only." % section.DefaultSectionTitle())
+                
         defaultsFile = open(filePath, "w")   
         configWriter.write(defaultsFile)
         defaultsFile.close()
         
-        print("Wrote current attributes to defaults file:%s" % filePath)
+        util.LogInfo("Saved current attribute values as default values.")
         
     
 # END OF CLASS

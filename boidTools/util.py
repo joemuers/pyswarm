@@ -24,10 +24,21 @@ def LogWarning(message, prefix=None):
     
 def LogError(message, prefix=None):
     __utilLogger__.error(("%s %s" % (prefix, message)) if(prefix is not None) else message)
+    
+def SetLoggingLevelDebug():
+    __utilLogger__.setLevel(logging.DEBUG)
+    LogDebug("Logging level set - DEBUG")
 
-######################################  
-def InitVal(value, defaultValue):
-    return value if value is not None else defaultValue
+def SetLoggingLevelInfo():
+    LogDebug("Logging level set - INFO")
+    __utilLogger__.setLevel(logging.INFO)
+
+######################################
+def GetProjectRootDirectory():
+    return pm.workspace.getPath()
+
+def GetProjectWorkingDirectory():
+    return pm.workspace.getcwd()
 
 ######################################
 
@@ -70,6 +81,14 @@ __import__(\"%s\", globals(), locals(), [\"%s\"], -1)" %
     
 ######################################
 
+
+
+######################################  
+def InitVal(value, defaultValue):
+    return value if value is not None else defaultValue
+
+######################################
+    
     
 
 ######################################

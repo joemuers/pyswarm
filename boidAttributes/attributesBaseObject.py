@@ -1,10 +1,13 @@
+from boidBaseObject import BoidBaseObject
 import attributeTypes as at
 import boidTools.uiBuilder as uib
+import boidTools.util as util
 
 import weakref
 
 
 
+########################################
 class AttributesListener(object):
     
     def onAttributeChanged(self, sectionObject, attributeName):
@@ -33,10 +36,10 @@ class DataBlobBaseObject(object):
 
 
 ########################################
-class FollowOnBehaviourAttributeInterface(object):
+class _FollowOnBehaviourAttributeInterface(object):
     
     def __init__(self, *args, **kwargs):
-        super(FollowOnBehaviourAttributeInterface, self).__init__(*args, **kwargs)
+        super(_FollowOnBehaviourAttributeInterface, self).__init__(*args, **kwargs)
         
         self._defaultBehaviourID = "<None>"
         self._followOnBehaviourIDs = [self._defaultBehaviourID]
@@ -44,6 +47,7 @@ class FollowOnBehaviourAttributeInterface(object):
         self._followOnBehaviourMenuItems = None
         
         self._followOnBehaviour = at.StringAttribute("Follow-On Behaviour", self._defaultBehaviourID)
+        self._followOnBehaviour.excludeFromDefaults = True
 
 #####################        
     def _makeFollowOnBehaviourOptionGroup(self):
@@ -73,7 +77,7 @@ class FollowOnBehaviourAttributeInterface(object):
 
 
 ########################################
-class AttributesBaseObject(at.SingleAttributeDelegate):
+class AttributesBaseObject(BoidBaseObject, at.SingleAttributeDelegate):
     
     @classmethod
     def DefaultSectionTitle(cls):
@@ -89,6 +93,35 @@ class AttributesBaseObject(at.SingleAttributeDelegate):
         self._listeners = []
         self._inBulkUpdate = False
 
+#####################
+    def __str__(self):
+        return ("Behaviour :%s" % self.sectionTitle())
+    
+    def _getMetaStr(self):
+        stringsList = [("%s=%s, " % (attribute.attributeLabel, attribute.value)) 
+                       for attribute in self._allAttributes()]
+        return ''.join(stringsList)
+ 
+ #####################   
+    def __getstate__(self):
+        selfDict = self.__dict__.copy()
+        strongDataBlobRefs = [blobRef() for blobRef in self._dataBlobs]
+        selfDict["_dataBlobs"] = strongDataBlobRefs
+        strongListenerRefs = [ref() for ref in self._listeners]
+        selfDict["_listeners"] = strongListenerRefs
+        
+        return selfDict
+    
+    def __setstate__(self, selfDict):
+        strongDataBlobRefs = selfDict["_dataBlobs"]
+        weakDataBlobRefs = [weakref.ref(blobRef, self._removeDeadBlobReference) for blobRef in strongDataBlobRefs]
+        selfDict["_dataBlobs"] = weakDataBlobRefs
+        strongListenerRefs = selfDict["_listeners"]
+        weakListenerRefs = [weakref.ref(listenerRef, self._removeDeadListenerReference) for listenerRef in strongListenerRefs]
+        selfDict["_listeners"] = weakListenerRefs
+        
+        self.__dict__.update(selfDict)
+        
 #####################    
     def populateUiLayout(self):
         raise NotImplemented
@@ -100,6 +133,34 @@ class AttributesBaseObject(at.SingleAttributeDelegate):
 #####################
     def _updateDataBlobWithAttribute(self, dataBlob, attribute):
         raise NotImplemented
+
+#####################    
+    __ALLATTRIBUTES_RECURSIVE_CHECK__ = ["metaStr"] # list of attributes (i.e. property accessors) which also call
+    #                                               # "_allAttributes" - they must be skipped to avoid a recursive loop
+    def _allAttributes(self):
+        attributesList = []
+        for attributeName in filter(lambda atNm: 
+                                    atNm not in AttributesBaseObject.__ALLATTRIBUTES_RECURSIVE_CHECK__, 
+                                    dir(self)):
+            try:
+                
+                attribute = getattr(self, attributeName)
+                if(isinstance(attribute, at._SingleAttributeBaseObject)):
+                    attributesList.append(attribute)
+                    
+            except RuntimeError as e:
+                if(attributeName not in AttributesBaseObject.__ALLATTRIBUTES_RECURSIVE_CHECK__):
+                    AttributesBaseObject.__ALLATTRIBUTES_RECURSIVE_CHECK__.append(attributeName)
+                    
+                    errorString = ("Found possible recursive loop for class property \"%s\" - properties \
+which use the _allAttributes method should be added to the \"__ALLATTRIBUTES_RECURSIVE_CHECK__\" list.  \
+Recommend this is hard-coded rather than done at runtime."
+% attributeName)
+                    raise RuntimeError(errorString)
+                else:
+                    raise e
+        
+        return attributesList
 
 #####################    
     def onFrameUpdated(self):
@@ -116,28 +177,34 @@ class AttributesBaseObject(at.SingleAttributeDelegate):
         
 #####################        
     def getDefaultsFromConfigReader(self, configReader):
+        return self._readAttributesFromConfigReader(configReader, self.DefaultSectionTitle(), True)
+        
+    def getSavedStateFromConfigReader(self, configReader):
+        return self._readAttributesFromConfigReader(configReader, self.sectionTitle(), False)
+    
+    def _readAttributesFromConfigReader(self, configReader, sectionTitle, isDefaults):
         self._inBulkUpdate = True
         
-        print("Reading default values for section \"%s\"..." % self.DefaultSectionTitle())
+        util.LogDebug("Reading attribute values for section \"%s\"..." % sectionTitle)
         
         attributeLookup = {}
-        for attributeName in dir(self):
-            attribute = getattr(self, attributeName)
-            if(issubclass(type(attribute), at._SingleAttributeBaseObject) and not attribute.excludeFromDefaults):
-                attributeLookup[attribute.attributeLabel] = attribute
+        for attribute in filter(lambda at: not (at.excludeFromDefaults and isDefaults), self._allAttributes()):
+            attributeLookup[attribute.attributeLabel] = attribute
+            if(attribute.nestedAttribute is not None):
+                attributeLookup[attribute.nestedAttribute.attributeLabel] = attribute.nestedAttribute
         
         attributeReadCount = 0
         try:
-            for attributeLabel, attributeValueStr in configReader.items(self.DefaultSectionTitle()):
+            for attributeLabel, attributeValueStr in configReader.items(sectionTitle):
                 try:
                     attributeLookup[attributeLabel].value = attributeValueStr
                     attributeReadCount += 1
                 except Exception as e:
-                    print("WARNING - could not read attribute: %s (%s), ignoring..." % (attributeLabel, e))
+                    util.LogWarning("WARNING - could not read attribute: %s (%s), ignoring..." % (attributeLabel, e))
                 else:
-                    print("Re-set attribute value: %s = %s" % (attributeLabel, attributeValueStr))
+                    util.LogDebug("Parsed attribute value: %s = %s" % (attributeLabel, attributeValueStr))
         except Exception as e:
-            print("ERROR - %s" % e)
+            util.LogWarning("ERROR - %s" % e)
                 
         self._inBulkUpdate = False
         
@@ -147,27 +214,37 @@ class AttributesBaseObject(at.SingleAttributeDelegate):
 
 #####################    
     def setDefaultsToConfigWriter(self, configWriter):
-        print("Saving default values for section \"%s\"..." % self.sectionTitle())
+        self._writeAttributesWithConfigWriter(configWriter, self.DefaultSectionTitle(), True)
+        
+    def setSavedStateWithConfigWriter(self, configWriter):
+        self._writeAttributesWithConfigWriter(configWriter, self.sectionTitle(), False)
+        
+    def _writeAttributesWithConfigWriter(self, configWriter, sectionTitle, isDefaults):
+        util.LogDebug("Writing values for section \"%s\"..." % sectionTitle)
         
         try:
-            if(configWriter.has_section(self.DefaultSectionTitle())):
-                configWriter.remove_section(self.DefaultSectionTitle())
-                print("Replacing previous values...")
+            if(configWriter.has_section(sectionTitle)):
+                configWriter.remove_section(sectionTitle)
+                util.LogDebug("Replacing previous values...")
             
-            configWriter.add_section(self.DefaultSectionTitle())
+            configWriter.add_section(sectionTitle)
         except Exception as e:
-            print("ERROR - %s" % e)
+            util.LogWarning("ERROR - %s" % e)
         else:
-            for attributeName in dir(self):
-                attribute = getattr(self, attributeName)
-                
-                if(issubclass(type(attribute), at._SingleAttributeBaseObject) and not attribute.excludeFromDefaults):
+            for attribute in filter(lambda at: not (at.excludeFromDefaults and isDefaults), self._allAttributes()):
+                ####
+                def _saveAttribute(configWriter, sectionTitle, attribute):
                     try:
-                        configWriter.set(self.sectionTitle(), attribute.attributeLabel, attribute.value)
-                        print("Changed default attribute value: %s = %s" % (attribute.attributeLabel, attribute.value))
+                        configWriter.set(sectionTitle, attribute.attributeLabel, attribute.value)
+                        util.LogDebug("Wrote attribute value to file: %s = %s" % (attribute.attributeLabel, attribute.value))
                     except Exception as e:
-                        print("WARNING - Could not write attribute to defaults file: %s (%s)" % (attributeName, e))
-
+                        util.LogWarning("WARNING - Could not write attribute %s to file (%s)" % (attribute.attributeLabel, e))
+                ####
+                
+                _saveAttribute(configWriter, sectionTitle, attribute)
+                if(attribute.nestedAttribute is not None):
+                    _saveAttribute(configWriter, sectionTitle, attribute.nestedAttribute)
+                        
 #####################    
     def sectionTitle(self):
         return self._sectionTitle

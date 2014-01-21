@@ -53,7 +53,7 @@ class GoalDrivenDataBlob(abo.DataBlobBaseObject):
 
 
 ###########################################
-class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject, abo.FollowOnBehaviourAttributeInterface):
+class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject, abo._FollowOnBehaviourAttributeInterface):
 
     @classmethod
     def DefaultSectionTitle(cls):
@@ -92,6 +92,13 @@ class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject, abo.FollowOnBehavi
         self._pyramidJumpOnProbability = at.FloatAttribute("Jump-On Probability", 0.1, self, minimumValue=0, maximumValue=1)
         self._pyramidPushUpwardsForce = at.FloatAttribute("Push-Upwards Force", 22)
         self._pyramidPushInwardsForce = at.FloatAttribute("Push-Inwards Force", 15)
+        
+    def __getstate__(self):
+        selfDict = super(GoalDrivenBehaviourAttributes, self).__getstate__()
+        selfDict["_leaderSelectDelegateCallback"] = None
+        selfDict["_selectCurrentLeadersButtonEnable"] = None
+        
+        return selfDict
         
 #####################
     def populateUiLayout(self):

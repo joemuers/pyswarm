@@ -602,6 +602,10 @@ def GetUserConfirmation(title, message):
     return pm.confirmBox(title, message, "OK", "Cancel")
 
 #####################
+def DisplayInfoBox(message, title=None):
+    pm.informBox(title, message)
+
+#####################
 def DeleteComponent(uiComponent):
     pm.deleteUI(uiComponent)
 

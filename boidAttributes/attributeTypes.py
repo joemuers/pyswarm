@@ -51,6 +51,20 @@ class _SingleAttributeBaseObject(BoidBaseObject):
                 (self._attributeLabel, self.delegate, self.excludeFromDefaults,
                  self.updateUiCommand, self.uiEnableMethod))
         
+#############################        
+    def __getstate__(self):
+        selfDict = self.__dict__.copy()
+        selfDict["_delegate"] = self.delegate
+        selfDict["updateUiCommand"] = None
+        selfDict["uiEnableMethod"] = None
+        
+        return selfDict
+    
+    def __setstate__(self, selfDict):
+        self.__dict__.update(selfDict)
+        if(self._delegate is not None):
+            self._delegate = weakref.ref(self._delegate) 
+        
 #####################   
     def _getValue(self):
         return self._value
@@ -74,6 +88,13 @@ class _SingleAttributeBaseObject(BoidBaseObject):
         return self._attributeLabel
     attributeLabel = property(_getAttributeLabel)
 
+#####################     
+    def _getNestedAttribute(self):
+        """Override if attribute has a seperate, internal (i.e. created internally, not passed in)
+        attribute that needs to be preserved when the attributes are saved."""
+        return None
+    nestedAttribute = property(lambda obj:obj._getNestedAttribute()) # lambda construct means subclasses only have to 
+    #                                                                # implement _getNestedAttribute for accessor to work.
 #####################    
     def _getValueFromInput(self, inputValue):
         """Must be able to handle both string and 'normal' object representations."""
@@ -256,6 +277,17 @@ class RandomizeController(_SingleAttributeBaseObject):
         
         self._randomizerAttribute = RandomizerAttribute(parentAttribute)
         self._parentAttribute = parentAttribute
+
+#####################        
+    def __str__(self):
+        return ("opt=%s, mult=%s" % (super(RandomizeController, self).__str__(), self._randomizerAttribute.__str__()))
+    
+    def _getMetaStr(self):
+        return ("<opt=%s, mult=%s>" % (super(RandomizeController, self)._getMetaStr(), self._randomizerAttribute.metaStr))
+
+#####################    
+    def _getNestedAttribute(self):
+        return self._randomizerAttribute
         
 #####################
     def _getValue(self):
@@ -276,7 +308,8 @@ class RandomizeController(_SingleAttributeBaseObject):
 #####################    
     def _updateInputUiComponents(self):
         super(RandomizeController, self)._updateInputUiComponents()
-        self._randomizerAttribute.setEnabled(self._value != RandomizeController.__Off__)
+        if(self._randomizerAttribute.uiEnableMethod is not None):
+            self._randomizerAttribute.setEnabled(self._value != RandomizeController.__Off__)
         
     def setEnabled(self, enabled):
         super(RandomizeController, self).setEnabled(enabled)
@@ -464,3 +497,6 @@ class LocationAttribute(MayaObjectAttribute):
 
 # END OF CLASS - LocationAttribute
 ######################################
+
+
+

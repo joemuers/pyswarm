@@ -71,7 +71,7 @@ class AgentSelectionWindow(BoidBaseObject):
         if(self._selectedOption != AgentSelectionWindow.__invalid__):
             util.LogWarning("Overwriting previous agent selection session.")
             
-        self._closeWindow()
+        self.closeWindow()
         
         self._currentlySelectedList = currentlySelectedAgentsList[:] # important to take a copy here - avoids modifying the original prematurely
         self._maxIdValue = sorted(self._idToAgentLookup.keys())[-1]
@@ -94,7 +94,7 @@ class AgentSelectionWindow(BoidBaseObject):
         
         uib.SetAsChildLayout(columnLayout, borderLayout)
         
-        uib.MakeButtonStrip((("OK", self._okButtonWasPressed), ("Cancel", self._closeWindow)))
+        uib.MakeButtonStrip((("OK", self._okButtonWasPressed), ("Cancel", self.closeWindow)))
         self._selectionMadeCommand = selectionMadeCommand
         
         self._window.show()
@@ -210,10 +210,10 @@ class AgentSelectionWindow(BoidBaseObject):
         else:
             util.LogError("Invalid input - selection not changed")
             
-        self._closeWindow()          
+        self.closeWindow()          
     
 #####################        
-    def _closeWindow(self, *args):
+    def closeWindow(self, *args):
         if(uib.WindowExists(self._window)):
             util.EvalDeferred(uib.DestroyWindow, self._window)
         
