@@ -3,8 +3,6 @@ import util
 
 import pymel.core as pm
 import sys
-from boidAttributes.attributeTypes import LocationAttribute, MayaObjectAttribute
-
 
 
 
@@ -107,8 +105,15 @@ def SetAsChildLayout(*childLayouts):
 def IsCurrentParent(control):
     return (control == pm.currentParent())
 
+#####################
+def MakeFormLayout(title=None):
+    if(title is not None):
+        return pm.formLayout(title)
+    else:
+        return pm.formLayout()
+
 ##################### 
-def MakeScrollLayout(title):
+def MakeScrollLayout(title=None):
     if(title is not None):
         return pm.scrollLayout(title, childResizable=True)
     else:
@@ -126,13 +131,18 @@ def MakeFrameLayout(title, makeCollapsable=True):
     return frame
 
 #####################
-def MakeTabLayout(height):
-    tabs = pm.tabLayout(height=height)
-    return tabs
+def MakeTabLayout(height=None):
+    if(height is not None):
+        return pm.tabLayout(height=height)
+    else:
+        return pm.tabLayout()
 
 ##################### 
-def MakeColumnLayout():
-    return pm.columnLayout(adjustableColumn=True)
+def MakeColumnLayout(title=None):
+    if(title is not None):
+        return pm.columnLayout(title, adjustableColumn=True)
+    else:
+        return pm.columnLayout(adjustableColumn=True)
 
 #####################    
 def MakeRowLayout(numColumns, 
@@ -180,13 +190,9 @@ def MakeRowLayout(numColumns,
         return layout
     else:
         raise ValueError  
-    
-#########################
-def MakeFormLayout():
-    return pm.formLayout()
 
 #########################
-def DistributeControlsInFormLayout(formLayout, controls):
+def DistributeControlsHorizontallyInFormLayout(formLayout, controls):
     formLayout.attachForm(controls[0], 'left', 2)
 
     numControls = len(controls)   
@@ -199,6 +205,14 @@ def DistributeControlsInFormLayout(formLayout, controls):
         position += stepSize
         
     formLayout.attachForm(controls[-1], 'right', 2)
+    
+def DistributeButtonedWindowInFormLayout(formLayout, windowLayout, buttonsLayout):
+    map(lambda x: formLayout.attachForm(*x), [(windowLayout, 'top', 1), 
+                                              (windowLayout, 'left', 1), (windowLayout, 'right', 1),
+                                              (buttonsLayout, 'bottom', 1), 
+                                              (buttonsLayout, 'left', 1), (buttonsLayout, 'right', 1)])
+    formLayout.attachControl(windowLayout, 'bottom', 1, buttonsLayout)
+    formLayout.attachNone(buttonsLayout, 'top')
         
 #########################
 
@@ -253,7 +267,9 @@ def MakeSliderGroup(attribute, annotation=None):
     return inputGroup
 
 #####################
-def MakeFieldGroup(attribute, annotation=None):
+def MakeFieldGroup(attribute, annotation=None, 
+                   leftColumnWidth=__LEFT_COLUMN_WIDTH__, 
+                   rightColumnWidth=__MIDDLE_COLUMN_WIDTH__):
     isFloatField = None
     groupCreationMethod = None
     
@@ -269,7 +285,7 @@ def MakeFieldGroup(attribute, annotation=None):
     kwargs = { "label" : attribute.attributeLabel, 
                "value1": attribute.value, 
                "columnAlign" : (1, "right"),
-               "columnWidth2" : (__LEFT_COLUMN_WIDTH__, __MIDDLE_COLUMN_WIDTH__)
+               "columnWidth2" : (leftColumnWidth, rightColumnWidth)
                }
     # and another shitty Pymel bug - fieldGrps cannot have min/max values!!!
     if(isFloatField):
@@ -462,7 +478,7 @@ def MakeLocationField(locationAttribute, withButton=False, annotation=None):
         locationField.setAnnotation(annotation)
         
     if(withButton):
-        button = pm.button(label="...", annotation=("Select/clear locator for %s" % LocationAttribute.attributeLabel), 
+        button = pm.button(label="...", annotation=("Select/clear locator for %s" % at.LocationAttribute.attributeLabel), 
                            width=__FOURTH_COLUMN_WIDTH__)
         button.setCommand(lambda *args: _MakeObjectSelectionList(locationAttribute))
         
@@ -471,7 +487,9 @@ def MakeLocationField(locationAttribute, withButton=False, annotation=None):
     return locationField
 
 #########################
-def MakePassiveTextField(stringAttribute, buttonCallback, annotation=None):
+def MakePassiveTextField(stringAttribute, buttonCallback, annotation=None, 
+                         leftColumnWidth=130, rightColumnWidth=__MIDDLE_COLUMN_WIDTH__):
+    
     if(not isinstance(stringAttribute, at.StringAttribute)):
         raise TypeError("Attempted to make text field (expected:%s, got:%s)" % 
                         (at.StringAttribute, type(stringAttribute)))
@@ -482,7 +500,7 @@ def MakePassiveTextField(stringAttribute, buttonCallback, annotation=None):
 
     textField = pm.textFieldButtonGrp(editable=False, text=stringAttribute.value,
                                       buttonLabel="...", buttonCommand=buttonCallback,
-                                      adjustableColumn=1, columnWidth2=(130, __MIDDLE_COLUMN_WIDTH__))
+                                      adjustableColumn=1, columnWidth2=(leftColumnWidth, rightColumnWidth))
     if(annotation is not None):
         textField.setAnnotation(annotation)
     
@@ -550,7 +568,7 @@ def MakeButtonStrip(textCommandTupleList):
         button = MakeButton(text, command, annotation)
         controls.append(button)
         
-    DistributeControlsInFormLayout(formLayout, controls)
+    DistributeControlsHorizontallyInFormLayout(formLayout, controls)
     SetAsChildLayout(formLayout)
     
     return formLayout
@@ -604,6 +622,20 @@ def GetUserConfirmation(title, message):
 #####################
 def DisplayInfoBox(message, title=None):
     pm.informBox(title, message)
+
+#####################    
+def GetFilePathFromUser(isReadOnly, initialFolderPath=None, fileExtensionMask=None):
+    kwargs = { "mode" :  0 if(isReadOnly) else 1 }
+    
+    if(initialFolderPath is not None):
+        mask = initialFolderPath + '*'
+        if(fileExtensionMask is not None):
+            mask += fileExtensionMask
+        kwargs["directoryMask"] = mask
+    elif(fileExtensionMask is not None):
+        kwargs["directoryMask"] = "*" + fileExtensionMask
+        
+    return pm.fileDialog(**kwargs)
 
 #####################
 def DeleteComponent(uiComponent):

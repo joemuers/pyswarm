@@ -28,7 +28,7 @@ class FollowPathDataBlob(abo.DataBlobBaseObject):
 class FollowPathBehaviourAttributes(abo.AttributesBaseObject, abo._FollowOnBehaviourAttributeInterface):
 
     @classmethod
-    def DefaultSectionTitle(cls):
+    def BehaviourTypeName(cls):
         return "Follow Path Behaviour"
 
 #####################    

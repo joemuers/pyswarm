@@ -32,12 +32,12 @@ class PerceptionAttributesDataBlob(abo.DataBlobBaseObject):
 class AgentPerceptionAttributes(abo.AttributesBaseObject):
  
     @classmethod
-    def DefaultSectionTitle(cls):
+    def BehaviourTypeName(cls):
         return "Agent Awareness"
  
 #####################   
     def __init__(self):
-        super(AgentPerceptionAttributes, self).__init__(AgentPerceptionAttributes.DefaultSectionTitle())
+        super(AgentPerceptionAttributes, self).__init__(AgentPerceptionAttributes.BehaviourTypeName())
         
         self._neighbourhoodSize = at.FloatAttribute("Neighbourhood Size", 4.0, self)
         self._neighbourhoodSize_Random = at.RandomizeController(self._neighbourhoodSize)

@@ -38,7 +38,11 @@ class AgentSelectionWindow(BoidBaseObject):
         self._selectionMadeCommand = None
         
         self.dataBlob = None # For client use only - not used internally
- 
+
+#####################
+    def __del__(self):
+        self.closeWindow()
+         
 #####################       
     def __str__(self):
         return ("<AgentSelectionWindow: \"%s\", particleShape:\"%s\">" % 
@@ -77,9 +81,10 @@ class AgentSelectionWindow(BoidBaseObject):
         self._maxIdValue = sorted(self._idToAgentLookup.keys())[-1]
         
         self._window = uib.MakeWindow(windowTitle, (450,80))
+        formLayout = uib.MakeFormLayout()
+        
         borderLayout = uib.MakeBorderingLayout()
         columnLayout = uib.MakeColumnLayout()
-        
         self._textInput = uib.MakeTextInputField("Agent IDs:", 
                                                  self.getSelectionString(), 
                                                  leftColumnWidth=100, 
@@ -91,12 +96,13 @@ class AgentSelectionWindow(BoidBaseObject):
                                                       annotation=_RadioButtonsAnnotation_)
         self._radioButtons.setSelect(AgentSelectionWindow.__textInputSelection__)
         self._selectedOption = AgentSelectionWindow.__textInputSelection__
-        
         uib.SetAsChildLayout(columnLayout, borderLayout)
         
-        uib.MakeButtonStrip((("OK", self._okButtonWasPressed), ("Cancel", self.closeWindow)))
+        buttonStripLayout = uib.MakeButtonStrip((("OK", self._okButtonWasPressed), ("Cancel", self.closeWindow)))
         self._selectionMadeCommand = selectionMadeCommand
+        uib.SetAsChildLayout(buttonStripLayout)
         
+        uib.DistributeButtonedWindowInFormLayout(formLayout, borderLayout, buttonStripLayout)
         self._window.show()
         
 #####################

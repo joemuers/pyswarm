@@ -27,7 +27,7 @@ class ClassicBoidDataBlob(abo.DataBlobBaseObject):
 class ClassicBoidBehaviourAttributes(abo.AttributesBaseObject):
     
     @classmethod
-    def DefaultSectionTitle(cls):
+    def BehaviourTypeName(cls):
         return "Classic Boid Behaviour"
     
 #####################    

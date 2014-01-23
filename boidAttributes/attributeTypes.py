@@ -26,6 +26,8 @@ class SingleAttributeDelegate(object):
 class _SingleAttributeBaseObject(BoidBaseObject):
     """Base class for attribute types."""
     
+    __metaclass__ = ABCMeta
+    
     def __init__(self, attributeLabel, value, delegate=None):
         self._attributeLabel = attributeLabel
         self._value = self._getValueFromInput(value)
@@ -38,7 +40,8 @@ class _SingleAttributeBaseObject(BoidBaseObject):
             self._delegate = weakref.ref(delegate)
         
         self.updateUiCommand = None
-        self.uiEnableMethod = None
+        self._uiEnableMethod = None
+        self._isUiEnabled = True
         
         self.excludeFromDefaults = False
 
@@ -46,6 +49,7 @@ class _SingleAttributeBaseObject(BoidBaseObject):
     def __str__(self):
         return str(self.value)
 
+########
     def _getMetaStr(self):
         return ("<label=%s, delegate=%s, exclude=%s, updateUi=%s, uiEnable=%s>" %
                 (self._attributeLabel, self.delegate, self.excludeFromDefaults,
@@ -53,15 +57,17 @@ class _SingleAttributeBaseObject(BoidBaseObject):
         
 #############################        
     def __getstate__(self):
-        selfDict = self.__dict__.copy()
-        selfDict["_delegate"] = self.delegate
-        selfDict["updateUiCommand"] = None
-        selfDict["uiEnableMethod"] = None
+        state = super(_SingleAttributeBaseObject, self).__getstate__()
+        state["_delegate"] = self.delegate
+        state["updateUiCommand"] = None
+        state["uiEnableMethod"] = None
         
-        return selfDict
-    
-    def __setstate__(self, selfDict):
-        self.__dict__.update(selfDict)
+        return state
+  
+########  
+    def __setstate__(self, state):
+        super(_SingleAttributeBaseObject, self).__setstate__(state)
+        
         if(self._delegate is not None):
             self._delegate = weakref.ref(self._delegate) 
         
@@ -70,14 +76,41 @@ class _SingleAttributeBaseObject(BoidBaseObject):
         return self._value
     def _setValue(self, value):
         newValue = self._getValueFromInput(value)
-        if(newValue != self.value):
-            self._value = newValue
-            
-            self._updateInputUiComponents()
-            self._updateDelegate()
-            print("set %s=%s" % (self._attributeLabel, newValue))
+        if(self._validateValue(newValue)):
+            self._updateValue(newValue)
     value = property(_getValue, _setValue)
+ 
+########
+    @abstractmethod
+    def _getValueFromInput(self, inputValue):
+        """Must be able to handle both string and 'normal' object representations."""
+        raise NotImplemented("Unrecognised attribute type")
 
+########
+    def _validateValue(self, newValue):
+        """Override if needed - should return true if value should be updated with new
+        value (and listeners notified and so on), false otherwise.
+        """
+        return (newValue != self.value)
+ 
+########
+    def _updateValue(self, newValue):
+        """Override if needed - updates value with newValue, updates listeners and updates UI components."""
+        self._value = newValue
+        self._updateInputUiComponents()
+        self._updateDelegate()
+        
+        util.LogDebug("Attribute value changed: %s=%s" % (self._attributeLabel, newValue))
+
+#####################           
+    def _getUiEnableMethod(self):
+        return self._uiEnableMethod
+    def _setUiEnableMethod(self, value):
+        self._uiEnableMethod = value
+        if(value is not None):
+            self._uiEnableMethod(self._isUiEnabled)
+    uiEnableMethod = property(_getUiEnableMethod, _setUiEnableMethod)
+    
 #####################    
     def _getDelegate(self):
         return self._delegate() if(self._delegate is not None) else None
@@ -96,21 +129,18 @@ class _SingleAttributeBaseObject(BoidBaseObject):
     nestedAttribute = property(lambda obj:obj._getNestedAttribute()) # lambda construct means subclasses only have to 
     #                                                                # implement _getNestedAttribute for accessor to work.
 #####################    
-    def _getValueFromInput(self, inputValue):
-        """Must be able to handle both string and 'normal' object representations."""
-        raise NotImplemented("Unrecognised attribute type")
-    
-#####################    
     def _updateInputUiComponents(self):
         if(self.updateUiCommand is not None):
             self.updateUiCommand(self.value)
-            
-#####################        
+ 
+#####################
     def setEnabled(self, enabled):
         if(self.uiEnableMethod is not None):
             self.uiEnableMethod(enabled)
-        else:
-            util.LogWarning("uiEnableMethod not defined for attribute %s, ignoring..." % self._attributeLabel)
+        elif(self.updateUiCommand is not None):
+            util.LogWarning("uiEnableMethod not defined for attribute \"%s\", ignoring..." % self._attributeLabel)
+
+        self._isUiEnabled = enabled
 
 #####################            
     def _updateDelegate(self):
@@ -147,17 +177,13 @@ class IntAttribute(_SingleAttributeBaseObject):
     maximumValue = property(_getMaximumValue)
  
 #####################    
-    def _getValue(self):
-        return self._value
-    def _setValue(self, value):
-        newValue = self._getValueFromInput(value)
+    def _validateValue(self, newValue):
         if((self.minimumValue is not None and newValue < self.minimumValue) or 
            (self.maximumValue is not None and self.maximumValue < newValue)):
             self._updateInputUiComponents()
-            raise ValueError("Value (%s) is out of bounds, range=%s to %s" % (value, self.minimumValue, self.maximumValue))
+            raise ValueError("Value (%s) is out of bounds, range=%s to %s" % (newValue, self.minimumValue, self.maximumValue))
         else:
-            super(IntAttribute, self)._setValue(newValue)
-    value = property(_getValue, _setValue)
+            return super(IntAttribute, self)._validateValue(newValue)
 
 #####################   
     def _getValueFromInput(self, inputValue):
@@ -204,13 +230,14 @@ class RandomizerAttribute(FloatAttribute):
         if(type(parentAttribute) != IntAttribute and type(parentAttribute) != FloatAttribute):
             raise TypeError("Attempt to create randomizer for non-valueType attribute")
         elif(parentAttribute._delegate is None):
-            print("WARNING - delegate attribute for randomized attribute \'%s\' is None" % parentAttribute.attributeLabel)
+            util.LogWarning("Delegate attribute for randomized attribute \'%s\' is None" % parentAttribute.attributeLabel)
         
         super(RandomizerAttribute, self).__init__(parentAttribute.attributeLabel + " Randomize", 0, parentAttribute.delegate, 0.0, 1.0)
         self._parentAttribute = parentAttribute
         
 #####################         
     def _clampIfNecessary(self, returnValue):
+        """Returns randomised value from the parent attribute that respects any minimum and maximum values."""
         if(self._parentAttribute._minimumValue is not None and returnValue < self._parentAttribute.minimumValue):
             return self._parentAttribute.minimumValue
         elif(self._parentAttribute._maximumValue is not None and returnValue > self._parentAttribute.maximumValue):
@@ -269,10 +296,10 @@ class RandomizeController(_SingleAttributeBaseObject):
         if(type(parentAttribute) != IntAttribute and type(parentAttribute) != FloatAttribute):
             raise TypeError("Attempt to create randomizeController for non-valueType attribute")
         elif(parentAttribute.delegate is None):
-            print("WARNING - delegate attribute for randomized attribute \'%s\' is None" % parentAttribute.attributeLabel)
+            util.LogWarning("Delegate attribute for randomized attribute \'%s\' is None" % parentAttribute.attributeLabel)
 
         super(RandomizeController, self).__init__(parentAttribute.attributeLabel + " Input", 
-                                                  RandomizeController.StringForOption(RandomizeController.__Off__), 
+                                                  RandomizeController.__Off__, 
                                                   parentAttribute.delegate)
         
         self._randomizerAttribute = RandomizerAttribute(parentAttribute)
@@ -302,8 +329,21 @@ class RandomizeController(_SingleAttributeBaseObject):
     randomizeMultiplierAttribute = property(_getRandomizeMultiplierValue)
  
 #####################   
+    def _validateValue(self, newValue):
+        if(newValue >= RandomizeController.__Off__ and newValue <= RandomizeController.__PureRandom__):
+            return newValue != self._value
+        else:
+            raise ValueError("Invalid value: %d (must be in the range %d - %d)" % 
+                             (newValue, RandomizeController.__Off__, RandomizeController.__PureRandom__))
+
+######################
     def _getValueFromInput(self, inputValue):
-        return RandomizeController.OptionForString(inputValue) 
+        if(isinstance(inputValue, str)):
+            return RandomizeController.OptionForString(inputValue)
+        elif(isinstance(inputValue, int)):
+            return inputValue
+        else:
+            raise TypeError("Got %s, expected %s or %s" % (type(inputValue), str, int)) 
 
 #####################    
     def _updateInputUiComponents(self):
@@ -340,7 +380,10 @@ class RandomizeController(_SingleAttributeBaseObject):
 class BoolAttribute(_SingleAttributeBaseObject):
     
     def _getValueFromInput(self, inputValue):
-        return bool(inputValue)
+        if(isinstance(inputValue, str)):
+            return inputValue != str(False)
+        else:
+            return bool(inputValue)
 
 # END OF CLASS - BoolAttribute
 ######################################

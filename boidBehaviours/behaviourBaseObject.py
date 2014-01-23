@@ -47,7 +47,7 @@ class BehaviourBaseObject(BoidBaseObject):
     
 ##########################
     def _getBehaviourId(self):
-        return self._attributes.sectionTitle()
+        return self._attributes.behaviourId
     behaviourId = property(_getBehaviourId)
 
 ##########################    

@@ -32,12 +32,12 @@ class MovementAttributesDataBlob(abo.DataBlobBaseObject):
 class AgentMovementAttributes(abo.AttributesBaseObject):
     
     @classmethod
-    def DefaultSectionTitle(cls):
+    def BehaviourTypeName(cls):
         return "Agent Movement"
     
 ######################
     def __init__(self):
-        super(AgentMovementAttributes, self).__init__(AgentMovementAttributes.DefaultSectionTitle())
+        super(AgentMovementAttributes, self).__init__(AgentMovementAttributes.BehaviourTypeName())
         
         self._maxVelocity = at.FloatAttribute("Max Velocity", 5.0, self)
         self._maxVelocity_Random = at.RandomizeController(self._maxVelocity)

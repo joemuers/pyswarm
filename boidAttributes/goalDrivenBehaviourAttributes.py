@@ -56,7 +56,7 @@ class GoalDrivenDataBlob(abo.DataBlobBaseObject):
 class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject, abo._FollowOnBehaviourAttributeInterface):
 
     @classmethod
-    def DefaultSectionTitle(cls):
+    def BehaviourTypeName(cls):
         return "Goal-Driven Behaviour"
     
 #####################    
@@ -78,8 +78,8 @@ class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject, abo._FollowOnBehav
         
         self._useInfectionSpread = at.BoolAttribute("Use Infection Spread", False, self)
         self._leadersText = at.StringAttribute("Leader Agents", "")
-        self._leaderSelectDelegateCallback = leaderSelectCallback
-        self._selectCurrentLeadersButtonEnable = None
+        self._leaderSelectDelegateCallback = leaderSelectCallback # should *not* be
+        self._selectCurrentLeadersButtonEnable = None             # included in Pickle save
         self._incubationPeriod = at.IntAttribute("Incubation Period", 10, self)
         self._incubationPeriod_Random = at.RandomizeController(self._incubationPeriod)
         self._goalChaseSpeed = at.FloatAttribute("Goal Chase Speed", 10, self)
@@ -93,12 +93,15 @@ class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject, abo._FollowOnBehav
         self._pyramidPushUpwardsForce = at.FloatAttribute("Push-Upwards Force", 22)
         self._pyramidPushInwardsForce = at.FloatAttribute("Push-Inwards Force", 15)
         
+        self.onValueChanged(self._useInfectionSpread) # required to ensure enabled/disabled states are up to date
+ 
+#####################       
     def __getstate__(self):
-        selfDict = super(GoalDrivenBehaviourAttributes, self).__getstate__()
-        selfDict["_leaderSelectDelegateCallback"] = None
-        selfDict["_selectCurrentLeadersButtonEnable"] = None
+        state = super(GoalDrivenBehaviourAttributes, self).__getstate__()
+        state["_leaderSelectDelegateCallback"] = None
+        state["_selectCurrentLeadersButtonEnable"] = None
         
-        return selfDict
+        return state
         
 #####################
     def populateUiLayout(self):
@@ -114,6 +117,7 @@ class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject, abo._FollowOnBehav
         uib.MakePassiveTextField(self._leadersText, self._leaderSelectRequestUiCallback)
         selectButtonRow = uib.MakeButtonStandalone("Scene Select", self._leaderGetSelectionRequestUiCallback)
         self._selectCurrentLeadersButtonEnable = selectButtonRow.setEnable
+        self._selectCurrentLeadersButtonEnable(self._useInfectionSpread.value)
         uib.MakeSliderGroup(self._incubationPeriod)
         uib.MakeRandomizerFields(self._incubationPeriod_Random)
         uib.MakeSeparator()
@@ -165,7 +169,8 @@ class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject, abo._FollowOnBehav
             self._leadersText.setEnabled(changedAttribute.value)
             self._incubationPeriod.setEnabled(changedAttribute.value)
             self._incubationPeriod_Random.setEnabled(changedAttribute.value)
-            self._selectCurrentLeadersButtonEnable(changedAttribute.value)
+            if(self._selectCurrentLeadersButtonEnable is not None):
+                self._selectCurrentLeadersButtonEnable(changedAttribute.value)
 
 #####################            
     def _leaderSelectRequestUiCallback(self, *args):

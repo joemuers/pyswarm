@@ -3,6 +3,7 @@ import boidVectors.vector3 as bv3
 import pymel.core as pm
 import pymel.core.nodetypes as pmn  # Eclipse doesn't like pm.nodetypes for some reason... (perhaps an issue with the Pymel predefinitions?)
 import logging
+import os
 
 
 
@@ -40,6 +41,12 @@ def GetProjectRootDirectory():
 def GetProjectWorkingDirectory():
     return pm.workspace.getcwd()
 
+def GetCurrentSceneName():
+    sceneFile = pm.system.sceneName()
+    sceneFile = os.path.split(sceneFile)[1]
+    
+    return os.path.splitext(sceneFile)[0]
+    
 ######################################
 
 
@@ -67,6 +74,9 @@ def EvalDeferred(boundMethod, *args, **kwargs):
     As such, this is the only way to provided the same functionality for bound methods from within
     modules and classes (Method adds this module to main, then evaluates bound methods via _MakeDeferredEvaluations).
     """
+    if(not callable(boundMethod)):
+        raise TypeError("Non-callable object \"%s\" passed to EvalDeferred." % boundMethod)
+    
     if(__name__ == "__main__"):
         raise RuntimeError("This version of EvalDeferred is not designed to be run from within the Script Editor.")
     else:
