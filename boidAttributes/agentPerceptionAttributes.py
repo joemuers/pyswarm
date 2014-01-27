@@ -50,6 +50,8 @@ class AgentPerceptionAttributes(abo.AttributesBaseObject):
         self._blindRegionAngle_Random = at.RandomizeController(self._blindRegionAngle)
         self._forwardVisionAngle = at.IntAttribute("Forward Vision Angle", 90, self, maximumValue=359)
         self._forwardVisionAngle_Random = at.RandomizeController(self._forwardVisionAngle)   
+        
+        self.onValueChanged(self._neighbourhoodSize) # sets up the min/max values for regions
 
 ##################### 
     def populateUiLayout(self):
@@ -91,6 +93,13 @@ class AgentPerceptionAttributes(abo.AttributesBaseObject):
             dataBlob.blindRegionAngle = self._getBlindRegionAngleForBlob(dataBlob)
         elif(attribute is self._forwardVisionAngle):
             dataBlob.forwardVisionAngle = self._getForwardVisionAngleForBlob(dataBlob)
+
+#####################            
+    def onValueChanged(self, changedAttribute):
+        if(changedAttribute is self._neighbourhoodSize):
+            self._nearRegionSize.maximumValue = self._neighbourhoodSize.value
+        elif(changedAttribute is self._nearRegionSize):
+            self._collisionRegionSize.maximumValue = self._nearRegionSize.value
 
 #####################         
     def _getMaxNeighbourhoodSize(self):

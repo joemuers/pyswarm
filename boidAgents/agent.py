@@ -56,7 +56,7 @@ class Agent(BoidBaseObject):
         #                                       # changed since last calculation, False otherwise.
         self._needsBehaviourCommit = False  # True if behaviour has been updated since last commit, False otherwise.
 
-        self._stickinessScale = 0.0
+        self._stickinessScale = -1.0
         self._stickinessChanged = False
         
         self.debugColour = brc.DefaultColour

@@ -196,7 +196,7 @@ class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject, abo._FollowOnBehav
 
 #####################     
     def _getBehaviourIncubationPeriodForBlob(self, dataBlob):
-        return self._behaviourIncubationPeriod_Random.valueForIntegerId(dataBlob.agentId)
+        return self._incubationPeriod_Random.valueForIntegerId(dataBlob.agentId)
      
     def _getGoalChaseSpeedForBlob(self, dataBlob):
         return self._goalChaseSpeed_Random.valueForIntegerId(dataBlob.agentId)

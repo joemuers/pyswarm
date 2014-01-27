@@ -66,11 +66,12 @@ class _PreferencesWindow(object):
         
         self._saveLocationTextField = uib.MakePassiveTextField(self._saveLocation, 
                                                                self._filePickerButtonWasPressed,
-                                                               leftColumnWidth=10)
+                                                               isEditable=True,
+                                                               leftColumnWidth=_PREFERENCES_WINDOW_LEFT_COLUMN_WIDTH_)
         self._radioButtons = uib.MakeRadioButtonGroup("", 
-                                                      ("Auto", "User-defined"), 
+                                                      ("Auto", "User defined"), 
                                                       self._onRadioButtonChange,
-                                                      leftColumnWidth=100)
+                                                      leftColumnWidth=_PREFERENCES_WINDOW_LEFT_COLUMN_WIDTH_)
         self._radioButtons.setSelect(self._saveModeOption)
         
         uib.SetAsChildLayout(columnLayout, borderLayout)

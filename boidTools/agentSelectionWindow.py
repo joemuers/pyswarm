@@ -172,9 +172,9 @@ class AgentSelectionWindow(BoidBaseObject):
                         tokenRange = _getRangeFromSubTokens(subTokens, self._maxIdValue)
                         for i in xrange(tokenRange[0], tokenRange[1] + 1):
                             newSelection.add(i)
-    
+                
                 del self._currentlySelectedList[:]
-                for agentId in filter(self._idToAgentLookup.has_key, newSelection):
+                for agentId in newSelection.intersection(self._idToAgentLookup.keys()):
                     self._currentlySelectedList.append(self._idToAgentLookup[agentId])
             except:
                 return False

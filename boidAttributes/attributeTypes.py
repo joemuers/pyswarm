@@ -96,11 +96,12 @@ class _SingleAttributeBaseObject(BoidBaseObject):
 ########
     def _updateValue(self, newValue):
         """Override if needed - updates value with newValue, updates listeners and updates UI components."""
+        oldValue = self._value
         self._value = newValue
         self._updateInputUiComponents()
         self._updateDelegate()
         
-        util.LogDebug("Attribute value changed: %s=%s" % (self._attributeLabel, newValue))
+        util.LogInfo("Attribute value changed: %s=%s (was %s)" % (self._attributeLabel, newValue, oldValue))
 
 #####################           
     def _getUiEnableMethod(self):
@@ -169,12 +170,24 @@ class IntAttribute(_SingleAttributeBaseObject):
 #####################        
     def _getMinimumValue(self):
         return self._minimumValue
-    minimumValue = property(_getMinimumValue)
+    def _setMinimumValue(self, value):
+        self._minimumValue = value
+        if(value is not None and self.value < value):
+            self.value = value
+        else:
+            self._updateInputUiComponents()
+    minimumValue = property(_getMinimumValue, _setMinimumValue)
 
-#####################    
+########
     def _getMaximumValue(self):
         return self._maximumValue
-    maximumValue = property(_getMaximumValue)
+    def _setMaximumValue(self, value):
+        self._maximumValue = value
+        if(value is not None and value < self.value):
+            self.value = value
+        else:
+            self._updateInputUiComponents()
+    maximumValue = property(_getMaximumValue, _setMaximumValue)
  
 #####################    
     def _validateValue(self, newValue):
@@ -209,21 +222,21 @@ class FloatAttribute(IntAttribute):
 class RandomizerAttribute(FloatAttribute):
     
     #static variables
-    _intToRandomLookup = []
-    _previousState = None
+    _GlobalIntToRandomLookup = []
+    _RandomSequencePreviousState = None
     
     @staticmethod
     def _RandomValueForInt(intKey):
-        if(not RandomizerAttribute._intToRandomLookup):
+        if(not RandomizerAttribute._RandomSequencePreviousState):
             random.seed(0)
-        elif(RandomizerAttribute._previousState is not None):
-            random.setstate(RandomizerAttribute._previousState)
-            RandomizerAttribute._previousState = None
+        elif(RandomizerAttribute._RandomSequencePreviousState is not None):
+            random.setstate(RandomizerAttribute._RandomSequencePreviousState)
+            RandomizerAttribute._RandomSequencePreviousState = None
             
-        while(len(RandomizerAttribute._intToRandomLookup) <= intKey):
-            RandomizerAttribute._intToRandomLookup.append(random.uniform(-1.0, 1.0))
+        while(len(RandomizerAttribute._GlobalIntToRandomLookup) <= intKey):
+            RandomizerAttribute._GlobalIntToRandomLookup.append(random.uniform(-1.0, 1.0))
             
-        return RandomizerAttribute._intToRandomLookup[intKey]
+        return RandomizerAttribute._GlobalIntToRandomLookup[intKey]
 
 #####################    
     def __init__(self, parentAttribute):
@@ -233,6 +246,7 @@ class RandomizerAttribute(FloatAttribute):
             util.LogWarning("Delegate attribute for randomized attribute \'%s\' is None" % parentAttribute.attributeLabel)
         
         super(RandomizerAttribute, self).__init__(parentAttribute.attributeLabel + " Randomize", 0, parentAttribute.delegate, 0.0, 1.0)
+        self._localIntToRandomLookup = {}
         self._parentAttribute = parentAttribute
         
 #####################         
@@ -245,22 +259,26 @@ class RandomizerAttribute(FloatAttribute):
         else:
             return returnValue
         
-#####################         
-    def _getRandomizedValue(self):
+#####################
+    def getLocalRandomizedValueForIntegerId(self, integerId):
         if(self.value != 0):
-            if(RandomizerAttribute._intToRandomLookup and RandomizerAttribute._previousState is not None):
-                RandomizerAttribute._previousState = random.getstate()
+            if(RandomizerAttribute._GlobalIntToRandomLookup and RandomizerAttribute._RandomSequencePreviousState is not None):
+                RandomizerAttribute._RandomSequencePreviousState = random.getstate()
+            
+            randomValue = self._localIntToRandomLookup.get(integerId)
+            if(randomValue is None):
+                randomValue = random.uniform(-1.0, 1.0)
+                self._localIntToRandomLookup[integerId] = randomValue
                 
-            diff = self._parentAttribute.value * self.value
-            result = self._parentAttribute._getValueFromInput(self._parentAttribute.value + random.uniform(-diff, diff))
+            diff = self._parentAttribute.value * self.value * randomValue
+            result = self._parentAttribute._getValueFromInput(self._parentAttribute.value + diff)
             
             return self._clampIfNecessary(result)
         else:
             return self._parentAttribute.value
-    randomizedValue = property(_getRandomizedValue)
 
 #####################    
-    def getRandomizedValueForIntegerId(self, integerId):
+    def getGlobalRandomizedValueForIntegerId(self, integerId):
         if(self.value != 0):
             diff = self._parentAttribute.value * self.value * RandomizerAttribute._RandomValueForInt(integerId)
             result = self._parentAttribute._getValueFromInput(self._parentAttribute.value + diff)
@@ -360,9 +378,9 @@ class RandomizeController(_SingleAttributeBaseObject):
         if(self._value == RandomizeController.__Off__):
             return self._parentAttribute.value
         elif(self._value == RandomizeController.__ById__):
-            return self._randomizerAttribute.getRandomizedValueForIntegerId(integerId)
+            return self._randomizerAttribute.getGlobalRandomizedValueForIntegerId(integerId)
         elif(self._value == RandomizeController.__PureRandom__):
-            return self._randomizerAttribute.randomizedValue
+            return self._randomizerAttribute.getLocalRandomizedValueForIntegerId(integerId)
         else:
             raise RuntimeError("Selected has unrecognized enum value: %s" % self._value)
         

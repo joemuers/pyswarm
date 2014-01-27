@@ -25,9 +25,9 @@ def WindowExists(windowReference):
 #####################
 def MakeWindow(title, widthHeight=None):
     if(widthHeight is None):
-        return pm.window(title, menuBar=True)
+        return pm.window(title, maximizeButton=False, resizeToFitChildren=True, menuBar=True)
     else:
-        return pm.window(title, menuBar=True, widthHeight=widthHeight)
+        return pm.window(title, maximizeButton=False, resizeToFitChildren=True, menuBar=True, widthHeight=widthHeight)
 
 #####################
 def DestroyWindow(windowReference):
@@ -258,7 +258,15 @@ def MakeSliderGroup(attribute, annotation=None):
     
     inputGroup = groupCreationMethod(**kwargs)
     inputGroup.changeCommand(lambda *args : attribute._setValue(inputGroup.getValue()))
-    attribute.updateUiCommand = inputGroup.setValue
+    
+    def _updateInputGroup(inputGroup, attribute):
+        inputGroup.setValue(attribute.value)
+        if(attribute.minimumValue is not None):
+            inputGroup.setMinValue(attribute.minimumValue)
+        if(attribute.maximumValue is not None):
+            inputGroup.setMaxValue(attribute.maximumValue)
+            
+    attribute.updateUiCommand = (lambda value: _updateInputGroup(inputGroup, attribute))
     attribute.uiEnableMethod = inputGroup.setEnable
     
     if(annotation is not None):
@@ -361,8 +369,8 @@ def MakeRandomizerFields(randomizerController, annotation=None):
     if(annotation is None):
         annotation = ("Input modes:\n\
 Off = value taken directly from %s.\n\
-By Agent ID = value offset by constant amount - which is randomized per-agent.\n\
-Pure Random = value offset by random amount every time it is queried." 
+By Agent ID = value offset by constant amount (same across all attributes) - which is randomized per-agent.\n\
+Pure Random = value offset by constant amount, randomized per-agent *and* per-attribute." 
 % randomizerController._parentAttribute.attributeLabel)
 
     optionsMenuRowLayout = MakeRandomizeOptionsMenu(randomizerController, annotation)
@@ -487,25 +495,31 @@ def MakeLocationField(locationAttribute, withButton=False, annotation=None):
     return locationField
 
 #########################
-def MakePassiveTextField(stringAttribute, buttonCallback, annotation=None, 
-                         leftColumnWidth=130, rightColumnWidth=__MIDDLE_COLUMN_WIDTH__):
+def MakePassiveTextField(stringAttribute, buttonCallback, annotation=None, isEditable=False,
+                         leftColumnWidth=__LEFT_COLUMN_WIDTH__, rightColumnWidth=__MIDDLE_COLUMN_WIDTH__):
     
     if(not isinstance(stringAttribute, at.StringAttribute)):
         raise TypeError("Attempted to make text field (expected:%s, got:%s)" % 
                         (at.StringAttribute, type(stringAttribute)))
     
-    rowLayout = MakeRowLayout(2)
+    rowLayout = MakeRowLayout(2, leftColumnWidth)
     
     MakeText(stringAttribute.attributeLabel, annotation)
 
-    textField = pm.textFieldButtonGrp(editable=False, text=stringAttribute.value,
+    textField = pm.textFieldButtonGrp(editable=isEditable, text=stringAttribute.value,
                                       buttonLabel="...", buttonCommand=buttonCallback,
-                                      adjustableColumn=1, columnWidth2=(leftColumnWidth, rightColumnWidth))
+                                      adjustableColumn=1, columnWidth2=(130, rightColumnWidth))
     if(annotation is not None):
         textField.setAnnotation(annotation)
     
     stringAttribute.updateUiCommand = textField.setText
-    stringAttribute.uiEnableMethod = textField.setEnableButton
+    if(isEditable):
+        def _setEnabled(textField, editable):
+            textField.setEnableButton(editable)
+            textField.setEditable(editable)
+        stringAttribute.uiEnableMethod = (lambda enable: _setEnabled(textField, enable))
+    else:
+        stringAttribute.uiEnableMethod = textField.setEnableButton
     
     SetAsChildLayout(rowLayout)
     
@@ -578,8 +592,7 @@ def MakeTextInputField(label, placeholderText=None, leftColumnWidth=__LEFT_COLUM
     textField = pm.textFieldGrp(label=label, 
                                 adjustableColumn=2, 
                                 columnWidth=(1, leftColumnWidth),
-                                columnAttach2=('both', 'both'),
-                                columnOffset2=(0, 10))
+                                columnAttach2=('both', 'both'))
     if(placeholderText is not None):
         textField.setText(placeholderText)
     if(annotation is not None):
@@ -598,7 +611,7 @@ def MakeRadioButtonGroup(label, buttonTitlesTuple, onChangeCommand,
                      ("labelArray%d" % numberOfButtons) : buttonTitlesTuple,
                      "numberOfRadioButtons" : numberOfButtons,
                      "changeCommand" : onChangeCommand,
-                     "columnAttach" : (2, "left", 10),
+                     "columnAttach" : (2, "left", 0),
                      "select" : 1 }
     if(annotation is not None):
         buttonKwargs["annotation"] = annotation
@@ -606,8 +619,8 @@ def MakeRadioButtonGroup(label, buttonTitlesTuple, onChangeCommand,
     buttonGroup = pm.radioButtonGrp(**buttonKwargs)
     
     buttonGroup.columnWidth((1, leftColumnWidth))
-    for index in xrange(numberOfButtons):
-        buttonGroup.columnWidth((index + 2, 90))
+    for index in xrange(numberOfButtons - 1):
+        buttonGroup.columnWidth((index + 2, 80))
     
     return buttonGroup
 
