@@ -2,21 +2,33 @@ from boidBaseObject import BoidBaseObject
 
 import boidVectors.vector3 as bv3
 
+from abc import ABCMeta, abstractmethod
 import weakref
 
 
 
+###################################
 class BehaviourDelegate(object):
     """Client objects can subclass BehaviourDelegate and pass the corresponding object
     to the behaviourBaseObject if they require a notification when behaviour completes."""
     
+    __metaclass__ = ABCMeta
+    
+    @abstractmethod
     def onBehaviourEndedForAgent(self, agent, behaviour, followOnBehaviourID):
         raise NotImplementedError
 
+# END OF CLASS - BehaviourDelegate
 ###################################
 
+
+
+####################################
 class BehaviourBaseObject(BoidBaseObject):
     
+    __metaclass__ = ABCMeta
+    
+##########################
     def __init__(self, attributes, delegate=None):
         if(delegate is not None and not isinstance(delegate, BehaviourDelegate)): 
             raise TypeError
@@ -74,6 +86,7 @@ class BehaviourBaseObject(BoidBaseObject):
         pass  # default does nothing
 
 ##########################    
+    @abstractmethod
     def getDesiredAccelerationForAgent(self, agent, nearbyAgentsList):
         """Must be implemented by subclasses to calculate behaviour as appropriate.
         Should return a Vector3.

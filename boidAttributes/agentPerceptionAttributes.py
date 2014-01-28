@@ -81,7 +81,7 @@ class AgentPerceptionAttributes(abo.AttributesBaseObject):
     def _createDataBlobForAgent(self, agent):
         return PerceptionAttributesDataBlob(agent)
 
-#####################    
+#########
     def _updateDataBlobWithAttribute(self, dataBlob, attribute):
         if(attribute is self._neighbourhoodSize):
             dataBlob.neighbourhoodSize = self._getNeighbourhoodSizeForBlob(dataBlob)
@@ -96,6 +96,8 @@ class AgentPerceptionAttributes(abo.AttributesBaseObject):
 
 #####################            
     def onValueChanged(self, changedAttribute):
+        super(AgentPerceptionAttributes, self).onValueChanged(changedAttribute)
+        
         if(changedAttribute is self._neighbourhoodSize):
             self._nearRegionSize.maximumValue = self._neighbourhoodSize.value
         elif(changedAttribute is self._nearRegionSize):

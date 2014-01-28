@@ -61,13 +61,14 @@ class _Zone(BoidBaseObject):
 
 ##############################
 class _ZoneRegionIteratable(object):
+    
     def __init__(self, regionList):
         self._regionList = regionList
 
     def __iter__(self):
         return itertools.chain.from_iterable(self._regionList)
 
-# END OF NESTED CLASS _ZoneRegionIterable
+# END OF CLASS _ZoneRegionIterable
 #############################
     
     
@@ -84,7 +85,7 @@ class ZoneGraph(BoidBaseObject, AttributesListener):
         self._globalAttributes.addListener(self)
         
         self._perceptionAttributes = attributesController.agentPerceptionAttributes
-        self._zoneSize = attributesController.agentPerceptionAttributes.maxNeighbourhoodSize
+        self._zoneSize = self._perceptionAttributes.maxNeighbourhoodSize
         self._perceptionAttributes.addListener(self)
         
         self._needsRebuild = True
@@ -100,11 +101,13 @@ class ZoneGraph(BoidBaseObject, AttributesListener):
         self._useSpatialHashing = True
         
         self.rebuildMapIfNecessary()
-            
+
+########################################            
     def _makeZonesNeighbours(self, zoneA, zoneB):
         zoneA.addNeighbouringZone(zoneB)
         zoneB.addNeighbouringZone(zoneA)
-        
+
+########################################        
     def rebuildMapIfNecessary(self):
         if(self._needsRebuild):
             zoneSize = self._zoneSize
@@ -203,9 +206,13 @@ class ZoneGraph(BoidBaseObject, AttributesListener):
         if(sectionObject == self._globalAttributes):
             if(self._lowerBoundsVector != self._globalAttributes.lowerBounds or
                self._upperBoundsVector != self._globalAttributes.upperBounds):
+                
+                self._lowerBoundsVector = bv3.Vector3(self._globalAttributes.lowerBounds)
+                self._upperBoundsVector = bv3.Vector3(self._globalAttributes.upperBounds)
                 self._needsRebuild = True
         elif(sectionObject == self._perceptionAttributes):
             if(self._zoneSize != self._perceptionAttributes.maxNeighbourhoodSize):
+                self._zoneSize = self._perceptionAttributes.maxNeighbourhoodSize
                 self._needsRebuild = True
 
 ########################################       

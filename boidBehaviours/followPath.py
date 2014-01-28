@@ -1,5 +1,5 @@
 from behaviourBaseObject import BehaviourBaseObject
-from boidTools import util
+from boidTools import sceneInterface
 
 import boidAttributes.followPathBehaviourAttributes as fpba
 import boidVectors.vector3 as bv3
@@ -85,10 +85,10 @@ class FollowPath(BehaviourBaseObject):
     def onFrameUpdated(self):  # overridden BoidBehaviourBaseObject method
         """Re-checks curve points from Maya in case the curve has moved..."""
         if(self._pathCurve is not None):
-            self._startVector = util.Vector3FromPymelPoint(self._pathCurve.getPointAtParam(0.0, space='world'))
+            self._startVector = sceneInterface.Vector3FromPymelPoint(self._pathCurve.getPointAtParam(0.0, space='world'))
             self._endParam = self._pathCurve.findParamFromLength(self._pathCurve.length())
             endPoint = self._pathCurve.getPointAtParam(self._endParam, space='world')
-            self._endVector = util.Vector3FromPymelPoint(endPoint)        
+            self._endVector = sceneInterface.Vector3FromPymelPoint(endPoint)        
  
 ################################          
     def getDesiredAccelerationForAgent(self, agent, nearbyAgents):  # overridden BoidBehaviourBaseObject method
@@ -98,9 +98,9 @@ class FollowPath(BehaviourBaseObject):
         desiredAcceleration = bv3.Vector3()
         
         if(self._pathCurve is not None and agent.isTouchingGround):  
-            pymelLocationVector = util.PymelPointFromVector3(agent.currentPosition)
+            pymelLocationVector = sceneInterface.PymelPointFromVector3(agent.currentPosition)
             pymelClosestCurvePoint = self._pathCurve.closestPoint(pymelLocationVector, space='world')
-            boidCurveClosestPoint = util.Vector3FromPymelPoint(pymelClosestCurvePoint)
+            boidCurveClosestPoint = sceneInterface.Vector3FromPymelPoint(pymelClosestCurvePoint)
             behaviourAttributes = agent.state.behaviourAttributes
             movementAttributes = agent.state.movementAttributes
             
@@ -120,7 +120,7 @@ class FollowPath(BehaviourBaseObject):
                     desiredAcceleration.normalise(movementAttributes.maxAcceleration)
                 else:
                     tangent = self._pathCurve.tangent(currentParamValue, space='world')
-                    boidTangentVector = util.Vector3FromPymelVector(tangent)
+                    boidTangentVector = sceneInterface.Vector3FromPymelVector(tangent)
                     
                     desiredAcceleration += boidTangentVector
                     desiredAcceleration.normalise(self.attributes.pathInfluenceMagnitude)

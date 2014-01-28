@@ -137,17 +137,20 @@ class GoalDriven(BehaviourBaseObject):
         else:
             util.LogWarning("Agent %d NOT made leader - has already progressed to Pyramid-Join stage." % agent.particleId)
             return False
-        
+
+########        
     def unMakeLeader(self, agent):
         if(agent in self._leaders):
             self._leaders.remove(agent)
             return True
         else:
             return False
-        
+ 
+########   
     def agentIsLeader(self, agent):
         return (agent in self._leaders)
-    
+
+########    
     def allLeaders(self):
         return list(self._leaders)
         
@@ -352,6 +355,7 @@ class GoalDriven(BehaviourBaseObject):
 
         return False
 
+########
     def _startGoalChaseCountdownIfNecessary(self, agent):
         if(self._goalStatusForAgent(agent) == gdba.GoalDrivenDataBlob.normal):
             nearestNeighbour = None
@@ -417,7 +421,8 @@ class GoalDriven(BehaviourBaseObject):
             self._agentDistance_average.divide(len(self._basePyramidDistanceLookup))
             self._needsAverageDistanceCalc = False
         return self._agentDistance_average
-    
+
+#########     
     def _basePyramidAveragePosition(self):
         """Average position of agents in the basePyramid."""        
         if(self._needsAveragePositionCalc and len(self._basePyramidDistanceLookup) > 0):
@@ -425,20 +430,24 @@ class GoalDriven(BehaviourBaseObject):
             self._agentPosition_average.divide(len(self._basePyramidDistanceLookup))
             self._needsAveragePositionCalc = False
         return self._agentPosition_average
- 
+
+######### 
     def _basePyramidMaxDistanceHorizontal(self):
         """Current largest (scalar) horizontal distance of an agent, within the basePyramid, from the baseLocator."""
         return self._maxAgentDistance.u
-    
+
+#########     
     def _basePyramidMaxDistanceVertical(self):
         """Current largest (scalar) vertical distance of an agent, within the basePyramid, from the baseLocator."""
         return self._maxAgentDistance.v
-    
+
+#########     
     def _basePyramidPushUpwardsMagnitudeHorizontal(self):
         """Acceleration applied by each boid in the horizontal direction (towards 
         the baseLocator) after having joined the basePyramid."""
         return self.attributes.basePyramidPushInwardsForce
-    
+
+#########     
     def _basePyramidPushUpwardsMagnitudeVertical(self):
         """Acceleration applied by each boid in the vertical direction (towards 
         the lipLocator) after having joined the basePyramid."""

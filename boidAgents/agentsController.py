@@ -1,5 +1,6 @@
 from boidBaseObject import BoidBaseObject
-from boidTools import util
+import boidTools.util as util
+import boidTools.sceneInterface as scene
 
 import boidVectors.vector3 as bv3
 import zoneGraph as zg
@@ -15,7 +16,7 @@ class AgentsController(BoidBaseObject):
     """
     
     def __init__(self, attributesController, particleShapeNode):
-        self._particleShapeNode = util.PymelObjectFromObjectName(particleShapeNode)
+        self._particleShapeNode = scene.PymelObjectFromObjectName(particleShapeNode)
         self._particleIdsOrdering = []
         self._idToAgentLookup = {}
         self._attributesController = attributesController
@@ -23,7 +24,7 @@ class AgentsController(BoidBaseObject):
         self._zoneGraph = zg.ZoneGraph(self._attributesController)        
         
 #         self._buildParticleList()
-        util.AddStickinessPerParticleAttributeIfNecessary(self.particleShapeName)
+        scene.AddStickinessPerParticleAttributeIfNecessary(self.particleShapeName)
         
         util.LogInfo("created new %s for nParticle %s" % (util.PackageName(), self.particleShapeName))
 
@@ -74,7 +75,7 @@ class AgentsController(BoidBaseObject):
             
             if(self._particleShapeNode.getCount() > 0):
                 #particle IDs are NOT guaranteed to come in numerical order => have to use this list as reference
-                self._particleIdsOrdering = util.ParticleIdsListForParticleShape(self.particleShapeName)             
+                self._particleIdsOrdering = scene.ParticleIdsListForParticleShape(self.particleShapeName)             
                 if(self._particleIdsOrdering is not None):
                     for particleId in self._particleIdsOrdering:
                         newAgent = ag.Agent(int(particleId), self._attributesController,
@@ -85,7 +86,7 @@ class AgentsController(BoidBaseObject):
             
             if(numParticles > len(self._idToAgentLookup)):
                 # add newly created particles to the list of agents
-                self._particleIdsOrdering = util.ParticleIdsListForParticleShape(self.particleShapeName)
+                self._particleIdsOrdering = scene.ParticleIdsListForParticleShape(self.particleShapeName)
                 
                 sortedIdsList = sorted(self._particleIdsOrdering)
                 keysList = sorted(self._idToAgentLookup.keys())
@@ -105,7 +106,7 @@ class AgentsController(BoidBaseObject):
                 
             elif(numParticles < len(self._idToAgentLookup)):
                 # remove recently deleted particles from the list of agents
-                self._particleIdsOrdering = util.ParticleIdsListForParticleShape(self.particleShapeName)
+                self._particleIdsOrdering = scene.ParticleIdsListForParticleShape(self.particleShapeName)
                 particleSet = set(self._particleIdsOrdering)
                 boidAgentSet = set(self._idToAgentLookup.keys())
                 
@@ -119,12 +120,12 @@ class AgentsController(BoidBaseObject):
     def _killSingleParticle(self, particleId):
         """IMPORTANT - WILL NOT TAKE EFEECT UNTIL AFTER NEXT FRAME UPDATE"""
         if(particleId in self._idToAgentLookup):
-            util.KillParticle(self.particleShapeName, particleId)
+            scene.KillParticle(self.particleShapeName, particleId)
         
 #############################            
     def _getSingleParticleInfo(self, particleId):            
-        position =  util.GetSingleParticlePosition(self.particleShapeName, particleId) 
-        velocity =  util.GetSingleParticleVelocity(self.particleShapeName, particleId) 
+        position =  scene.GetSingleParticlePosition(self.particleShapeName, particleId) 
+        velocity =  scene.GetSingleParticleVelocity(self.particleShapeName, particleId) 
         agent = self._idToAgentLookup[particleId]
         
         agent.updateCurrentVectors(bv3.Vector3(position[0], position[1], position[2]), 
@@ -134,7 +135,7 @@ class AgentsController(BoidBaseObject):
 #############################
     def setStickiness(self, particleId, value):
         self._idToAgentLookup[particleId].stickinessScale = value
-        util.SetSingleParticleStickinessScale(self.particleShapeName, particleId, value) # do this right now - otherwise will wait until next frame update
+        scene.SetSingleParticleStickinessScale(self.particleShapeName, particleId, value) # do this right now - otherwise will wait until next frame update
 
 #############################
     def refreshInternals(self):
@@ -166,12 +167,12 @@ class AgentsController(BoidBaseObject):
             #self._buildParticleList(True)
         
         if(numParticles > 0):
-            positions = util.ParticlePositionsListForParticleShape(self.particleShapeName)
-            velocities = util.ParticleVelocitiesListForParticleShape(self.particleShapeName)
+            positions = scene.ParticlePositionsListForParticleShape(self.particleShapeName)
+            velocities = scene.ParticleVelocitiesListForParticleShape(self.particleShapeName)
             
             if(len(positions) < numParticles * 3):
                 #repeated call here because of shitty Maya bug whereby sometimes only get first item in request for goalsU...
-                positions = util.ParticlePositionsListForParticleShape(self.particleShapeName) 
+                positions = scene.ParticlePositionsListForParticleShape(self.particleShapeName) 
     
             for i in xrange(numParticles):
                 j = i * 3
@@ -187,7 +188,7 @@ class AgentsController(BoidBaseObject):
 
 #############################
     def _queryExtraInfo(self):
-        stickinessScales = util.StickinessScalesListForParticleShape(self.particleShapeName)
+        stickinessScales = scene.StickinessScalesListForParticleShape(self.particleShapeName)
         for index, stickiness in enumerate(stickinessScales):
             particleId = self._particleIdsOrdering[index]
             self._idToAgentLookup[particleId]._stickinessScale = stickiness
@@ -212,11 +213,11 @@ class AgentsController(BoidBaseObject):
 #############################            
     def _paintBlack(self):
         for agent in self._idToAgentLookup.itervalues:
-            util.SetParticleColour(self.particleShapeName, agent.particleId, 0)
+            scene.SetParticleColour(self.particleShapeName, agent.particleId, 0)
             
     def setDebugColour(self, agent):
         if(self._attributesController.globalAttributes.useDebugColours):
-            util.SetParticleColour(self.particleShapeName, agent.particleId, agent.debugColour)     
+            scene.SetParticleColour(self.particleShapeName, agent.particleId, agent.debugColour)     
 
 #############################
     def _updateSingleParticle(self, particleId):
@@ -290,7 +291,7 @@ class AgentsController(BoidBaseObject):
     
     def closestAgentToLocator(self, locator, ignoreVertical=False):
         """Helper method intended for use in Maya's Script Editor."""
-        target = util.Vector3FromLocator(locator)
+        target = scene.Vector3FromLocator(locator)
         return self.closestAgentToPoint(target.x, target.y, target.z, ignoreVertical)
     
     

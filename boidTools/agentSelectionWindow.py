@@ -1,7 +1,8 @@
 from boidBaseObject import BoidBaseObject
 
 import uiBuilder as uib
-import util as util
+import boidTools.util as util
+import boidTools.sceneInterface as scene
 
 
 
@@ -185,7 +186,7 @@ class AgentSelectionWindow(BoidBaseObject):
     def _updateSelectionFromSceneIfNecessary(self):
         if(self._selectedOption == AgentSelectionWindow.__sceneSelection__):
             del self._currentlySelectedList[:]
-            for selectedAgentId in sorted(util.GetSelectedParticles(self._particleShapeName)):
+            for selectedAgentId in sorted(scene.GetSelectedParticles(self._particleShapeName)):
                 self._currentlySelectedList.append(self._idToAgentLookup[selectedAgentId])
             self._textInput.setText(self.getSelectionString())
     

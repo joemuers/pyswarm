@@ -22,10 +22,11 @@ class AttributesController(BoidBaseObject):
         self.globalAttributes = ga.GlobalAttributes(sceneBounds1, sceneBounds2)
         self.agentMovementAttributes = ama.AgentMovementAttributes()
         self.agentPerceptionAttributes = apa.AgentPerceptionAttributes()
-        defaultBehaviourId = cbba.ClassicBoidBehaviourAttributes.BehaviourTypeName()
-        self._defaultBehaviourAttributes = cbba.ClassicBoidBehaviourAttributes(defaultBehaviourId)
         
-        self._behaviourAttributesList = [self._defaultBehaviourAttributes]
+        defaultBehaviourId = cbba.ClassicBoidBehaviourAttributes.BehaviourTypeName()
+        self.defaultBehaviourAttributes = cbba.ClassicBoidBehaviourAttributes(defaultBehaviourId)
+        
+        self._behaviourAttributesList = [self.defaultBehaviourAttributes]
         
         self.restoreDefaultAttributeValuesFromFile()
         self._notifyOnBehavioursListChanged()
@@ -44,11 +45,6 @@ class AttributesController(BoidBaseObject):
         stringsList.extend([("<\t%s\n>\n" % attributes.metaStr) for attributes in self._allSections()])
         
         return ''.join(stringsList)
-
-#####################        
-    def _getDefaultBehaviourAttributes(self):
-        return self._defaultBehaviourAttributes
-    defaultBehaviourAttributes = property(_getDefaultBehaviourAttributes)
  
 #####################   
     def behaviourAttributesForId(self, behaviourId):

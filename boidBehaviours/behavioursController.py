@@ -6,10 +6,6 @@ import goalDriven as gd
 import followPath as fp
 
 
-##### TODO - mechanism for deleting a behaviour (& reassigning enlisted agents)
-## - poss algorithm: change agent-has-behaviour to behaviour-has-agents??
-
-
 
 #######################################
 class BehavioursController(BoidBaseObject, BehaviourDelegate):

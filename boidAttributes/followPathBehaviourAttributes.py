@@ -1,6 +1,6 @@
 import attributesBaseObject as abo
 import attributeTypes as at
-import boidTools.util as util
+import boidTools.sceneInterface as scene
 import boidTools.uiBuilder as uib
 
 
@@ -37,7 +37,7 @@ class FollowPathBehaviourAttributes(abo.AttributesBaseObject, abo._FollowOnBehav
         
         self._pathCurve = at.MayaObjectAttribute("Path Curve", pathCurve)
         if(pathCurve is None):
-            self._pathCurve.objectType = util.GetCurveType()
+            self._pathCurve.objectType = scene.CurvePymelType()
         self._pathDevianceThreshold = at.FloatAttribute("Path Deviance Threshold", 3.0, self)
         self._pathDevianceThreshold_Random = at.RandomizeController(self._pathDevianceThreshold)
         self._goalDistanceThreshold = at.FloatAttribute("Goal Distance Threshold", 1.0, self)

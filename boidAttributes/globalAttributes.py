@@ -152,6 +152,16 @@ class GlobalAttributes(abo.AttributesBaseObject):
         
         self._updateBoundsVectors()
 
+#####################        
+    def _createDataBlobForAgent(self, agent):
+        # Not needed for global attributes
+        return None
+    
+########
+    def _updateDataBlobWithAttribute(self, dataBlob, attribute):
+        # Not needed for global attributes
+        pass
+
 #####################    
     def onFrameUpdated(self):
         self._sceneBounds1.verifyLocatorIfNecessary()

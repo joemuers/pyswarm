@@ -1,7 +1,8 @@
 import attributesBaseObject as abo
 import attributeTypes as at
-import boidTools.uiBuilder as uib
 import boidTools.util as util
+import boidTools.uiBuilder as uib
+import boidTools.sceneInterface as scene
 
 
 
@@ -64,7 +65,7 @@ class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject, abo._FollowOnBehav
         super(GoalDrivenBehaviourAttributes, self).__init__(sectionTitle)
         
         if(basePyramidGoalHeight is not None and type(basePyramidGoalHeight) != float):
-            pyramidBaseVector = util.Vector3FromLocator(basePyramidGoalHeight)
+            pyramidBaseVector = scene.Vector3FromLocator(basePyramidGoalHeight)
             if(pyramidBaseVector is not None):
                 basePyramidGoalHeight = pyramidBaseVector.y
         
@@ -102,6 +103,12 @@ class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject, abo._FollowOnBehav
         state["_selectCurrentLeadersButtonEnable"] = None
         
         return state
+
+########
+    def __setstate__(self, state):
+        super(GoalDrivenBehaviourAttributes, self).__setstate__(state)
+        self._leaderSelectDelegateCallback = None
+        self._selectCurrentLeadersButtonEnable = None
         
 #####################
     def populateUiLayout(self):

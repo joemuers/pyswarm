@@ -1,5 +1,5 @@
 from boidBaseObject import BoidBaseObject
-from boidTools import util
+from boidTools import sceneInterface
 
 import boidVectors.vector3 as bv3
 import agentState as agt
@@ -179,10 +179,10 @@ class Agent(BoidBaseObject):
             desiredVelocity = bv3.Vector3(self.currentVelocity)
             desiredVelocity.add(self._desiredAcceleration)
             
-            util.SetSingleParticleVelocity(particleShapeName, self.particleId, desiredVelocity)
+            sceneInterface.SetSingleParticleVelocity(particleShapeName, self.particleId, desiredVelocity)
             
             if(self._stickinessChanged):
-                util.SetSingleParticleStickinessScale(particleShapeName, self.particleId, self.stickinessScale)
+                sceneInterface.SetSingleParticleStickinessScale(particleShapeName, self.particleId, self.stickinessScale)
                 self._stickinessChanged = False
             
             self._needsBehaviourCommit = False

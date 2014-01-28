@@ -1,8 +1,9 @@
 from boidBaseObject import BoidBaseObject
 import attributeTypes as at
-import boidTools.uiBuilder as uib
 import boidTools.util as util
+import boidTools.uiBuilder as uib
 
+from abc import ABCMeta, abstractmethod
 import weakref
 from ConfigParser import NoSectionError
 
@@ -10,7 +11,9 @@ from ConfigParser import NoSectionError
 
 ########################################
 class AttributesListener(object):
+    __metaclass__ = ABCMeta
     
+    @abstractmethod
     def onAttributeChanged(self, sectionObject, attributeName):
         raise NotImplemented
 
@@ -84,6 +87,9 @@ class _FollowOnBehaviourAttributeInterface(object):
 ########################################
 class AttributesBaseObject(BoidBaseObject, at.SingleAttributeDelegate):
     
+    __metaclass__ = ABCMeta
+    
+#####################
     @classmethod
     def BehaviourTypeName(cls):
         raise NotImplemented("Method should return default title for each subclass.")
@@ -131,24 +137,27 @@ class AttributesBaseObject(BoidBaseObject, at.SingleAttributeDelegate):
     behaviourId = property(_getBehaviourId)
     
 #####################    
+    @abstractmethod
     def populateUiLayout(self):
         raise NotImplemented
 
-#####################     
+#####################    
+    @abstractmethod 
     def _createDataBlobForAgent(self, agent):
         raise NotImplemented
     
-#####################
+#########
+    @abstractmethod
     def _updateDataBlobWithAttribute(self, dataBlob, attribute):
         raise NotImplemented
 
 #####################    
-    __ALLATTRIBUTES_RECURSIVE_CHECK__ = ["metaStr"] # list of attributes (i.e. property accessors) which also call
+    _ALLATTRIBUTES_RECURSIVE_CHECK_ = ["metaStr"] # list of attributes (i.e. property accessors) which also call
     #                                               # "_allAttributes" - they must be skipped to avoid a recursive loop
     def _allAttributes(self):
         attributesList = []
         for attributeName in filter(lambda atNm: 
-                                    atNm not in AttributesBaseObject.__ALLATTRIBUTES_RECURSIVE_CHECK__, 
+                                    atNm not in AttributesBaseObject._ALLATTRIBUTES_RECURSIVE_CHECK_, 
                                     dir(self)):
             try:
                 
@@ -157,11 +166,11 @@ class AttributesBaseObject(BoidBaseObject, at.SingleAttributeDelegate):
                     attributesList.append(attribute)
                     
             except RuntimeError as e:
-                if(attributeName not in AttributesBaseObject.__ALLATTRIBUTES_RECURSIVE_CHECK__):
-                    AttributesBaseObject.__ALLATTRIBUTES_RECURSIVE_CHECK__.append(attributeName)
+                if(attributeName not in AttributesBaseObject._ALLATTRIBUTES_RECURSIVE_CHECK_):
+                    AttributesBaseObject._ALLATTRIBUTES_RECURSIVE_CHECK_.append(attributeName)
                     
                     errorString = ("Found possible recursive loop for class property \"%s\" - properties \
-which use the _allAttributes method should be added to the \"__ALLATTRIBUTES_RECURSIVE_CHECK__\" list.  \
+which use the _allAttributes method should be added to the \"_ALLATTRIBUTES_RECURSIVE_CHECK_\" list.  \
 Recommend this is hard-coded rather than done at runtime."
 % attributeName)
                     raise RuntimeError(errorString)
@@ -215,7 +224,7 @@ Recommend this is hard-coded rather than done at runtime."
         
         return (attributeReadCount == len(attributeLookup))
 
-#####################    
+########
     def setDefaultsToConfigWriter(self, configWriter):
         sectionTitle = self.BehaviourTypeName()
         util.LogDebug("Adding default values for section \"%s\"..." % sectionTitle)

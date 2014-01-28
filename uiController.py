@@ -81,21 +81,22 @@ class UiController(BoidBaseObject):
             raise TypeError("Expected subclass of %s, got %s" (UiControllerDelegate, type(delegate)))
         else:
             self._delegate = weakref.ref(delegate)
-            
             self._defaultBehaviourId = None
             
-            self._uiWindow = None
-            self._uiComponentToAttributesLookup = {}
-            self._tabLayout = None
-            self._removeBehaviourMenu = None
-            self._selectAgentsWithMenu = None
-            self._selectAgentsNotWithMenu = None
-            self._assignAgentsToMenu = None
-            
+            self._recreateUiComponents()
             self._needsUiRebuild = False
         
-######################            
-    def __del__(self):
+########
+    def _recreateUiComponents(self):
+        self._uiWindow = None
+        self._uiComponentToAttributesLookup = {}
+        self._tabLayout = None
+        self._removeBehaviourMenu = None
+        self._selectAgentsWithMenu = None
+        self._selectAgentsNotWithMenu = None
+        self._assignAgentsToMenu = None
+
+########
         self.hideUI()
 
 ######################
@@ -109,6 +110,7 @@ class UiController(BoidBaseObject):
             self._delegate = weakref.ref(state[0])
         self._defaultBehaviourId = state[1]
         
+        self._recreateUiComponents()
         self._needsUiRebuild = True
 
 ######################        
@@ -143,13 +145,7 @@ class UiController(BoidBaseObject):
     def hideUI(self):
         if(self.uiVisible):
             uib.DestroyWindow(self._uiWindow)
-            self._uiWindow = None
-            self._uiComponentToAttributesLookup.clear()
-            self._tabLayout = None
-            self._removeBehaviourMenu = None
-            self._selectAgentsWithMenu = None
-            self._selectAgentsNotWithMenu = None
-            self._assignAgentsToMenu = None
+            self._recreateUiComponents()
             self._needsUiRebuild = False  
             
 #####################         

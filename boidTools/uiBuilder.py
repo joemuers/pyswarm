@@ -1,5 +1,6 @@
 import boidAttributes.attributeTypes as at
-import util
+import boidTools.util as util
+import boidTools.sceneInterface as scene
 
 import pymel.core as pm
 import sys
@@ -440,7 +441,7 @@ def _MakeObjectSelectionList(objectAttribute):
     objectList = [None] if(allowNone) else []
     objectNamesList = ["<None>"] if(allowNone) else []
     
-    objectList.extend(util.GetObjectsInSceneOfType(objectAttribute.objectType))
+    objectList.extend(scene.GetObjectsInSceneOfType(objectAttribute.objectType))
     objectNamesList.extend(map(lambda obj: obj.name(), objectList[1:] if(allowNone) else objectList))
     
     windowHandle = ("Select %s" % objectType.__name__)

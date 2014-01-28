@@ -2,6 +2,7 @@ from boidBaseObject import BoidBaseObject
 
 import boidVectors.vector3 as bv3
 import boidTools.util as util
+import boidTools.sceneInterface as scene
 
 from abc import ABCMeta, abstractmethod
 import random
@@ -28,6 +29,7 @@ class _SingleAttributeBaseObject(BoidBaseObject):
     
     __metaclass__ = ABCMeta
     
+####################
     def __init__(self, attributeLabel, value, delegate=None):
         self._attributeLabel = attributeLabel
         self._value = self._getValueFromInput(value)
@@ -445,7 +447,7 @@ class MayaObjectAttribute(_SingleAttributeBaseObject):
             else:
                 raise ValueError("Got <None> type for attribute %s" % self.attributeLabel)
         else:
-            returnValue = util.PymelObjectFromObjectName(inputValue, bypassTransformNodes=False) 
+            returnValue = scene.PymelObjectFromObjectName(inputValue, bypassTransformNodes=False) 
             
             if(returnValue is None):
                 raise TypeError("Got none-Pymel type: %s for attribute %s" % (type(returnValue), self.attributeLabel))
@@ -480,7 +482,7 @@ class LocationAttribute(MayaObjectAttribute):
  
 #####################        
     def _getObjectType(self):
-        return util.GetLocatorType()
+        return scene.LocatorPymelType()
     def _setObjectType(self, value):
         pass
     objectType = property(_getObjectType, _setObjectType)
@@ -537,7 +539,7 @@ class LocationAttribute(MayaObjectAttribute):
 
 #####################    
     def _getValueFromInput(self, inputValue):
-        result = util.Vector3FromLocator(inputValue)
+        result = scene.Vector3FromLocator(inputValue)
         if(result is not None):
             self._boundLocator = inputValue
         else:

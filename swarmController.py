@@ -3,8 +3,9 @@ import boidAgents.agentsController as bac
 import boidAttributes.attributesController as bat
 import boidBehaviours.behavioursController as bbc
 import uiController as uic
-import boidTools.agentSelectionWindow as asw
 import boidTools.util as util
+import boidTools.agentSelectionWindow as asw
+import boidTools.sceneInterface as scene
 import boidResources.fileLocations as fl
 
 import os
@@ -27,7 +28,7 @@ def InitialiseSwarm(particleShapeNode=None, sceneBounds1=None, sceneBounds2=None
     _SceneSetup(False)
     
     if(particleShapeNode is None):
-        particleShapeNode = util.GetSelectedParticleShapeNode()
+        particleShapeNode = scene.GetSelectedParticleShapeNode()
         if(particleShapeNode is None):
             raise RuntimeError("No particle node specified - you must either select one in the scene \
 or pass in a reference via the \"particleShapeNode\" argument to this method.")
@@ -56,7 +57,7 @@ def GetSwarmInstanceForParticle(particleShapeNode):
     if it exists (otherwise returns None).
     """
     global _SwarmInstances_
-    pymelShapeNode = util.PymelObjectFromObjectName(particleShapeNode, True)
+    pymelShapeNode = scene.PymelObjectFromObjectName(particleShapeNode, True)
     for swarmController in _SwarmInstances_:
         if(pymelShapeNode.name() == swarmController.particleShapeName):
             return swarmController
@@ -111,8 +112,13 @@ def LoadSceneFromFile(fileLocation=None):
     
     fileLocation = util.InitVal(fileLocation, fl.SaveFileLocation())
     if(os.path.exists(fileLocation)):
-        readFile = open(fileLocation, "rb")
-        newInstances = pickle.load(readFile)
+        try:
+            readFile = open(fileLocation, "rb")
+            newInstances = pickle.load(readFile)
+        except Exception as e:
+            util.LogWarning("Cannot restore %s session - error \"%s\" while reading file: %s" % 
+                            (util.PackageName(), e, fileLocation))
+            raise e
         
         while(_SwarmInstances_):
             _SwarmInstances_.pop().hideUI()
@@ -146,7 +152,7 @@ def _SceneSetup(calledExternally=True):
             LoadSceneFromFile()
             util.LogInfo("Scene setup complete.")
         except:
-            message = ("Scene setup complete.\nNo previous %s scene file found" % util.PackageName())
+            message = ("Scene setup complete.\n\tNo previous %s scene file found" % util.PackageName())
             if(not calledExternally):
                 message += '.'
             else:
@@ -174,20 +180,20 @@ else:
     _SceneSetup()
 
 # END OF MODULE METHODS
-##########################################
+#========================================================
 
 
 
-##########################################
+#========================================================
 class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
     
     def __init__(self, particleShapeNode, sceneBounds1=None, sceneBounds2=None):
-        if(not isinstance(particleShapeNode, util.GetParticleType())):
+        if(not isinstance(particleShapeNode, scene.ParticlePymelType())):
             raise TypeError("Cannot create swarm with this node type (expected %s, got %s)." %
-                            util.GetParticleType(), type(particleShapeNode))
+                            scene.ParticlePymelType(), type(particleShapeNode))
             
         if(sceneBounds1 is None and sceneBounds2 is None):
-            locatorsList = util.GetSelectedLocators()
+            locatorsList = scene.GetSelectedLocators()
             if(len(locatorsList) >= 2):
                 sceneBounds1 = locatorsList[0]
                 sceneBounds2 = locatorsList[1]
@@ -337,7 +343,7 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
             currentSelection = list(allAgents.difference(set(currentSelection)))
         
         particleIds = map(lambda agent: agent.particleId, currentSelection)
-        util.SelectParticlesInList(particleIds, self.particleShapeName) 
+        scene.SelectParticlesInList(particleIds, self.particleShapeName) 
         
 ########
     def showAssignAgentsWindowForBehaviour(self, behaviourId):
@@ -408,7 +414,7 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
                                                currentSelection, self._onAgentSelectionCompleted)
         else:
             particleIds = map(lambda agent: agent.particleId, currentSelection)
-            util.SelectParticlesInList(particleIds, self.particleShapeName)
+            scene.SelectParticlesInList(particleIds, self.particleShapeName)
         
 ##############################
     def _onAgentSelectionCompleted(self, selectionWindow, selectedAgentsList, selectionDisplayString):
