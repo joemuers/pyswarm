@@ -14,15 +14,52 @@ except:
     import pickle
 
 
+###########################################
+_HaveRunSceneSetup = False
+
+#####
+def _SceneSetup(calledExternally=True):
+    global _HaveRunSceneSetup
+    
+    if(not _HaveRunSceneSetup):
+        util.AddScriptNodesIfNecessary(__name__, _SceneSetup, _OnFrameUpdated, _SceneTeardown)
+        util.AddSceneSavedScriptJobIfNecessary(SaveSceneToFile)
+        
+        try:
+            LoadSceneFromFile()
+            util.LogInfo("Setup complete.")
+        except:
+            message = ("Setup complete.\nNo previous %s scene file found" % util.PackageName())
+            if(calledExternally):
+                message += '.'
+            else:
+                message += ("- run %s method to create a swarm instance." % InitialiseSwarm.__name__)
+            util.LogInfo(message)
+            
+        _HaveRunSceneSetup = True
+
+#####
+def _SceneTeardown():
+    global _HaveRunSceneSetup
+     
+    util.ClearSceneSavedScriptJobReference()
+    for swarmInstance in _SwarmInstances_:
+        swarmInstance.hideUI()
+    
+    util.LogInfo("Cleaned up resources.")
+    _HaveRunSceneSetup = False
 
 ###########################################
 _SwarmInstances_ = []
 
-#############################
+#####
 def InitialiseSwarm(particleShapeNode=None, sceneBounds1=None, sceneBounds2=None):
     """Creates a new swarm instance for the given particle node.
     If a swarm already exists for that particle node, it will be replaced.
     """
+    global _SwarmInstances_
+    _SceneSetup(False)
+    
     if(particleShapeNode is None):
         particleShapeNode = util.GetSelectedParticleShapeNode()
         if(particleShapeNode is None):
@@ -43,6 +80,7 @@ or pass in a reference via the \"particleShapeNode\" argument to this method.")
 #############################
 def Show():
     """Will make the UIs visible (if not already) for all existing swarm instances."""
+    global _SwarmInstances_
     for swarmInstance in _SwarmInstances_:
         swarmInstance.showUI()
 
@@ -51,6 +89,7 @@ def GetSwarmInstanceForParticle(particleShapeNode):
     """Gets the corresponding swarm instance for the given particle node,
     if it exists (otherwise returns None).
     """
+    global _SwarmInstances_
     pymelShapeNode = util.PymelObjectFromObjectName(particleShapeNode, True)
     for swarmController in _SwarmInstances_:
         if(pymelShapeNode.name() == swarmController.particleShapeName):
@@ -64,6 +103,8 @@ def RemoveSwarmInstanceForParticle(particleShapeNode):
 
 #############################        
 def RemoveSwarmInstance(swarmInstance):
+    global _SwarmInstances_
+    
     if(swarmInstance in _SwarmInstances_):
         swarmInstance.hideUI()
         _SwarmInstances_.remove(swarmInstance)
@@ -81,6 +122,9 @@ It is recommended that swarm management is done only via the module methods prov
 #############################         
 _PICKLE_PROTOCOL_VERSION_ = 2 # Safer to stick to constant version rather than using "highest"
 def SaveSceneToFile(fileLocation=None):
+    global _PICKLE_PROTOCOL_VERSION_
+    global _SwarmInstances_
+    
     fileLocation = util.InitVal(fileLocation, fl.SaveFileLocation())
     saveFile = open(fileLocation, "wb")
     pickle.dump(_SwarmInstances_, saveFile, _PICKLE_PROTOCOL_VERSION_)
@@ -90,6 +134,8 @@ def SaveSceneToFile(fileLocation=None):
     
 #############################     
 def LoadSceneFromFile(fileLocation=None):
+    global _SwarmInstances_
+    
     fileLocation = util.InitVal(fileLocation, fl.SaveFileLocation())
     if(os.path.exists(fileLocation)):
         readFile = open(fileLocation, "rb")
@@ -108,13 +154,16 @@ def LoadSceneFromFile(fileLocation=None):
     
 #############################        
 def _OnFrameUpdated():
+    global _SwarmInstances_
     for swarmInstance in _SwarmInstances_:
         swarmInstance._onFrameUpdated()
 
-  
 ############################# 
 if(__name__ == "__main__"):
-    print "TODO - add Maya script node to run _OnFrameUpdated()"
+    print "TODO - add unit tests"
+else:
+    util.LogInfo("%s initialised, run %s method %s to create a swarm instance." % 
+                 (util.PackageName(), __name__, InitialiseSwarm.__name__))
 
 # END OF MODULE METHODS
 ##########################################
