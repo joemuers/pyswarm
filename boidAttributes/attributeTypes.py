@@ -101,7 +101,7 @@ class _SingleAttributeBaseObject(BoidBaseObject):
         self._updateInputUiComponents()
         self._updateDelegate()
         
-        util.LogInfo("Attribute value changed: %s=%s (was %s)" % (self._attributeLabel, newValue, oldValue))
+        util.LogInfo("Attribute value changed: %s=%s (was: %s)" % (self._attributeLabel, newValue, oldValue))
 
 #####################           
     def _getUiEnableMethod(self):

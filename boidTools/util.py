@@ -52,21 +52,6 @@ def GetCurrentSceneName():
 
 
 ######################################
-__DeferredEvaluations__ = []
-__ModuleHandle__ = "__SPECIAL_UTIL_IMPORT_FOR_DEFERRED_EVALUATION__"
-__DeferredEvaluationString__ = ("%s._MakeDeferredEvaluations()" % __ModuleHandle__)
-
-def _MakeDeferredEvaluations():    
-    for commandTuple in __DeferredEvaluations__:
-        command = commandTuple[0]
-        arguments = commandTuple[1]
-        keywords = commandTuple[2]
-        
-        command(*arguments, **keywords)
-    
-    del __DeferredEvaluations__[:]
-
-######################################
 def EvalDeferred(boundMethod, *args, **kwargs):
     """This nasty little piece of hackery is necessary because the Pymel version of evalDeferred is not
     usable from a object-oriented environment - all you get is a string literal to be executed
@@ -88,6 +73,21 @@ __import__(\"%s\", globals(), locals(), [\"%s\"], -1)" %
             pm.evalDeferred(__DeferredEvaluationString__)
     
         __DeferredEvaluations__.append((boundMethod, args, kwargs))
+    
+#######    
+__DeferredEvaluations__ = []
+__ModuleHandle__ = "__SPECIAL_UTIL_IMPORT_FOR_DEFERRED_EVALUATION__"
+__DeferredEvaluationString__ = ("%s._MakeDeferredEvaluations()" % __ModuleHandle__)
+
+def _MakeDeferredEvaluations():    
+    for commandTuple in __DeferredEvaluations__:
+        command = commandTuple[0]
+        arguments = commandTuple[1]
+        keywords = commandTuple[2]
+        
+        command(*arguments, **keywords)
+    
+    del __DeferredEvaluations__[:]
     
 ######################################
 
@@ -212,6 +212,13 @@ def GetCurveType():
     return pmn.NurbsCurve
 
 ######################################
+def ScriptJobsAreInScene():
+    return False
+
+# def AddSwarmScriptJobsToScene():
+#     if(not ScriptJobsAreInScene()):
+#         
+
 
 
 
@@ -307,4 +314,16 @@ def SetParticleColour(particleShapeName, particleId, colour):
         pm.particle(particleShapeName, e=True, at="rgbPP", id=particleId, vv=(colour[0], colour[1], colour[2]))
     else: # assuming colour is a float => greyscalse colour
         pm.particle(particleShapeName, e=True, at="rgbPP", id=particleId, vv=(colour, colour, colour))
-    
+
+######################################        
+def AddStickinessPerParticleAttributeIfNecessary(particleShapeName):
+    if(not pm.attributeQuery('stickinessScalePP', node=particleShapeName, exists=True)):
+        pm.AddAttribute(particleShapeName, longName='stickinessScalePP', dataType='doubleArray')
+        LogDebug("Added PP attribute stickinessScalePP to %s" % particleShapeName)
+    if(not pm.attributeQuery('stickinessScalePP0', node=particleShapeName, exists=True)):
+        pm.AddAttribute(particleShapeName, longName='stickinessScalePP0', dataType='doubleArray')
+        LogDebug("Added PP attribute stickinessScalePP0 to %s" % particleShapeName)
+        
+
+# END OF MODULE
+###################################################

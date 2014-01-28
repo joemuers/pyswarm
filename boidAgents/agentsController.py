@@ -23,6 +23,7 @@ class AgentsController(BoidBaseObject):
         self._zoneGraph = zg.ZoneGraph(self._attributesController)        
         
 #         self._buildParticleList()
+        util.AddStickinessPerParticleAttributeIfNecessary(self.particleShapeName)
         
         util.LogInfo("created new %s for nParticle %s" % (util.PackageName(), self.particleShapeName))
 

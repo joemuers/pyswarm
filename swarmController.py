@@ -78,6 +78,11 @@ It is recommended that swarm management is done only via the module methods prov
     else:
         raise TypeError("Got %s of type %s (expected %s)." % (swarmInstance, type(swarmInstance), SwarmController))
 
+#############################
+def RemoveAllSwarmInstances():
+    for swarmInstance in _SwarmInstances_[:]:
+        RemoveSwarmInstance(swarmInstance)
+
 #############################         
 _PICKLE_PROTOCOL_VERSION_ = 2 # Safer to stick to constant version rather than using "highest"
 def SaveSceneToFile(fileLocation=None):
