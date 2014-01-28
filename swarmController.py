@@ -14,40 +14,6 @@ except:
     import pickle
 
 
-###########################################
-_HaveRunSceneSetup = False
-
-#####
-def _SceneSetup(calledExternally=True):
-    global _HaveRunSceneSetup
-    
-    if(not _HaveRunSceneSetup):
-        util.AddScriptNodesIfNecessary(__name__, _SceneSetup, _OnFrameUpdated, _SceneTeardown)
-        util.AddSceneSavedScriptJobIfNecessary(SaveSceneToFile)
-        
-        try:
-            LoadSceneFromFile()
-            util.LogInfo("Scene setup complete.")
-        except:
-            message = ("Scene setup complete.\nNo previous %s scene file found" % util.PackageName())
-            if(not calledExternally):
-                message += '.'
-            else:
-                message += (" - run %s method to create a swarm instance." % InitialiseSwarm.__name__)
-            util.LogInfo(message)
-            
-        _HaveRunSceneSetup = True
-
-#####
-def _SceneTeardown():
-    global _HaveRunSceneSetup
-    
-    util.ClearSceneSavedScriptJobReference()
-    for swarmInstance in _SwarmInstances_:
-        swarmInstance.hideUI()
-    
-    util.LogInfo("Cleaned up resources.")
-    _HaveRunSceneSetup = False
 
 ###########################################
 _SwarmInstances_ = []
@@ -97,11 +63,11 @@ def GetSwarmInstanceForParticle(particleShapeNode):
         
     return None
 
-#############################
+##############################
 def RemoveSwarmInstanceForParticle(particleShapeNode):
     RemoveSwarmInstance(GetSwarmInstanceForParticle(particleShapeNode))
 
-#############################        
+#####
 def RemoveSwarmInstance(swarmInstance):
     global _SwarmInstances_
     
@@ -119,13 +85,15 @@ It is recommended that swarm management is done only via the module methods prov
     else:
         raise TypeError("Got %s of type %s (expected %s)." % (swarmInstance, type(swarmInstance), SwarmController))
 
-#############################
+#####
 def RemoveAllSwarmInstances():
     for swarmInstance in _SwarmInstances_[:]:
         RemoveSwarmInstance(swarmInstance)
 
 #############################         
 _PICKLE_PROTOCOL_VERSION_ = 2 # Safer to stick to constant version rather than using "highest"
+
+#####
 def SaveSceneToFile(fileLocation=None):
     global _PICKLE_PROTOCOL_VERSION_
     global _SwarmInstances_
@@ -137,7 +105,7 @@ def SaveSceneToFile(fileLocation=None):
     
     util.LogInfo("Saved %s scene to file %s" % (util.PackageName(), fileLocation))
     
-#############################     
+#####
 def LoadSceneFromFile(fileLocation=None):
     global _SwarmInstances_
     
@@ -163,6 +131,41 @@ def _OnFrameUpdated():
     for swarmInstance in _SwarmInstances_:
         swarmInstance._onFrameUpdated()
 
+###########################################
+_HaveRunSceneSetup = False
+
+#####
+def _SceneSetup(calledExternally=True):
+    global _HaveRunSceneSetup
+    
+    if(not _HaveRunSceneSetup):
+        util.AddScriptNodesIfNecessary(__name__, _SceneSetup, _OnFrameUpdated, _SceneTeardown)
+        util.AddSceneSavedScriptJobIfNecessary(SaveSceneToFile)
+        
+        try:
+            LoadSceneFromFile()
+            util.LogInfo("Scene setup complete.")
+        except:
+            message = ("Scene setup complete.\nNo previous %s scene file found" % util.PackageName())
+            if(not calledExternally):
+                message += '.'
+            else:
+                message += (" - run %s method %s to create a swarm instance." % (__name__, InitialiseSwarm.__name__))
+            util.LogInfo(message)
+            
+        _HaveRunSceneSetup = True
+
+#####
+def _SceneTeardown():
+    global _HaveRunSceneSetup
+    
+    util.ClearSceneSavedScriptJobReference()
+    for swarmInstance in _SwarmInstances_:
+        swarmInstance.hideUI()
+    
+    util.LogInfo("Cleaned up resources.")
+    _HaveRunSceneSetup = False
+    
 ############################# 
 if(__name__ == "__main__"):
     print "TODO - add unit tests"
@@ -426,5 +429,5 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
             self._leaderAgentsSelectionWindow.dataBlob = None
         
 
-# END OF CLASS 
+# END OF CLASS - SwarmController
 ##################################
