@@ -28,11 +28,17 @@ class _DataBlobBaseObject(object):
     """
     def __init__(self, agent):
         self._agentId = agent.particleId
- 
+        self.onUnassignedCallback = None
+        
 #####################        
     def _getAgentId(self):
         return self._agentId
     agentId = property(_getAgentId)
+    
+####################
+    def onUnassigned(self):
+        if(self.onUnassignedCallback is not None):
+            self.onUnassignedCallback(self._agentId)
      
 #####################   
     def __eq__(self, other):
@@ -117,12 +123,13 @@ class AttributesBaseObject(BoidBaseObject, at.SingleAttributeDelegate):
          
         self._behaviourId = behaviourId
         self._dataBlobs = {}
+        self._dataBlobRepository = {}
         self._listeners = set()
         self._inBulkUpdate = False
  
 #####################
     def __str__(self):
-        return ("Behaviour :%s" % self.behaviourId)
+        return ("Attribute set:%s" % self.behaviourId)
       
 ########
     def _getMetaStr(self):
@@ -135,9 +142,7 @@ class AttributesBaseObject(BoidBaseObject, at.SingleAttributeDelegate):
 #####################   
     def __getstate__(self):
         state = super(AttributesBaseObject, self).__getstate__()
-           
-        strongDataBlobRefs = [blobRef() for blobRef in self._dataBlobs.itervalues()]
-        state["_dataBlobs"] = strongDataBlobRefs
+        
         strongListenerRefs = [ref() for ref in self._listeners]
         state["_listeners"] = strongListenerRefs
            
@@ -146,14 +151,7 @@ class AttributesBaseObject(BoidBaseObject, at.SingleAttributeDelegate):
 ########
     def __setstate__(self, state):
         super(AttributesBaseObject, self).__setstate__(state)
-           
-        # dictionary comprehensions not supported in Python 2.6...
-#         self._dataBlobs = { blob.agentId : weakref.ref(blob, self._removeDeadBlobReference)
-#                             for blob in self._dataBlobs }
-        blobsDict = {}
-        for blob in self._dataBlobs:
-            blobsDict[blob.agentId] = blob
-        self._dataBlobs = blobsDict
+        
         self._listeners = set([weakref.ref(listener, self._removeDeadListenerReference) 
                                for listener in self._listeners])
                            
@@ -217,6 +215,31 @@ Recommend this is hard-coded rather than done at runtime." % attributeName)
         Implement in subclasses if required."""
         pass
            
+#####################     
+    def getDataBlobForAgent(self, agent):
+        agentId = agent.particleId
+        if(agentId in self._dataBlobs):
+            raise RuntimeError("Re-requesting dataBlob which is already assigned")
+        
+        newBlob = self._dataBlobRepository.pop(agentId, None)
+        if(newBlob is None):
+            newBlob = self._createDataBlobForAgent(agent)
+            newBlob.onUnassignedCallback = self._dataBlobUnassignedCallback
+            for attribute in self._allAttributes():
+                self._updateDataBlobWithAttribute(newBlob, attribute)
+
+        self._dataBlobs[agentId] = newBlob
+
+        return newBlob
+    
+########
+    def _dataBlobUnassignedCallback(self, agentId):
+        self._dataBlobRepository[agentId] = self._dataBlobs.pop(agentId)
+        
+########
+    def purgeDataBlobRepository(self):
+        del self._dataBlobRepository[:]
+        
 #####################        
     def getDefaultsFromConfigReader(self, configReader):
         self._inBulkUpdate = True
@@ -276,21 +299,6 @@ Recommend this is hard-coded rather than done at runtime." % attributeName)
                 _saveAttribute(configWriter, sectionTitle, attribute)
                 if(attribute.nestedAttribute is not None):
                     _saveAttribute(configWriter, sectionTitle, attribute.nestedAttribute)
-       
-#####################     
-    def getNewDataBlobForAgent(self, agent):
-        newBlob = self._createDataBlobForAgent(agent)
-            
-        for attribute in self._allAttributes():
-            self._updateDataBlobWithAttribute(newBlob, attribute)
-                    
-        self._dataBlobs[newBlob.agentId] = (weakref.ref(newBlob, lambda r: self._removeDeadBlobReference(newBlob.agentId)))
-            
-        return newBlob
-    
-#########
-    def _removeDeadBlobReference(self, deadReference):
-        del self._dataBlobs[deadReference().agentId]
     
 #####################    
     def addListener(self, listener):
@@ -316,8 +324,11 @@ Recommend this is hard-coded rather than done at runtime." % attributeName)
     
 #####################            
     def onValueChanged(self, changedAttribute): # overridden SingleAttributeDelegate method
-        for blobRef in self._dataBlobs.itervalues():
-            self._updateDataBlobWithAttribute(blobRef(), changedAttribute)
+        for dataBlob in self._dataBlobs.itervalues():
+            self._updateDataBlobWithAttribute(dataBlob, changedAttribute)
+            
+        for dataBlob in self._dataBlobRepository.itervalues():
+            self._updateDataBlobWithAttribute(dataBlob, changedAttribute)
             
         self._notifyListeners(changedAttribute.attributeLabel)
     

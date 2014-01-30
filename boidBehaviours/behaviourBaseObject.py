@@ -87,6 +87,17 @@ class BehaviourBaseObject(BoidBaseObject):
         pass  # default does nothing
 
 ##########################    
+    def assignAgent(self, agent):
+        if(agent.currentBehaviour is not self):
+            agent.currentBehaviour = self
+            
+            try:
+                agent.state.behaviourAttributes.onUnassigned()
+            except:
+                pass
+            agent.state.behaviourAttributes = self.attributes.getDataBlobForAgent(agent)
+
+##########################    
     @abstractmethod
     def getDesiredAccelerationForAgent(self, agent, nearbyAgentsList):
         """Must be implemented by subclasses to calculate behaviour as appropriate.
@@ -94,7 +105,30 @@ class BehaviourBaseObject(BoidBaseObject):
         """
         raise NotImplementedError
 
-##########################
+########    
+    def getCompoundDesiredAcceleration(self, agent, nearbyAgentsList):
+        if(agent.currentBehaviour is not self):
+            agentPrimaryBehaviour = agent.currentBehaviour
+            agentPrimaryAttributes = agent.state.behaviourAttributes
+            
+            agent.currentBehaviour = self
+            ownAttributes = self.attributes.getDataBlobForAgent(agent)
+            agent.state.behaviourAttributes = ownAttributes
+
+            result = self.getDesiredAccelerationForAgent(agent, nearbyAgentsList)
+            
+            agent.currentBehaviour = agentPrimaryBehaviour
+            agent.state.behaviourAttributes = agentPrimaryAttributes
+            try:
+                ownAttributes.onUnassigned()
+            except:
+                pass
+            
+            return result
+        else:
+            return self.getDesiredAccelerationForAgent(agent, nearbyAgentsList)
+            
+################################
     def _clampMovementIfNecessary(self, agent, desiredAcceleration, maxAcceleration, maxVelocity, maxTurnRate, maxTurnAngleRateOfChange, maxTurnVelocity):
         if(self._clampRotationIfNecessary(agent, desiredAcceleration, maxAcceleration, maxTurnRate, maxTurnAngleRateOfChange, maxTurnVelocity)):
             return True

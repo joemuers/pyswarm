@@ -88,7 +88,11 @@ class FollowPath(BehaviourBaseObject):
             self._startVector = sceneInterface.Vector3FromPymelPoint(self._pathCurve.getPointAtParam(0.0, space='world'))
             self._endParam = self._pathCurve.findParamFromLength(self._pathCurve.length())
             endPoint = self._pathCurve.getPointAtParam(self._endParam, space='world')
-            self._endVector = sceneInterface.Vector3FromPymelPoint(endPoint)        
+            self._endVector = sceneInterface.Vector3FromPymelPoint(endPoint)    
+            
+#################################
+    def onAgentUpdated(self, agent):
+        self._normalBehaviour.onAgentUpdated(agent)    
  
 ################################          
     def getDesiredAccelerationForAgent(self, agent, nearbyAgents):  # overridden BoidBehaviourBaseObject method
@@ -126,7 +130,7 @@ class FollowPath(BehaviourBaseObject):
                     desiredAcceleration.normalise(self.attributes.pathInfluenceMagnitude)
             
             if(self.attributes.pathInfluenceMagnitude < 1.0):
-                normalDesiredAcceleration = self._normalBehaviour.getDesiredAccelerationForAgent(agent, nearbyAgents)
+                normalDesiredAcceleration = self._normalBehaviour.getCompoundDesiredAcceleration(agent, nearbyAgents)
                 normalBehaviourInfluence = 1 - self.attributes.pathInfluenceMagnitude
                 normalDesiredAcceleration *= normalBehaviourInfluence
                 desiredAcceleration *= self.attributes.pathInfluenceMagnitude

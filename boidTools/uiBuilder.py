@@ -595,17 +595,27 @@ def MakeButtonStrip(textCommandTupleList):
     return formLayout
 
 #####################
-def MakeTextInputField(label, placeholderText=None, leftColumnWidth=__LEFT_COLUMN_WIDTH__, annotation=None):
-    textField = pm.textFieldGrp(label=label, 
-                                adjustableColumn=2, 
-                                columnWidth=(1, leftColumnWidth),
-                                columnAttach2=('both', 'both'))
+def MakeTextInputField(label, enterCommand=None, placeholderText=None, leftColumnWidth=__LEFT_COLUMN_WIDTH__, annotation=None):
+    rowLayout = MakeRowLayout(2, leftColumnWidth)
+
+    MakeText(label, annotation)
+    textField = pm.textField()
+#     textField = pm.textFieldGrp(label=label, 
+#                                 adjustableColumn=2, 
+#                                 columnWidth=(1, leftColumnWidth),
+#                                 columnAttach2=('both', 'both'))
+    if(enterCommand is not None):
+        textField.enterCommand(enterCommand)
     if(placeholderText is not None):
         textField.setText(placeholderText)
     if(annotation is not None):
         textField.setAnnotation(annotation)
         
-    return textField
+    SetAsChildLayout(rowLayout)
+    
+    return (rowLayout, textField)
+#         
+#     return textField
 
 #####################
 def MakeRadioButtonGroup(label, buttonTitlesTuple, onChangeCommand, 

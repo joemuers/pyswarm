@@ -45,11 +45,10 @@ class Agent(BoidBaseObject):
         
     """
 
-    def __init__(self, particleId, attributesController, startingBehaviour, startingAttributes):
+    def __init__(self, particleId, attributesController, startingBehaviour):
         self.state = agt.AgentState(int(particleId), attributesController)
         
-        self._currentBehaviour = None
-        self.setNewBehaviour(startingBehaviour, startingAttributes)
+        self.currentBehaviour = None
         
         self._desiredAcceleration = bv3.Vector3()
         self._needsBehaviourCalculation = False # True if position/heading/circumstance has 
@@ -60,11 +59,14 @@ class Agent(BoidBaseObject):
         self._stickinessChanged = False
         
         self.debugColour = brc.DefaultColour
+        
+        startingBehaviour.assignAgent(self)
 
 ##################### 
     def __str__(self):
         return "<%s, stck=%.2f, bhvr=\"%s\">" % (self.state, self.stickinessScale, self.currentBehaviour.behaviourId)
     
+########
     def _getMetaStr(self):          
         return ("<%s, desiredAccel=%s>" % (self.state.metaStr, self._desiredAcceleration))
  
@@ -88,10 +90,6 @@ class Agent(BoidBaseObject):
     def _getParticleId(self):
         return self.state.particleId
     particleId = property(_getParticleId)
-    
-    def _getCurrentBehaviour(self):
-        return self._currentBehaviour
-    currentBehaviour = property(_getCurrentBehaviour)
 
     def _getCurrentPosition(self):
         return self.state.position
@@ -130,14 +128,6 @@ class Agent(BoidBaseObject):
     isTouchingGround = property(_getIsTouchingGround)
     
 ##################### 
-    def setNewBehaviour(self, behaviour, behaviourAttributes):
-        """Note that, to cancel pending behaviour, you can pass: behaviour == None, incubationPeriod == -1."""
-        if(self._currentBehaviour is not behaviour):
-            self._currentBehaviour = behaviour
-            self.state.behaviourAttributes = behaviourAttributes.getNewDataBlobForAgent(self)
-#             behaviour.onAgentUpdated(self)  # TODO - should this be here??
-        
-##################### 
     def updateCurrentVectors(self, position, velocity):
         """Updates internal state from corresponding vectors."""
         self.state.updateCurrentVectors(position, velocity)
@@ -146,13 +136,13 @@ class Agent(BoidBaseObject):
         
         self.debugColour = brc.DefaultColour
         
-        self._currentBehaviour.onAgentUpdated(self)
+        self.currentBehaviour.onAgentUpdated(self)
            
 ###########################
     def calculateDesiredBehaviour(self, otherAgentsList, forceUpdate=False):
         """Calculates desired behaviour and updates desiredAccleration accordingly."""
         if(self._needsBehaviourCalculation or forceUpdate):     
-            self._desiredAcceleration = self._currentBehaviour.getDesiredAccelerationForAgent(self, otherAgentsList)
+            self._desiredAcceleration = self.currentBehaviour.getDesiredAccelerationForAgent(self, otherAgentsList)
             
             self._needsBehaviourCalculation = False
             self._needsBehaviourCommit = True

@@ -18,20 +18,20 @@ def PymelObjectFromObjectName(objectName, bypassTransformNodes=True):
         return _GetPymelObjectWithType(value, None) if(bypassTransformNodes) else value 
     
 ######################################
-def GetSelectedParticleShapeNode(particleShapeName=None):
+def GetSelectedParticleShapeNodes(particleShapeName=None):
     selectionList = pm.ls(selection=True)
+    returnList = []
     for selectedObject in selectionList:
         result = _GetPymelObjectWithType(selectedObject, ParticlePymelType())
         if(result is not None and 
            (particleShapeName is None or result.name() == particleShapeName)):
-            return result
+            returnList.append(result)
 
-    return None
+    return returnList
 
 ######################################
 def GetSelectedParticles(particleShapeName):
-    selectedParticleShape = GetSelectedParticleShapeNode(particleShapeName)
-    if(selectedParticleShape is not None):
+    if(GetSelectedParticleShapeNodes(particleShapeName)):
         return ParticleIdsListForParticleShape(particleShapeName)
     else:
         selectionList = pm.ls(selection=True)

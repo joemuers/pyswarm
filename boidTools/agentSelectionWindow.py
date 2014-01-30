@@ -104,9 +104,10 @@ class AgentSelectionWindow(BoidBaseObject):
         borderLayout = uib.MakeBorderingLayout()
         columnLayout = uib.MakeColumnLayout()
         self._textInput = uib.MakeTextInputField("Agent IDs:", 
+                                                 self._okButtonWasPressed,
                                                  self._getSelectionString(), 
                                                  leftColumnWidth=_LeftColumnWidth_, 
-                                                 annotation=_TextFieldAnnotation_)
+                                                 annotation=_TextFieldAnnotation_)[1]
         self._selectionMethodRadioButtons = uib.MakeRadioButtonGroup("Selection Method:", 
                                                                      AgentSelectionWindow.__SelectionOptionStrings__[1:], 
                                                                      self._onSelectionRadioButtonChange,

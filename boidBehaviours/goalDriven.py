@@ -148,6 +148,8 @@ class GoalDriven(BehaviourBaseObject):
         """Checks current location of agent to determine appropriate list it should be put
         into (which then determines corresponding behaviour).
         """
+        self._normalBehaviour.onAgentUpdated(agent)
+        
         baseToAgentVec = agent.currentPosition - self.attributes.basePyramidGoal
         agentAttributes = agent.state.behaviourAttributes
         agentStatus = self._effectiveGoalStatusForAgent(agent)
@@ -221,7 +223,7 @@ class GoalDriven(BehaviourBaseObject):
                     return desiredAcceleration
                 else:
                     self._startGoalChaseCountdownIfNecessary(agent)
-                    return self._normalBehaviour.getDesiredAccelerationForAgent(agent, nearbyAgentsList)
+                    return self._normalBehaviour.getCompoundDesiredAcceleration(agent, nearbyAgentsList)
                 
         return desiredAcceleration
 
@@ -336,7 +338,7 @@ class GoalDriven(BehaviourBaseObject):
             nearestNeighbour = None
             nearestNeighbourDistanceSquared = float('inf')                    
             for nearbyAgent in agent.state.nearbyList:
-                if(nearbyAgent._currentBehaviour is self):
+                if(nearbyAgent.currentBehaviour is self):
                     distance = agent.currentPosition - nearbyAgent.currentPosition
                     if(distance.magnitudeSquared() < nearestNeighbourDistanceSquared):
                         nearestNeighbour = nearbyAgent
@@ -532,7 +534,7 @@ class GoalDriven(BehaviourBaseObject):
             if(status == gdba.GoalDrivenDataBlob.inBasePyramid):
                 agent.debugColour = colours.GoalDriven_InBasePyramid(agent)
             elif(status == gdba.GoalDrivenDataBlob.goalChase):
-                if(self.attributes.useInfectionSpread and self.attributes.agentIsLeader(agent.agentId)):
+                if(self.attributes.useInfectionSpread and self.attributes.agentIsLeader(agent.particleId)):
                     agent.debugColour =  colours.GoalDriven_IsLeader
                 else:
                     agent.debugColour = colours.GoalDriven_ChasingGoal

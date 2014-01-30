@@ -15,12 +15,12 @@ class AgentsController(BoidBaseObject):
     also manages interaction with the actual Pymel objects within Maya.
     """
     
-    def __init__(self, attributesController):
+    def __init__(self, attributesController, behavioursController):
         self._globalAttributes = attributesController.globalAttributes
         self._particleIdsOrdering = []
         self._idToAgentLookup = {}
         self._attributesController = attributesController
-        self.defaultBehaviourMethod = None
+        self._behavioursController = behavioursController
         self._zoneGraph = zg.ZoneGraph(self._attributesController)        
         
         scene.AddStickinessPerParticleAttributeIfNecessary(self._particleShapeName)
@@ -70,6 +70,32 @@ class AgentsController(BoidBaseObject):
     _particleCount = property(_getParticleCount)
     
 #############################
+    def refreshInternals(self):
+        self._zoneGraph.rebuildMapIfNecessary()
+        self._getAllParticlesInfo()
+        
+#############################
+    def setStickiness(self, particleId, value):
+        self._idToAgentLookup[particleId].stickinessScale = value
+        scene.SetSingleParticleStickinessScale(self._particleShapeName, particleId, value) # do this right now - otherwise will wait until next frame update
+        
+#############################                     
+    def _killSingleParticle(self, particleId):
+        """IMPORTANT - WILL NOT TAKE EFEECT UNTIL AFTER NEXT FRAME UPDATE"""
+        if(particleId in self._idToAgentLookup):
+            scene.KillParticle(self._particleShapeName, particleId)
+        
+#############################
+    def onFrameUpdated(self):       
+        """Performs one full iteration of updating all boidAgent behaviour.
+        Should be called from Maya once per frame update.
+        """
+        self._zoneGraph.rebuildMapIfNecessary()
+        self._getAllParticlesInfo()
+        self._calculateAgentsBehaviour()
+        self._updateAllParticles()
+
+#############################
     def _buildParticleList(self, fullRebuild=True):
         """Builds/rebuilds the list of boidAgents based on the current state
         of the corresponding nParticle ShapeNode.
@@ -82,8 +108,7 @@ class AgentsController(BoidBaseObject):
                 self._particleIdsOrdering = scene.ParticleIdsListForParticleShape(self._particleShapeName)             
                 if(self._particleIdsOrdering is not None):
                     for particleId in self._particleIdsOrdering:
-                        newAgent = ag.Agent(int(particleId), self._attributesController,
-                                            self.defaultBehaviourMethod(), self._attributesController.defaultBehaviourAttributes)
+                        newAgent = ag.Agent(int(particleId), self._attributesController, self._behavioursController.defaultBehaviour)
                         self._idToAgentLookup[newAgent.particleId] = newAgent
         else:
             numParticles = self._particleCount
@@ -99,8 +124,7 @@ class AgentsController(BoidBaseObject):
                 
                 for ptclId in reversed(sortedIdsList):
                     if(ptclId > lastKey):
-                        newAgent = ag.Agent(int(ptclId), self._attributesController,
-                                            self.defaultBehaviourMethod(), self._attributesController.defaultBehaviourAttributes)
+                        newAgent = ag.Agent(int(ptclId), self._attributesController, self._behavioursController.defaultBehaviour)
                         self._idToAgentLookup[newAgent.particleId] = newAgent   
                         newAgentsList.append(newAgent)
                     else:
@@ -119,13 +143,7 @@ class AgentsController(BoidBaseObject):
             else:
                 util.LogWarning("Possible logic error - partial rebuild of %s but with no change in particle count." 
                                 % self._particleShapeName)
-
-#############################                     
-    def _killSingleParticle(self, particleId):
-        """IMPORTANT - WILL NOT TAKE EFEECT UNTIL AFTER NEXT FRAME UPDATE"""
-        if(particleId in self._idToAgentLookup):
-            scene.KillParticle(self._particleShapeName, particleId)
-        
+            
 #############################            
     def _getSingleParticleInfo(self, particleId):            
         position =  scene.GetSingleParticlePosition(self._particleShapeName, particleId) 
@@ -136,27 +154,7 @@ class AgentsController(BoidBaseObject):
                                    bv3.Vector3(velocity[0], velocity[1], velocity[2]))
         self._zoneGraph.updateAgentPosition(agent)
  
-#############################
-    def setStickiness(self, particleId, value):
-        self._idToAgentLookup[particleId].stickinessScale = value
-        scene.SetSingleParticleStickinessScale(self._particleShapeName, particleId, value) # do this right now - otherwise will wait until next frame update
-
-#############################
-    def refreshInternals(self):
-        self._zoneGraph.rebuildMapIfNecessary()
-        self._getAllParticlesInfo()
-        
-#############################
-    def onFrameUpdated(self):       
-        """Performs one full iteration of updating all boidAgent behaviour.
-        Should be called from Maya once per frame update.
-        """
-        self._zoneGraph.rebuildMapIfNecessary()
-        self._getAllParticlesInfo()
-        self._calculateAgentsBehaviour()
-        self._updateAllParticles()
-
-#############################
+#########
     def _getAllParticlesInfo(self, queryExtraInfo=False):
         """Updates all boidAgent instances with position, velocity and derived
         information from their corresponding Maya-side particle instances.
@@ -190,7 +188,7 @@ class AgentsController(BoidBaseObject):
             if(queryExtraInfo):
                 self._queryExtraInfo()
 
-#############################
+#########
     def _queryExtraInfo(self):
         stickinessScales = scene.StickinessScalesListForParticleShape(self._particleShapeName)
         for index, stickiness in enumerate(stickinessScales):
@@ -205,6 +203,12 @@ class AgentsController(BoidBaseObject):
             agent.calculateDesiredBehaviour(regionGenerator)
 
 #############################
+    def _updateSingleParticle(self, particleId):
+        singleParticle = self._idToAgentLookup[particleId]
+        self.setDebugColour(singleParticle)
+        singleParticle.commitNewBehaviour(self._particleShapeName)
+        
+#########
     def _updateAllParticles(self):
         """Iterates though all agents & executes previously calculated behaviour.
         Note that this must be done subsequently to the calculations and on a separate iteration
@@ -218,50 +222,45 @@ class AgentsController(BoidBaseObject):
     def _paintBlack(self):
         for agent in self._idToAgentLookup.itervalues:
             scene.SetParticleColour(self._particleShapeName, agent.particleId, 0)
-            
+  
+########          
     def setDebugColour(self, agent):
-        if(self._attributesController.globalAttributes.useDebugColours):
+        if(self._globalAttributes.useDebugColours):
             scene.SetParticleColour(self._particleShapeName, agent.particleId, agent.debugColour)     
-
-#############################
-    def _updateSingleParticle(self, particleId):
-        singleParticle = self._idToAgentLookup[particleId]
-        self.setDebugColour(singleParticle)
-        singleParticle.commitNewBehaviour(self._particleShapeName)
         
 #############################         
     def getAgentsFollowingBehaviour(self, behaviour):
         returnList = []
-        
         for agent in self._idToAgentLookup.itervalues():
-            if(agent._currentBehaviour is behaviour):
+            if(agent.currentBehaviour is behaviour):
                 returnList.append(agent)
                 
         return returnList
 
 #############################    
-    def makeAgentsFollowBehaviour(self, agentsList, behaviour, attributes):
+    def makeAgentsFollowBehaviour(self, agentsList, behaviour):
         for agent in agentsList:
             try:
                 if(isinstance(agent, ag.Agent)):
-                    agent.setNewBehaviour(behaviour, attributes)
+                    agentObject = agent
                 elif(type(agent) == int):
                     agentObject = self._idToAgentLookup[agent]
-                    agentObject.setNewBehaviour(behaviour, attributes)
                 else:
                     raise TypeError("Unrecognised agent %s of type %s" % (agent, type(agent)))
+                
+                behaviour.assignAgent(agentObject)
+                
             except TypeError as e:
                 print e
         
 ########        
-    def makeAllAgentsFollowBehaviour(self, behaviour, attributes):
+    def makeAllAgentsFollowBehaviour(self, behaviour):
         for agent in self._idToAgentLookup.itervalues():
-            agent.setNewBehaviour(behaviour, attributes)
+            agent.setNewBehaviour(behaviour)
 
 ########            
     def makeAgentsFollowDefaultBehaviour(self, agentsList):
-        self.makeAgentsFollowBehaviour(agentsList, self.defaultBehaviourMethod(),
-                                       self._attributesController.defaultBehaviourAttributes)
+        self.makeAgentsFollowBehaviour(agentsList, self._behavioursController.defaultBehaviour)
 
 #############################       
     def onNewBoidsCreated(self, newBoidsList):
@@ -299,7 +298,8 @@ class AgentsController(BoidBaseObject):
                     closestDistance = candidateDistance
         
         return closestAgent
-    
+
+########    
     def closestAgentToLocator(self, locator, ignoreVertical=False):
         """Helper method intended for use in Maya's Script Editor."""
         target = scene.Vector3FromLocator(locator)

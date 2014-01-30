@@ -46,8 +46,8 @@ class AgentState(BoidBaseObject):
         self._needsFullListsRebuild = True 
         self._needsAveragesRecalc = False
         
-        self._movementAttributes = attributesController.agentMovementAttributes.getNewDataBlobForAgent(self)
-        self._perceptionAttributes = attributesController.agentPerceptionAttributes.getNewDataBlobForAgent(self)
+        self._movementAttributes = attributesController.agentMovementAttributes.getDataBlobForAgent(self)
+        self._perceptionAttributes = attributesController.agentPerceptionAttributes.getDataBlobForAgent(self)
         self.behaviourAttributes = None  # data 'blob' for client behaviours to store instance-level data - not used internally
         self._globalAttributes = attributesController.globalAttributes
         

@@ -179,6 +179,11 @@ class AttributesController(BoidBaseObject):
             self._notifyOnBehavioursListChanged()
             
         return behaviourAttributes
+    
+#####################
+    def purgeRepositories(self):
+        for attributes in self._allSections():
+            attributes.purgeDataBlobRepository()
         
 #####################   
     def restoreDefaultAttributeValuesFromFile(self, section=None):

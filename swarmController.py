@@ -9,6 +9,7 @@ import boidTools.sceneInterface as scene
 import boidResources.fileLocations as fl
 
 import os
+import sys
 try:
     import cPickle as pickle
 except:
@@ -32,23 +33,27 @@ def _InitialiseSwarm(particleShapeNode=None, sceneBounds1=None, sceneBounds2=Non
     _SceneSetup(False)
     
     if(particleShapeNode is None):
-        particleShapeNode = scene.GetSelectedParticleShapeNode()
-        if(particleShapeNode is None):
+        selectedParticleNodes = scene.GetSelectedParticleShapeNodes()
+        if(selectedParticleNodes):
+            newSwarms = [_InitialiseSwarm(particleNode, sceneBounds1, sceneBounds2) 
+                         for particleNode in selectedParticleNodes]            
+            return newSwarms if(len(newSwarms) > 1) else newSwarms[0]
+        else:
             raise RuntimeError("No particle node specified - you must either select one in the scene \
 or pass in a reference via the \"particleShapeNode\" argument to this method.")
-    
-    try:
-        RemoveSwarmInstanceForParticle(particleShapeNode)
-    except:
-        pass
-    
-    newSwarm = SwarmController(particleShapeNode, sceneBounds1, sceneBounds2)
-    _SwarmInstances_.append(newSwarm)
-    newSwarm.showUI()
-    
-    util.LogInfo("Created new %s instance for nParticle %s" % (util.PackageName(), newSwarm.particleShapeName))
-    
-    return newSwarm
+    else:
+        try:
+            RemoveSwarmInstanceForParticle(particleShapeNode)
+        except:
+            pass
+        
+        newSwarm = SwarmController(particleShapeNode, sceneBounds1, sceneBounds2)
+        _SwarmInstances_.append(newSwarm)
+        newSwarm.showUI()
+        
+        util.LogInfo("Created new %s instance for nParticle %s" % (util.PackageName(), newSwarm.particleShapeName))
+        
+        return newSwarm
 
 #####
 InitialiseSwarm.__doc__ = _InitialiseSwarm.__doc__ 
@@ -157,7 +162,8 @@ def _SceneSetup(calledExternally=True):
     global _HaveRunSceneSetup
     
     if(not _HaveRunSceneSetup):
-        util.AddScriptNodesIfNecessary(__name__, _SceneSetup, _OnFrameUpdated, _SceneTeardown)
+        moduleSelf = sys.modules[__name__]
+        util.AddScriptNodesIfNecessary(moduleSelf, _SceneSetup, _OnFrameUpdated, _SceneTeardown)
         util.AddSceneSavedScriptJobIfNecessary(SaveSceneToFile)
         
         try:
@@ -211,12 +217,12 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
                 sceneBounds2 = locatorsList[1]
         
         self._attributesController = bat.AttributesController(particleShapeNode, sceneBounds1, sceneBounds2)
-        self._agentsController = bac.AgentsController(self._attributesController)
-        self._behavioursController = bbc.BehavioursController(self._attributesController, self._agentsController)
+        self._behavioursController = bbc.BehavioursController(self._attributesController)
+        self._agentsController = bac.AgentsController(self._attributesController, self._behavioursController)
         self._uiController = uic.UiController(self)
-        self._agentsController._buildParticleList()
-        
         self._behaviourAssignmentSelectionWindow = asw.AgentSelectionWindow(self._attributesController.globalAttributes)
+        
+        self._agentsController._buildParticleList()
 
 #############################        
     def __str__(self):
@@ -309,6 +315,8 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
         self._behavioursController.onFrameUpdated()
         self._agentsController.refreshInternals()
         
+        self._attributesController.purgeRepositories()
+        
         util.LogInfo("Refreshed internal state...")
 
 ########        
@@ -341,8 +349,7 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
 
 ########          
     def makeAgentsWithBehaviourSelected(self, behaviourId, invertSelection):
-        behaviourAttributes = self._attributesController.behaviourAttributesForId(behaviourId)
-        behaviour = self._behavioursController.behaviourForAttributes(behaviourAttributes)
+        behaviour = self._behavioursController.behaviourWithId(behaviourId)
         currentSelection = self._agentsController.getAgentsFollowingBehaviour(behaviour)
         if(invertSelection):
             allAgents = set(self._agentsController.allAgents)
@@ -353,26 +360,23 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
         
 ########
     def showAssignAgentsWindowForBehaviour(self, behaviourId):
-        behaviourAttributes = self._attributesController.behaviourAttributesForId(behaviourId)
-        behaviour = self._behavioursController.behaviourForAttributes(behaviourAttributes)
+        behaviour = self._behavioursController.behaviourWithId(behaviourId)
         currentSelection = [agent.particleId for agent in self._agentsController.getAgentsFollowingBehaviour(behaviour)]
         
-        self._behaviourAssignmentSelectionWindow.dataBlob = behaviourAttributes
-        self._behaviourAssignmentSelectionWindow.show("Assign agents to \"%s\"" % behaviourAttributes.behaviourId, 
-                                        currentSelection, self._onAgentSelectionCompleted)  
+        self._behaviourAssignmentSelectionWindow.dataBlob = behaviourId
+        self._behaviourAssignmentSelectionWindow.show("Assign agents to \"%s\"" % behaviourId, 
+                                                      currentSelection, self._onAgentSelectionCompleted)  
 
 ########
     def assignAgentsToBehaviour(self, agentIdsList, behaviourId):
-        behaviourAttributes = self._attributesController.behaviourAttributesForId(behaviourId)
-        behaviour = self._behavioursController.behaviourForAttributes(behaviourAttributes)
-        self._agentsController.makeAgentsFollowBehaviour(agentIdsList, behaviour, behaviourAttributes)
+        behaviour = self._behavioursController.behaviourWithId(behaviourId)
+        self._agentsController.makeAgentsFollowBehaviour(agentIdsList, behaviour)
  
 ########    
     def getAssignedAgentIdsForBehaviour(self, behaviourId):
-        behaviourAttributes = self._attributesController.behaviourAttributesForId(behaviourId)
-        behaviour = self._behavioursController.behaviourForAttributes(behaviourAttributes)
-        
-        return [agent.particleId for agent in sorted(self._agentsController.getAgentsFollowingBehaviour(behaviour))]
+        behaviour = self._behavioursController.behaviourWithId(behaviourId)
+        return [agent.particleId 
+                for agent in sorted(self._agentsController.getAgentsFollowingBehaviour(behaviour))]
             
 #############################                  
     def addClassicBoidBehaviour(self):
@@ -398,40 +402,40 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
 
 #############################        
     def _onBehaviourAttributesDeleted(self, deletedAttributes):
-        deletedBehaviour = self._behavioursController.removeBehaviourForAttributes(deletedAttributes)
+        deletedBehaviourId = deletedAttributes.behaviourId
+        deletedBehaviour = self._behavioursController.removeBehaviourForId(deletedBehaviourId)
         agentsFollowingOldBehaviour = self._agentsController.getAgentsFollowingBehaviour(deletedBehaviour)
-        defaultAttributes = self._attributesController.defaultBehaviourAttributes
-        defaultBehaviour = self._behavioursController.defaultBehaviour
         
-        self._agentsController.makeAgentsFollowBehaviour(agentsFollowingOldBehaviour, defaultBehaviour, defaultAttributes)
+        self._agentsController.makeAgentsFollowDefaultBehaviour(agentsFollowingOldBehaviour)
         self._uiController.removeBehaviourFromUI(deletedAttributes)
         
-        util.LogInfo("Removed behaviour \"%s\"" % deletedAttributes.behaviourId)
+        util.LogInfo("Removed behaviour \"%s\"" % deletedBehaviourId)
         
 ##############################
     def _onAgentSelectionCompleted(self, selectionWindow, selectedAgentsList, selectionDisplayString):
         """Callback for agent selection window."""
         if(selectionWindow is self._behaviourAssignmentSelectionWindow):
-            attributes = self._behaviourAssignmentSelectionWindow.dataBlob
-            behaviour = self._behavioursController.behaviourForAttributes(attributes)
+            behaviourId = selectionWindow.dataBlob
+            behaviour = self._behavioursController.behaviourWithId(behaviourId)
+            defaultBehaviour = self._behavioursController.defaultBehaviour
             
             toUnassign = selectionWindow.originalSelection.difference(selectedAgentsList)
             if(toUnassign):
-                if(attributes is self._attributesController.defaultBehaviourAttributes):
+                if(behaviour is defaultBehaviour):
                     util.LogWarning("Cannot implicitly un-assign agents from default behaviour \"%s\"." % 
-                                    attributes.behaviourId)
+                                    behaviourId)
                 else:
                     self._agentsController.makeAgentsFollowDefaultBehaviour(toUnassign)
             
-            self._agentsController.makeAgentsFollowBehaviour(selectedAgentsList, behaviour, attributes)
+            self._agentsController.makeAgentsFollowBehaviour(selectedAgentsList, behaviour)
             self._behaviourAssignmentSelectionWindow.dataBlob = None
             
             if(selectedAgentsList):
                 util.LogInfo("The following agents are now assigned to behaviour \"%s\": %s." %
-                             (attributes.behaviourId, ', '.join([str(agentId) for agentId in selectedAgentsList])))
-            elif(attributes is not self._attributesController.defaultBehaviourAttributes):
+                             (behaviourId, ', '.join([str(agentId) for agentId in selectedAgentsList])))
+            elif(behaviour is not defaultBehaviour):
                 util.LogInfo("All agents previously following \"%s\" now assigned to default behaviour \"%s\"." 
-                             % (attributes.behaviourId, self._attributesController.defaultBehaviourAttributes.behaviourId))
+                             % (behaviourId, defaultBehaviour.behaviourId))
                 
 
 # END OF CLASS - SwarmController
