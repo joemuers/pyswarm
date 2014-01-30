@@ -21,6 +21,10 @@ _SwarmInstances_ = []
 
 #####
 def InitialiseSwarm(particleShapeNode=None, sceneBounds1=None, sceneBounds2=None):
+    return util.SafeEvaluate(True, _InitialiseSwarm, particleShapeNode, sceneBounds1, sceneBounds2)
+
+#####
+def _InitialiseSwarm(particleShapeNode=None, sceneBounds1=None, sceneBounds2=None):
     """Creates a new swarm instance for the given particle node.
     If a swarm already exists for that particle node, it will be replaced.
     """
@@ -42,7 +46,12 @@ or pass in a reference via the \"particleShapeNode\" argument to this method.")
     _SwarmInstances_.append(newSwarm)
     newSwarm.showUI()
     
+    util.LogInfo("Created new %s instance for nParticle %s" % (util.PackageName(), newSwarm.particleShapeName))
+    
     return newSwarm
+
+#####
+InitialiseSwarm.__doc__ = _InitialiseSwarm.__doc__ 
 
 #############################
 def Show():
@@ -76,13 +85,16 @@ def RemoveSwarmInstance(swarmInstance):
         swarmInstance.hideUI()
         _SwarmInstances_.remove(swarmInstance)
         
-        util.LogInfo("%s instance %s deleted." % (util.PackageName(), swarmInstance.particleShapeName))
+        util.LogInfo("%s instance for %s deleted." % (util.PackageName(), swarmInstance.particleShapeName))
     elif(swarmInstance is not None and isinstance(swarmInstance, SwarmController)):
         swarmInstance.hideUI()
         util.LogWarning("Attempt to delete unregistered swarm instance - likely causes:\n\
 swarmController module as been reloaded, leaving \'orphan\' instances, or,\n\
 an instance has been created indepedently by the user.\n\
 It is recommended that swarm management is done only via the module methods provided.")
+    elif(str(type(swarmInstance) == str(SwarmController))):
+        raise RuntimeError("%s module-level variables missing - likely due to reload. Recommend you re-initialise completely." 
+                           % util.PackageName())
     else:
         raise TypeError("Got %s of type %s (expected %s)." % (swarmInstance, type(swarmInstance), SwarmController))
 
@@ -198,15 +210,13 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
                 sceneBounds1 = locatorsList[0]
                 sceneBounds2 = locatorsList[1]
         
-        self._attributesController = bat.AttributesController(self._requestedLeaderSelectForBehaviour, 
-                                                              sceneBounds1, sceneBounds2)
-        self._agentsController = bac.AgentsController(self._attributesController, particleShapeNode)
+        self._attributesController = bat.AttributesController(particleShapeNode, sceneBounds1, sceneBounds2)
+        self._agentsController = bac.AgentsController(self._attributesController)
         self._behavioursController = bbc.BehavioursController(self._attributesController, self._agentsController)
         self._uiController = uic.UiController(self)
         self._agentsController._buildParticleList()
         
-        self._behaviourAssignmentSelectionWindow = asw.AgentSelectionWindow(self._agentsController)
-        self._leaderAgentsSelectionWindow = asw.AgentSelectionWindow(self._agentsController)
+        self._behaviourAssignmentSelectionWindow = asw.AgentSelectionWindow(self._attributesController.globalAttributes)
 
 #############################        
     def __str__(self):
@@ -220,22 +230,19 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
     def __getstate__(self):
         state = super(SwarmController, self).__getstate__()
         state["_behaviourAssignmentSelectionWindow"] = None
-        state["_leaderAgentsSelectionWindow"] = None
         
         return state
 
 ########        
     def __setstate__(self, state):
         super(SwarmController, self).__setstate__(state)
-        
-        self._behaviourAssignmentSelectionWindow = asw.AgentSelectionWindow(self._agentsController)
-        self._leaderAgentsSelectionWindow = asw.AgentSelectionWindow(self._agentsController)
-        
+        self._behaviourAssignmentSelectionWindow = asw.AgentSelectionWindow(self._attributesController.globalAttributes)
+                                                                            
         self.showUI()
 
 #############################    
     def _getParticleShapeName(self):
-        return self._agentsController.particleShapeName
+        return self._attributesController.globalAttributes.particleShapeNode.name()
     particleShapeName = property(_getParticleShapeName)
 
 #############################    
@@ -272,7 +279,6 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
     def hideUI(self):
         self._uiController.hideUI()
         self._behaviourAssignmentSelectionWindow.closeWindow()
-        self._leaderAgentsSelectionWindow.closeWindow()
  
 ########       
     def openFile(self, filePath):
@@ -332,7 +338,7 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
     def removeAllBehaviours(self):
         for behaviourId in self._attributesController.behaviourTypeNamesList():
             self.removeBehaviour(behaviourId)
-        
+
 ########          
     def makeAgentsWithBehaviourSelected(self, behaviourId, invertSelection):
         behaviourAttributes = self._attributesController.behaviourAttributesForId(behaviourId)
@@ -342,14 +348,14 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
             allAgents = set(self._agentsController.allAgents)
             currentSelection = list(allAgents.difference(set(currentSelection)))
         
-        particleIds = map(lambda agent: agent.particleId, currentSelection)
+        particleIds = [agent.particleId for agent in currentSelection]
         scene.SelectParticlesInList(particleIds, self.particleShapeName) 
         
 ########
     def showAssignAgentsWindowForBehaviour(self, behaviourId):
         behaviourAttributes = self._attributesController.behaviourAttributesForId(behaviourId)
         behaviour = self._behavioursController.behaviourForAttributes(behaviourAttributes)
-        currentSelection = self._agentsController.getAgentsFollowingBehaviour(behaviour)
+        currentSelection = [agent.particleId for agent in self._agentsController.getAgentsFollowingBehaviour(behaviour)]
         
         self._behaviourAssignmentSelectionWindow.dataBlob = behaviourAttributes
         self._behaviourAssignmentSelectionWindow.show("Assign agents to \"%s\"" % behaviourAttributes.behaviourId, 
@@ -361,27 +367,28 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
         behaviour = self._behavioursController.behaviourForAttributes(behaviourAttributes)
         self._agentsController.makeAgentsFollowBehaviour(agentIdsList, behaviour, behaviourAttributes)
  
-########        
-    def makeLeaderAgentsSelectedForBehaviour(self, behaviourId):
-        self._requestedLeaderSelectForBehaviour(behaviourId, False)
+########    
+    def getAssignedAgentIdsForBehaviour(self, behaviourId):
+        behaviourAttributes = self._attributesController.behaviourAttributesForId(behaviourId)
+        behaviour = self._behavioursController.behaviourForAttributes(behaviourAttributes)
         
-########       
-    def showLeaderSelectWindowForBehaviour(self, behaviourId):
-        self._requestedLeaderSelectForBehaviour(behaviourId, True)
-        
+        return [agent.particleId for agent in sorted(self._agentsController.getAgentsFollowingBehaviour(behaviour))]
+            
 #############################                  
     def addClassicBoidBehaviour(self):
         newBehaviour = self._attributesController.addClassicBoidAttributes()
         self._onNewBehaviourAttributesAdded(newBehaviour)
+        
 ########
     def addGoalDrivenBehaviour(self, wallLipGoal=None, basePyramidGoalHeight=None, finalGoal=None):
         newBehaviour = self._attributesController.addGoalDrivenAttributes(wallLipGoal, basePyramidGoalHeight, finalGoal)
         self._onNewBehaviourAttributesAdded(newBehaviour)
+        
 ########        
     def addFollowPathBehaviour(self, pathCurve=None):
         newBehaviour = self._attributesController.addFollowPathAttributes(pathCurve)
         self._onNewBehaviourAttributesAdded(newBehaviour)
-  
+
 #############################      
     def _onNewBehaviourAttributesAdded(self, newBehaviourAttributes):
         self._behavioursController.createBehaviourForNewAttributes(newBehaviourAttributes)
@@ -401,21 +408,6 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
         
         util.LogInfo("Removed behaviour \"%s\"" % deletedAttributes.behaviourId)
         
-#############################
-    def _requestedLeaderSelectForBehaviour(self, behaviourAttributes, isChangeRequest):
-        if(isinstance(behaviourAttributes, str)):
-            behaviourAttributes = self._attributesController.behaviourAttributesForId(behaviourAttributes)
-            
-        behaviour = self._behavioursController.behaviourForAttributes(behaviourAttributes)
-        currentSelection = behaviour.allLeaders()
-        if(isChangeRequest):
-            self._leaderAgentsSelectionWindow.dataBlob = behaviourAttributes
-            self._leaderAgentsSelectionWindow.show("Select leader agents for \"%s\"" % behaviourAttributes.behaviourId,
-                                               currentSelection, self._onAgentSelectionCompleted)
-        else:
-            particleIds = map(lambda agent: agent.particleId, currentSelection)
-            scene.SelectParticlesInList(particleIds, self.particleShapeName)
-        
 ##############################
     def _onAgentSelectionCompleted(self, selectionWindow, selectedAgentsList, selectionDisplayString):
         """Callback for agent selection window."""
@@ -423,17 +415,24 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
             attributes = self._behaviourAssignmentSelectionWindow.dataBlob
             behaviour = self._behavioursController.behaviourForAttributes(attributes)
             
+            toUnassign = selectionWindow.originalSelection.difference(selectedAgentsList)
+            if(toUnassign):
+                if(attributes is self._attributesController.defaultBehaviourAttributes):
+                    util.LogWarning("Cannot implicitly un-assign agents from default behaviour \"%s\"." % 
+                                    attributes.behaviourId)
+                else:
+                    self._agentsController.makeAgentsFollowDefaultBehaviour(toUnassign)
+            
             self._agentsController.makeAgentsFollowBehaviour(selectedAgentsList, behaviour, attributes)
             self._behaviourAssignmentSelectionWindow.dataBlob = None
-        elif(selectionWindow is self._leaderAgentsSelectionWindow):
-            attributes = self._leaderAgentsSelectionWindow.dataBlob
-            behaviour = self._behavioursController.behaviourForAttributes(attributes)
             
-            for agent in selectedAgentsList:
-                behaviour.makeLeader(agent)
-            attributes.setLeadersAgentsTextDisplay(selectionDisplayString)
-            self._leaderAgentsSelectionWindow.dataBlob = None
-        
+            if(selectedAgentsList):
+                util.LogInfo("The following agents are now assigned to behaviour \"%s\": %s." %
+                             (attributes.behaviourId, ', '.join([str(agentId) for agentId in selectedAgentsList])))
+            elif(attributes is not self._attributesController.defaultBehaviourAttributes):
+                util.LogInfo("All agents previously following \"%s\" now assigned to default behaviour \"%s\"." 
+                             % (attributes.behaviourId, self._attributesController.defaultBehaviourAttributes.behaviourId))
+                
 
 # END OF CLASS - SwarmController
 ##################################

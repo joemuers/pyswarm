@@ -7,14 +7,20 @@ import boidTools.sceneInterface as scene
 
 
 ########################
+_UpdateRadioButtonsAnnotation_ = "Add = Final selection will be added to the previously existing selection.\n\
+Set = Final selection will replace the previously existing selection."
+
 _TextFieldAnnotation_ = "Comma-separated list of particle IDs, range format = \"x-y\", wildcard = \"*\"\n\
 eg. \"*-3, 6, 9, 10-13\" gives the selection: 0,1,2,3,6,9,10,11,12,13.\n\
 NB. Agent IDs relate directly to Maya's particle IDs."
 
-_RadioButtonsAnnotation_ = "Listed IDs = Takes selection from listed IDs in the text box, above.\n\
+_SelectionRadioButtonsAnnotation_ = "Listed IDs = Takes selection from listed IDs in the text box, above.\n\
 In-Scene = Takes selection from individually selected particles within the scene.\n\
 All = Selects all the agents in the scene.\n\
 None = Clears the selection."
+
+
+_LeftColumnWidth_ = 100
 
 ########################
 
@@ -26,21 +32,27 @@ class AgentSelectionWindow(BoidBaseObject):
     __invalid__, __textInputSelection__, __sceneSelection__, __selectAll__, __selectNone__ = range(5)
     __SelectionOptionStrings__ = ["<N/A>", "Listed IDs", "In-Scene", "All", "None"]
     
+    __invalid__, __addSelection__, __setSelection__ = range(3)
+    __UpdateTypeStrings__ = ["<N/A>", "Add", "Set"]
+    
+    
 #####################    
-    def __init__(self, agentsController):
-        self._agentsController = agentsController
-        self._currentlySelectedList = []
-        self._maxIdValue = 0
+    def __init__(self, globalAttributes):
+        self._globalAttributes = globalAttributes
+        self._currentlySelectedAgentsList = []
+        self._originallySelectedAgentsSet = set()
+        self._fullAgentsList = []
         
         self._window = None
+        self._updateTypeRadioButtons = None
         self._textInput = None
-        self._radioButtons = None
+        self._selectionMethodRadioButtons = None
         self._selectedOption = AgentSelectionWindow.__invalid__
         self._selectionMadeCommand = None
         
         self.dataBlob = None # For client use only - not used internally
 
-#####################
+########
     def __del__(self):
         self.closeWindow()
          
@@ -49,54 +61,65 @@ class AgentSelectionWindow(BoidBaseObject):
         return ("<AgentSelectionWindow: \"%s\", particleShape:\"%s\">" % 
                 (self._window.getTitle() if(self._window is not None) else "<Not Visible>", 
                  self._particleShapeName))
-    
-    def _getMetaStr(self):
-        selectedAgentsStr = ''.join([("\t%s\n" % agent) for agent in self._currentlySelectedList])
-        return ("<SelectionMethod=%s, selectedText=\"%s\", endCmd=%s, selection:\n\t%s>" %
-                (AgentSelectionWindow.__SelectionOptionStrings__[self._selectedOption],
-                 self.getSelectionString(), self._selectionMadeCommand, selectedAgentsStr))
 
-#####################     
+########    
+    def _getMetaStr(self):
+        selectedAgentsStr = ', '.join([("%d" % agentId) for agentId in self._currentlySelectedAgentsList])
+        return ("<SelectionMethod=%s, selectedText=\"%s\", endCmd=%s, selection: %s>" %
+                (AgentSelectionWindow.__SelectionOptionStrings__[self._selectedOption],
+                 self._getSelectionString(), self._selectionMadeCommand, selectedAgentsStr))
+
+#####################
     def _getParticleShapeName(self):
-        return self._agentsController.particleShapeName
+        return self._globalAttributes.particleShapeNode.name()
     _particleShapeName = property(_getParticleShapeName)
- 
-#####################   
-    def _getIdToAgentLookup(self):
-        return self._agentsController._idToAgentLookup
-    _idToAgentLookup = property(_getIdToAgentLookup)
 
 #####################  
     def _getSelectionList(self):
-        return self._currentlySelectedList
+        return self._currentlySelectedAgentsList
     selectionList = property(_getSelectionList)
 
+#########
+    def _getOriginalSelection(self):
+        return self._originallySelectedAgentsSet
+    originalSelection = property(_getOriginalSelection)
+    
 #####################    
-    def show(self, windowTitle, currentlySelectedAgentsList, selectionMadeCommand):
+    def show(self, windowTitle, currentlySelectedAgentIdsList, selectionMadeCommand, validSelectionIdsList=None):
         if(self._selectedOption != AgentSelectionWindow.__invalid__):
             util.LogWarning("Overwriting previous agent selection session.")
             
         self.closeWindow()
         
-        self._currentlySelectedList = currentlySelectedAgentsList[:] # important to take a copy here - avoids modifying the original prematurely
-        self._maxIdValue = sorted(self._idToAgentLookup.keys())[-1]
+        self._currentlySelectedAgentsList = list(currentlySelectedAgentIdsList) # important to take a copy here - avoids modifying the original prematurely
+        self._originallySelectedAgentsSet = set(currentlySelectedAgentIdsList)
+        if(validSelectionIdsList is not None):
+            self._fullAgentsList = sorted(validSelectionIdsList)
+        else:
+            self._fullAgentsList = sorted(scene.ParticleIdsListForParticleShape(self._particleShapeName))
         
-        self._window = uib.MakeWindow(windowTitle, (450,80))
+        self._window = uib.MakeWindow(windowTitle)#, (450,80))
         formLayout = uib.MakeFormLayout()
         
         borderLayout = uib.MakeBorderingLayout()
         columnLayout = uib.MakeColumnLayout()
         self._textInput = uib.MakeTextInputField("Agent IDs:", 
-                                                 self.getSelectionString(), 
-                                                 leftColumnWidth=100, 
+                                                 self._getSelectionString(), 
+                                                 leftColumnWidth=_LeftColumnWidth_, 
                                                  annotation=_TextFieldAnnotation_)
-        self._radioButtons = uib.MakeRadioButtonGroup("Selection Method:", 
-                                                      AgentSelectionWindow.__SelectionOptionStrings__[1:], 
-                                                      self._onRadioButtonChange,
-                                                      leftColumnWidth=100,
-                                                      annotation=_RadioButtonsAnnotation_)
-        self._radioButtons.setSelect(AgentSelectionWindow.__textInputSelection__)
+        self._selectionMethodRadioButtons = uib.MakeRadioButtonGroup("Selection Method:", 
+                                                                     AgentSelectionWindow.__SelectionOptionStrings__[1:], 
+                                                                     self._onSelectionRadioButtonChange,
+                                                                     leftColumnWidth=_LeftColumnWidth_,
+                                                                     annotation=_SelectionRadioButtonsAnnotation_)
+        self._selectionMethodRadioButtons.setSelect(AgentSelectionWindow.__textInputSelection__)
         self._selectedOption = AgentSelectionWindow.__textInputSelection__
+        
+        self._updateTypeRadioButtons = uib.MakeRadioButtonGroup("Update Type:",
+                                                                AgentSelectionWindow.__UpdateTypeStrings__[1:],
+                                                                None,
+                                                                leftColumnWidth=_LeftColumnWidth_,
+                                                                annotation=_UpdateRadioButtonsAnnotation_)
         uib.SetAsChildLayout(columnLayout, borderLayout)
         
         buttonStripLayout = uib.MakeButtonStrip((("OK", self._okButtonWasPressed), ("Cancel", self.closeWindow)))
@@ -107,8 +130,8 @@ class AgentSelectionWindow(BoidBaseObject):
         self._window.show()
         
 #####################
-    def getSelectionString(self):        
-        if(self._currentlySelectedList):
+    def _getSelectionString(self):        
+        if(self._currentlySelectedAgentsList):
             ####
             def _appendToStringArray(stringArray, rangeStart, rangeEnd):
                 if(stringArray): stringArray.append(", ")
@@ -121,8 +144,7 @@ class AgentSelectionWindow(BoidBaseObject):
             rangeStart = -1
             rangeEnd = -1
             stringArray = []
-            for agent in self._currentlySelectedList:
-                agentId = agent.particleId
+            for agentId in self._currentlySelectedAgentsList:
                 if(rangeStart == -1):
                     rangeStart = agentId
                     rangeEnd = agentId
@@ -141,10 +163,7 @@ class AgentSelectionWindow(BoidBaseObject):
         
 #####################    
     def _updateSelectionFromStringIfNecessary(self):
-        ######
-        def _strip(string):
-            return string.strip()
-        
+        #####
         def _getRangeFromSubTokens(subTokens, upperBounds):
             if(len(subTokens) == 1):
                 if(subTokens[0] == '*'): return (0, upperBounds)
@@ -166,17 +185,18 @@ class AgentSelectionWindow(BoidBaseObject):
                 newSelection = set()
                 stringTokens = self._textInput.getText().split(',')
                 for token in stringTokens:
-                    subTokens = map(_strip, token.split('-'))
+                    subTokens = map(lambda tkn: tkn.strip(), token.split('-'))
                     if(len(subTokens) != 1 and len(subTokens) != 2):
                         raise ValueError
                     else:
-                        tokenRange = _getRangeFromSubTokens(subTokens, self._maxIdValue)
+                        maxIdValue = self._fullAgentsList[-1]
+                        tokenRange = _getRangeFromSubTokens(subTokens, maxIdValue)
                         for i in xrange(tokenRange[0], tokenRange[1] + 1):
                             newSelection.add(i)
                 
-                del self._currentlySelectedList[:]
-                for agentId in newSelection.intersection(self._idToAgentLookup.keys()):
-                    self._currentlySelectedList.append(self._idToAgentLookup[agentId])
+                del self._currentlySelectedAgentsList[:]
+                for agentId in newSelection.intersection(set(self._fullAgentsList)):
+                    self._currentlySelectedAgentsList.append(agentId)
             except:
                 return False
         
@@ -185,15 +205,25 @@ class AgentSelectionWindow(BoidBaseObject):
 #####################    
     def _updateSelectionFromSceneIfNecessary(self):
         if(self._selectedOption == AgentSelectionWindow.__sceneSelection__):
-            del self._currentlySelectedList[:]
-            for selectedAgentId in sorted(scene.GetSelectedParticles(self._particleShapeName)):
-                self._currentlySelectedList.append(self._idToAgentLookup[selectedAgentId])
-            self._textInput.setText(self.getSelectionString())
+            selectedParticleIds = scene.GetSelectedParticles(self._particleShapeName)
+            del self._currentlySelectedAgentsList[:]
+            self._currentlySelectedAgentsList.extend(sorted(selectedParticleIds))
+            self._textInput.setText(self._getSelectionString())
+
+#####################             
+    def _updateSelectionWithOriginalSelectionIfNecessary(self):
+        if(self._updateTypeRadioButtons.getSelect() == AgentSelectionWindow.__addSelection__ and
+           self._originallySelectedAgentsSet):
+            fullSelection = self._originallySelectedAgentsSet.union(self._currentlySelectedAgentsList)
+            if(len(fullSelection) > len(self._currentlySelectedAgentsList)):
+                del self._currentlySelectedAgentsList[:]
+                self._currentlySelectedAgentsList.extend(fullSelection)
+                self._currentlySelectedAgentsList.sort()
     
 #####################    
-    def _onRadioButtonChange(self, *args):
-        if(self._radioButtons.getSelect() != self._selectedOption):
-            self._selectedOption = self._radioButtons.getSelect()
+    def _onSelectionRadioButtonChange(self, *args):
+        if(self._selectionMethodRadioButtons.getSelect() != self._selectedOption):
+            self._selectedOption = self._selectionMethodRadioButtons.getSelect()
             
             if(self._selectedOption == AgentSelectionWindow.__textInputSelection__):
                 self._textInput.setEditable(True)
@@ -201,11 +231,12 @@ class AgentSelectionWindow(BoidBaseObject):
                 self._updateSelectionFromSceneIfNecessary()
                 self._textInput.setEditable(False)
             elif(self._selectedOption == AgentSelectionWindow.__selectAll__): 
-                self._currentlySelectedList = sorted(self._idToAgentLookup.values())
+                del self._currentlySelectedAgentsList[:]
+                self._currentlySelectedAgentsList.extend(self._fullAgentsList)
                 self._textInput.setText("*")
                 self._textInput.setEditable(False)
             elif(self._selectedOption == AgentSelectionWindow.__selectNone__): 
-                del self._currentlySelectedList[:]
+                del self._currentlySelectedAgentsList[:]
                 self._textInput.setText("")
                 self._textInput.setEditable(False)
       
@@ -213,7 +244,8 @@ class AgentSelectionWindow(BoidBaseObject):
     def _okButtonWasPressed(self, *args):
         if(self._updateSelectionFromStringIfNecessary()):
             self._updateSelectionFromSceneIfNecessary()
-            self._selectionMadeCommand(self, self._currentlySelectedList, self.getSelectionString())
+            self._updateSelectionWithOriginalSelectionIfNecessary()
+            self._selectionMadeCommand(self, self._currentlySelectedAgentsList, self._getSelectionString())
         else:
             util.LogError("Invalid input - selection not changed")
             
@@ -224,10 +256,11 @@ class AgentSelectionWindow(BoidBaseObject):
         if(uib.WindowExists(self._window)):
             util.EvalDeferred(uib.DestroyWindow, self._window)
         
-        del self._currentlySelectedList[:]
+        del self._currentlySelectedAgentsList[:]
+        self._originallySelectedAgentsSet.clear()
         self._window = None
         self._textInput = None
-        self._radioButtons = None
+        self._selectionMethodRadioButtons = None
         self._selectedOption = AgentSelectionWindow.__invalid__
 
 

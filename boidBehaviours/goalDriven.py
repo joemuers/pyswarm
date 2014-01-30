@@ -4,7 +4,6 @@ from boidResources import colours
 import boidAttributes.goalDrivenBehaviourAttributes as gdba
 import boidVectors.vector2 as bv2
 import boidVectors.vector3 as bv3
-import boidTools.util as util
 
 import random
 
@@ -80,14 +79,13 @@ class GoalDriven(BehaviourBaseObject):
         
         self._baseToFinalDirection = bv3.Vector3() # direction vector from baseLocator to finalLocator
         
-        self._leaders = set()
+        self._leaderPositions = []
         self._basePyramidDistanceLookup = {}
         
         self._normalBehaviour = normalBehaviourInstance
         
         # variables in the following block relate to agent's distance
         # from the baseLocator when in the basePyramid
-#         self._agentPyramidEntryThreshold = boidAttributes.GoalTargetDistanceThreshold()
         self._agentDistance_runningTotal = bv2.Vector2()
         self._agentDistance_average = bv2.Vector2()
         self._needsAverageDistanceCalc = False
@@ -99,6 +97,8 @@ class GoalDriven(BehaviourBaseObject):
         self._agentPosition_average = bv3.Vector3()
         self._needsAveragePositionCalc = False
         
+        self._infectionSpreadMode = False
+        self._performInfectionSpreadReset = True
         self._performCollapse = False
         
 #######################        
@@ -110,63 +110,29 @@ class GoalDriven(BehaviourBaseObject):
                  self.attributes.finalGoal, 
                  self._baseToFinalDirection,
                  "Y" if self.attributes.useInfectionSpread else "N"))
-    
+
+#########    
     def _getMetaStr(self):
-        leaderStringsList = [("%d," % agent.particleId) for agent in self._leaders]
-        pyramidStringsList = [("\t%s\n" % agent) for agent in self._basePyramidDistanceLookup]
+        leadersString = ', '.join([("%d" % agentId) for agentId in self.attributes.allLeaderIds])
+        pyramidString = ''.join([("\t%s\n" % agent) for agent in self._basePyramidDistanceLookup])
         
-        return ("<ldrs=%s, avDist=%s, maxDist=%s, avPos=%s\natLoctn=\n%s\natLip=\n%s\nover=\n%s>" % 
-                ("".join(leaderStringsList),
+        return ("<ldrs=%s, avDist=%s, maxDist=%s, avPos=%s\natLoctn=\n%s>" % 
+                (leadersString,
                  self._basePyramidAverageDistance(), self._maxAgentDistance, self._basePyramidAveragePosition(), 
-                 ''.join(pyramidStringsList)))#, ''.join(atLipStringsList), ''.join(overStringsList)))
-        
-####################### 
-    def makeLeader(self, agent):
-        if(agent.currentBehaviour is not self):
-            self._leaders.add(agent)
-            
-            util.LogWarning("Agent %d made leader for behaviour \"%s\", but is following behaviour \"%s\". Results may not be as-designed." %
-                             (agent.particleId, agent.currentBehaviour.behaviourId, self.behaviourId))
-            return True
-        elif(not agent.state.behaviourAttributes.didArriveAtBasePyramid):
-            self._leaders.add(agent)
-            self._setGoalStatusForAgent(agent, gdba.GoalDrivenDataBlob.goalChase)
-            
-            util.LogInfo("Agent %d made leader for behaviour \"%s\"" % (agent.particleId, self.behaviourId))
-            return True
-        else:
-            util.LogWarning("Agent %d NOT made leader - has already progressed to Pyramid-Join stage." % agent.particleId)
-            return False
-
-########        
-    def unMakeLeader(self, agent):
-        if(agent in self._leaders):
-            self._leaders.remove(agent)
-            return True
-        else:
-            return False
- 
-########   
-    def agentIsLeader(self, agent):
-        return (agent in self._leaders)
-
-########    
-    def allLeaders(self):
-        return list(self._leaders)
-        
-#######################
-    def getBehaviourSpecificAttributesForAgent(self, agent): # overridden BehaviourBaseObject method
-        newDataBlob = super(GoalDriven, self).getBehaviourSpecificAttributesForAgent(agent)
-        newDataBlob.currentStatus = (gdba.GoalDrivenDataBlob.normal if(self.attributes.useInfectionSpread) 
-                                     else gdba.GoalDrivenDataBlob.goalChase)
-        
-        return newDataBlob
+                 pyramidString))#, ''.join(atLipStringsList), ''.join(overStringsList)))
         
 #######################        
     def onFrameUpdated(self):  # overridden BoidBehaviourBaseObject method
         """Lists of agents must be rebuild on every frame, this method clears the lists
         and sets up everything for a new frame."""
         
+        if(self.attributes.useInfectionSpread):
+            self._performInfectionSpreadReset = not self._infectionSpreadMode
+            self._infectionSpreadMode = True
+        else:
+            self._infectionSpreadMode = False
+            
+        del self._leaderPositions[:]
         self._agentPosition_runningTotal.reset()
         self._needsAveragePositionCalc = True
         self._agentDistance_runningTotal.reset()
@@ -183,34 +149,52 @@ class GoalDriven(BehaviourBaseObject):
         into (which then determines corresponding behaviour).
         """
         baseToAgentVec = agent.currentPosition - self.attributes.basePyramidGoal
-        
-        newStatus = self._goalStatusForAgent(agent)
+        agentAttributes = agent.state.behaviourAttributes
+        agentStatus = self._effectiveGoalStatusForAgent(agent)
         
         if(abs(self._baseToFinalDirection.angleTo(baseToAgentVec)) < 90):
             # boid agent has cleared the wall...
             if(self._baseToFinalDirection.magnitudeSquared(True) < baseToAgentVec.magnitudeSquared(True)):
                 # reached final goal
-                newStatus = gdba.GoalDrivenDataBlob.reachedFinalGoal
+                agentStatus = gdba.GoalDrivenDataBlob.reachedFinalGoal
             else:
                 # still on top of wall moving towards final goal
-                newStatus = gdba.GoalDrivenDataBlob.overWallLip
+                agentStatus = gdba.GoalDrivenDataBlob.overWallLip
         else:
             if(agent.currentPosition.y >= (self.attributes.wallLipGoal.y - 0.1)): # TODO - make this check more robust.
                 # agent has reached top of the wall, now will move twds final goal
-                newStatus = gdba.GoalDrivenDataBlob.atWallLip
-            elif(baseToAgentVec.magnitudeSquared(True) < self._basePyramidMaxDistanceHorizontal() **2):
+                agentStatus = gdba.GoalDrivenDataBlob.atWallLip
+            elif(baseToAgentVec.magnitudeSquared(True) < agentAttributes.pyramidJoinAtDistance **2):
                 # agent is close enough to be considered as being at the basePyramid
-                newStatus = gdba.GoalDrivenDataBlob.inBasePyramid
-            elif(self._goalStatusForAgent(agent) >= gdba.GoalDrivenDataBlob.inBasePyramid):
-                # agent is still some distance away is will simply chase the baseLocator/leader for now
-                newStatus = gdba.GoalDrivenDataBlob.goalChase
+                agentStatus = gdba.GoalDrivenDataBlob.inBasePyramid
+            else:
+                # agent is still some distance away & will simply chase the baseLocator/leader for now
                 
-                if(agent.state.behaviourAttributes.didArriveAtBasePyramid and 
+                if(agentAttributes.didArriveAtBasePyramid and 
                    agent.state.perceptionAttributes.neighbourhoodSize < baseToAgentVec.magnitude()):
                     # if miles away, may as well just start over afresh
-                    agent.state.behaviourAttributes.didArriveAtBasePyramid = False
+                    agentAttributes.didArriveAtBasePyramid = False
                 
-        self._setGoalStatusForAgent(agent, newStatus, baseToAgentVec)
+                if(not agentAttributes.didArriveAtBasePyramid):
+                    if(self._infectionSpreadMode and self.attributes.agentIsLeader(agent.particleId)):
+                        # agent has been designated as a leader
+                        self._leaderPositions.append(agent.currentPosition)
+                        agentStatus = gdba.GoalDrivenDataBlob.goalChase
+                    elif(agentStatus == gdba.GoalDrivenDataBlob._uninitialised):
+                        # newly assigned/reset agent => initialise accordingly
+                        if(self._infectionSpreadMode): agentStatus = gdba.GoalDrivenDataBlob.normal
+                        else: agentStatus = gdba.GoalDrivenDataBlob.goalChase
+                    elif(agentStatus == gdba.GoalDrivenDataBlob.pending):
+                        # agent has been 'infected' - check the countdown
+                        agentAttributes.goalChaseCountdown -= 1
+                        if(agentAttributes.goalChaseCountdown < 0):
+                            agentStatus = gdba.GoalDrivenDataBlob.goalChase
+                    else:
+                        agentStatus = gdba.GoalDrivenDataBlob.goalChase
+                elif(agentStatus > gdba.GoalDrivenDataBlob.inBasePyramid):
+                    agentStatus = gdba.GoalDrivenDataBlob.goalChase
+                    
+        self._setGoalStatusForAgent(agent, agentStatus, baseToAgentVec)
         self._setDebugColourForAgent(agent)
 
 #######################
@@ -235,8 +219,6 @@ class GoalDriven(BehaviourBaseObject):
                     return desiredAcceleration
                 elif(self._goalChaseBehaviour(agent, desiredAcceleration)):
                     return desiredAcceleration
-                elif(self._decrementGoalChaseCountdownIfNecessary(agent)):
-                    self._goalChaseBehaviour(agent, desiredAcceleration)
                 else:
                     self._startGoalChaseCountdownIfNecessary(agent)
                     return self._normalBehaviour.getDesiredAccelerationForAgent(agent, nearbyAgentsList)
@@ -312,8 +294,11 @@ class GoalDriven(BehaviourBaseObject):
                     agent.currentVelocity.magnitudeSquared(True) < goalChaseSpeedSquared or 
                     abs(nearbyAgent.currentVelocity.angleTo(agent.currentVelocity)) > 90) ):
                     # TODO - just expand the goal's radius here...
-                    self._registerAgentAtBasePyramid(agent)
-                    return self._goalChaseBehaviour(agent, desiredAcceleration)
+                    # play around with this algorithm if agents get added in a strange manner...
+                    returnVal = self._goalChaseBehaviour(agent, desiredAcceleration) 
+                    self._setGoalStatusForAgent(agent, gdba.GoalDrivenDataBlob.inBasePyramid)
+                    
+                    return returnVal
         return False
     
 #######################  
@@ -344,16 +329,6 @@ class GoalDriven(BehaviourBaseObject):
             return True
         else:
             return False
- 
-#######################   
-    def _decrementGoalChaseCountdownIfNecessary(self, agent):
-        if(self._goalStatusForAgent(agent) == gdba.GoalDrivenDataBlob.pending):
-            agent.state.behaviourAttributes.goalChaseCountdown -= 1
-            if(agent.state.behaviourAttributes.goalChaseCountdown <= 0):
-                self._setGoalStatusForAgent(agent, gdba.GoalDrivenDataBlob.goalChase)
-                return True
-
-        return False
 
 ########
     def _startGoalChaseCountdownIfNecessary(self, agent):
@@ -397,7 +372,7 @@ class GoalDriven(BehaviourBaseObject):
             
             self._basePyramidDistanceLookup[agent] = distanceVector
           
-#######################        
+#########
     def _deRegisterAgentFromBasePyramid(self, agent):
         """Should be called when agent leaves/falls out of basePyramid, switches out
         of 'push-up' behaviour
@@ -459,24 +434,24 @@ class GoalDriven(BehaviourBaseObject):
         towards (when following goalChase behaviour)."""
         
         returnValue = None
-        numLeaders = len(self._leaders)
+        numLeaders = self.attributes.numberOfLeaders
 
         if(agent.state.behaviourAttributes.didArriveAtBasePyramid or 
-           numLeaders == 0 or self.agentIsLeader(agent)):
+           numLeaders == 0 or self.attributes.agentIsLeader(agent.particleId)):
             returnValue = self.attributes.basePyramidGoal
         elif(numLeaders == 1):
-            returnValue = self._leaders[0].currentPosition
+            returnValue = self._leaderPositions[0]
         else:
-            candidateLeader = None
+            candidateLeaderPosition = None
             minDistanceSquared = agent.currentPosition.distanceSquaredFrom(self.attributes.basePyramidGoal)
-            for leader in self._leaders:
-                candidateDistanceSquared = agent.currentPosition.distanceSquaredFrom(leader.currentPosition)
+            for leaderPosition in self._leaderPositions:
+                candidateDistanceSquared = agent.currentPosition.distanceSquaredFrom(leaderPosition)
                 if(candidateDistanceSquared < minDistanceSquared):
                     minDistanceSquared = candidateDistanceSquared
-                    candidateLeader = leader
+                    candidateLeaderPosition = leaderPosition
             
-            if(candidateLeader is not None):
-                returnValue = candidateLeader.currentPosition
+            if(candidateLeaderPosition is not None):
+                returnValue = candidateLeaderPosition
             else:
                 returnValue = self.attributes.basePyramidGoal
                 
@@ -502,53 +477,73 @@ class GoalDriven(BehaviourBaseObject):
 
 #######################        
     def _goalStatusForAgent(self, agent):
+        return agent.state.behaviourAttributes.currentStatus
+    
+########
+    def _effectiveGoalStatusForAgent(self, agent):
         if(AgentBehaviourIsGoalDriven(agent)):
-            return agent.state.behaviourAttributes.currentStatus
+            currentStatus = agent.state.behaviourAttributes.currentStatus
+            
+            if(self._infectionSpreadMode):
+                if(self._performInfectionSpreadReset and currentStatus <= gdba.GoalDrivenDataBlob.goalChase):
+                    return gdba.GoalDrivenDataBlob._uninitialised
+                else:
+                    return currentStatus
+            else:
+                if(currentStatus < gdba.GoalDrivenDataBlob.goalChase): 
+                    return gdba.GoalDrivenDataBlob._uninitialised
+                else:
+                    return currentStatus
         else:
-            raise TypeError(("Agent %d is following behaviour %s" % (agent.particleId, agent.currentBehaviour.behaviourId)))
-            return gdba.GoalDrivenDataBlob._invalid
+            raise RuntimeError(("Agent %d is following behaviour %s" % (agent.particleId, agent.currentBehaviour.behaviourId)))
+            return gdba.GoalDrivenDataBlob._uninitialised
 
 #######################    
-    def _setGoalStatusForAgent(self, agent, status, distanceVector=None):
-        if(status != self._goalStatusForAgent(agent)):
-            agent.state.behaviourAttributes.currentStatus = status
+    def _setGoalStatusForAgent(self, agent, newStatus, distanceVector=None):
+        if(newStatus == gdba.GoalDrivenDataBlob._uninitialised):
+            raise RuntimeError("Attempted to set agent behaviour status == uninitialised")
+        
+        agentAttributes = agent.state.behaviourAttributes
+        
+        if(newStatus != agentAttributes.currentStatus):
+            agentAttributes.currentStatus = newStatus
             
-            if(status == gdba.GoalDrivenDataBlob.pending):
-                agent.state.behaviourAttributes.goalChaseCountdown = agent.state.behaviourAttributes.incubationPeriod
+            if(newStatus == gdba.GoalDrivenDataBlob.pending):
+                agentAttributes.goalChaseCountdown = agentAttributes.incubationPeriod
             else:
-                if(status >= gdba.GoalDrivenDataBlob.inBasePyramid):
-                    if(self.agentIsLeader(agent)):
-                        self._leaders.remove(agent)
-                    if(status == gdba.GoalDrivenDataBlob.reachedFinalGoal):
+                agentAttributes.goalChaseCountdown = -1
+                if(newStatus >= gdba.GoalDrivenDataBlob.inBasePyramid):
+                    agentAttributes.didArriveAtBasePyramid = True
+                    if(newStatus == gdba.GoalDrivenDataBlob.reachedFinalGoal):
                         self._notifyDelegateBehaviourEndedForAgent(agent, self.attributes.followOnBehaviourID)
-                    agent.state.behaviourAttributes.didArriveAtBasePyramid = True
-                agent.state.behaviourAttributes.goalChaseCountdown = -1
                 
-        if(status == gdba.GoalDrivenDataBlob.inBasePyramid):
+        if(newStatus == gdba.GoalDrivenDataBlob.inBasePyramid):
             self._registerAgentAtBasePyramid(agent, distanceVector)
         else:
             self._deRegisterAgentFromBasePyramid(agent)
 
 #######################            
     def _setDebugColourForAgent(self, agent):
-        if(self.agentIsLeader(agent)):
-            agent.debugColour = colours.GoalDriven_IsLeader
-        elif(not agent.isTouchingGround):
+        if(not agent.isTouchingGround):
             agent.debugColour = colours.Normal_NotTouchingGround
         else:
             status = self._goalStatusForAgent(agent)
+            
             if(status == gdba.GoalDrivenDataBlob.inBasePyramid):
                 agent.debugColour = colours.GoalDriven_InBasePyramid(agent)
             elif(status == gdba.GoalDrivenDataBlob.goalChase):
-                agent.debugColour = colours.GoalDriven_ChasingGoal
+                if(self.attributes.useInfectionSpread and self.attributes.agentIsLeader(agent.agentId)):
+                    agent.debugColour =  colours.GoalDriven_IsLeader
+                else:
+                    agent.debugColour = colours.GoalDriven_ChasingGoal
             elif(status == gdba.GoalDrivenDataBlob.atWallLip or status == gdba.GoalDrivenDataBlob.overWallLip):
                 agent.debugColour = colours.GoalDriven_OverTheWall
             elif(status == gdba.GoalDrivenDataBlob.reachedFinalGoal):
                 agent.debugColour = colours.GoalDriven_ReachedGoal
             
 #######################            
-    def collapsePyramid(self, cancel=False):
-        self._performCollapse = not cancel
+    def collapsePyramid(self, performIt=True):
+        self._performCollapse = performIt
         
         
 # END OF CLASS - BoidBehaviourGoalDriven

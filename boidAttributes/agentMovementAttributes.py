@@ -5,7 +5,7 @@ import boidTools.uiBuilder as uib
 
 
 ##########################################
-class MovementAttributesDataBlob(abo.DataBlobBaseObject):
+class MovementAttributesDataBlob(abo._DataBlobBaseObject):
     
     def __init__(self, agent):
         super(MovementAttributesDataBlob, self).__init__(agent)

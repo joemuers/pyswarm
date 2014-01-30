@@ -130,6 +130,9 @@ class Vector3(BoidBaseObject):
     def __eq__(self, other):
         return IsVector3(other) and self.x == other.x and self.y == other.y and self.z == other.z
     
+    def __ne__(self, other):
+        return not self.__eq__(other)
+    
     def __lt__(self, other):
         return IsVector3(other) and self.magnitudeSquared() < other.magnitudeSquared()
     

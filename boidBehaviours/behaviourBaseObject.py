@@ -9,7 +9,7 @@ import weakref
 
 ###################################
 class BehaviourDelegate(object):
-    """Client objects can subclass BehaviourDelegate and pass the corresponding object
+    """Client objects can subclass BehaviourDelegate and pass themself as a delegate
     to the behaviourBaseObject if they require a notification when behaviour completes."""
     
     __metaclass__ = ABCMeta
@@ -46,7 +46,8 @@ class BehaviourBaseObject(BoidBaseObject):
         selfDict["_delegate"] = self.delegate
         
         return selfDict
-    
+
+########    
     def __setstate__(self, selfDict):
         self.__dict__.update(selfDict)
         if(self._delegate is not None):
@@ -92,17 +93,6 @@ class BehaviourBaseObject(BoidBaseObject):
         Should return a Vector3.
         """
         raise NotImplementedError
-
-##########################    
-    def getBehaviourSpecificAttributesForAgent(self, agent):
-        """This object will be set to an agent state's 'behaviourAttributes' property when
-        a behaviour is first assigned to the agent.
-        For each behaviourBaseObject subclass, if the operation of the behaviour requires the
-        agent objects to carry bespoke per-agent information, then the getNewDataBlobForAgent 
-        method (within it's corresponding **attributesBaseObject** subclass) should be implemented to return an 
-        appropriate data container object.
-        """
-        return self.attributes.getNewDataBlobForAgent(agent)
 
 ##########################
     def _clampMovementIfNecessary(self, agent, desiredAcceleration, maxAcceleration, maxVelocity, maxTurnRate, maxTurnAngleRateOfChange, maxTurnVelocity):

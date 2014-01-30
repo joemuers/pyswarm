@@ -14,27 +14,38 @@ def PackageName():
 
 ######################################
 __utilLogger__ = logging.getLogger(PackageName())
-
+#####
 def LogDebug(message, prefix=None):
     __utilLogger__.debug(("(dbg) %s %s" % (prefix, message)) if(prefix is not None) 
                          else ("(dbg) %s" % message))
     
+#####
 def LogInfo(message, prefix=None):
     __utilLogger__.info(("%s %s" % (prefix, message)) if(prefix is not None) else message)
     
+#####
 def LogWarning(message, prefix=None):
     __utilLogger__.warning(("%s %s" % (prefix, message)) if(prefix is not None) else message)
     
+#####
 def LogError(message, prefix=None):
     __utilLogger__.error(("%s %s" % (prefix, message)) if(prefix is not None) else message)
-    
-def SetLoggingLevelDebug():
-    __utilLogger__.setLevel(logging.DEBUG)
-    LogDebug("Logging level set - DEBUG")
 
+#####
+def LogException(exception):
+    __utilLogger__.exception(exception)
+    
+#####
+def SetLoggingLevelDebug():
+    if(__utilLogger__.level != logging.DEBUG):
+        __utilLogger__.setLevel(logging.DEBUG)
+        LogDebug("Logging level set - DEBUG")
+
+#####
 def SetLoggingLevelInfo():
-    LogDebug("Logging level set - INFO")
-    __utilLogger__.setLevel(logging.INFO)
+    if(__utilLogger__.level != logging.INFO):
+        LogDebug("Logging level set - INFO")
+        __utilLogger__.setLevel(logging.INFO)
 
 ######################################
 
@@ -68,7 +79,6 @@ def GetCurrentSceneName():
 
 ######################################
 __SaveSceneScriptJobNumber__ = -1
-
 #####
 def AddSceneSavedScriptJobIfNecessary(saveMethod):
     global __SaveSceneScriptJobNumber__
@@ -172,8 +182,7 @@ __import__(\"%s\", globals(), locals(), [\"%s\"], -1)" %
 ######################################
 __DeferredEvaluationsQueue__ = []
 __ModuleHandle__ = ("__%s_IMPORT_FOR_DEFERRED_EVALUATION__" % PackageName().upper())
-__DeferredEvaluationString__ = ("%s._MakeDeferredEvaluations()" % __ModuleHandle__)
-
+__DeferredEvaluationMethodString__ = ("%s._MakeDeferredEvaluations()" % __ModuleHandle__)
 #####
 def EvalDeferred(boundMethod, *args, **kwargs):
     """This nasty little piece of hackery is necessary because the Pymel version of evalDeferred is not
@@ -184,7 +193,7 @@ def EvalDeferred(boundMethod, *args, **kwargs):
     """
     global __DeferredEvaluationsQueue__
     global __ModuleHandle__
-    global __DeferredEvaluationString__
+    global __DeferredEvaluationMethodString__
     
     if(not callable(boundMethod)):
         raise TypeError("Non-callable object \"%s\" passed to EvalDeferred." % boundMethod)
@@ -194,7 +203,7 @@ def EvalDeferred(boundMethod, *args, **kwargs):
 __import__(\"%s\", globals(), locals(), [\"%s\"], -1)" % 
                             (__ModuleHandle__, __ModuleHandle__, __name__, __name__))
             pm.evalDeferred(importString)
-            pm.evalDeferred(__DeferredEvaluationString__)
+            pm.evalDeferred(__DeferredEvaluationMethodString__)
         
         __DeferredEvaluationsQueue__.append((boundMethod, args, kwargs))
     
@@ -203,16 +212,21 @@ def _MakeDeferredEvaluations():
     global __DeferredEvaluationsQueue__
     
     for commandTuple in __DeferredEvaluationsQueue__:
-        command = commandTuple[0]
-        arguments = commandTuple[1]
-        keywords = commandTuple[2]
-        
-        command(*arguments, **keywords)
+        method, arguments, keywords = commandTuple
+        method(*arguments, **keywords)
     
     del __DeferredEvaluationsQueue__[:]
     
 ######################################
+def SafeEvaluate(verboseErrorLog, method, *args, **kwargs):
+    try:
+        return method(*args, **kwargs)
+    except Exception as e:
+        if(verboseErrorLog):
+            LogException(e)
+        else:
+            LogWarning("%s error: %s" % (method.__name__, e))
+        
 
-
-    
-    
+# END OF MODULE
+##########################################################

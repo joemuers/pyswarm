@@ -87,6 +87,10 @@ class UiController(BoidBaseObject):
             self._needsUiRebuild = False
         
 ########
+    def __del__(self):
+        self.hideUI()
+        
+########
     def _recreateUiComponents(self):
         self._uiWindow = None
         self._uiComponentToAttributesLookup = {}
@@ -95,9 +99,6 @@ class UiController(BoidBaseObject):
         self._selectAgentsWithMenu = None
         self._selectAgentsNotWithMenu = None
         self._assignAgentsToMenu = None
-
-########
-        self.hideUI()
 
 ######################
     def __getstate__(self):

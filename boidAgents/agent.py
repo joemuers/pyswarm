@@ -135,7 +135,7 @@ class Agent(BoidBaseObject):
         if(self._currentBehaviour is not behaviour):
             self._currentBehaviour = behaviour
             self.state.behaviourAttributes = behaviourAttributes.getNewDataBlobForAgent(self)
-            behaviour.onAgentUpdated(self)  # TODO - should this be here??
+#             behaviour.onAgentUpdated(self)  # TODO - should this be here??
         
 ##################### 
     def updateCurrentVectors(self, position, velocity):

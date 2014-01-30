@@ -5,7 +5,7 @@ import attributeTypes as at
 
 
 ##########################################
-class PerceptionAttributesDataBlob(abo.DataBlobBaseObject):
+class PerceptionAttributesDataBlob(abo._DataBlobBaseObject):
     
     def __init__(self, agent):
         super(PerceptionAttributesDataBlob, self).__init__(agent)

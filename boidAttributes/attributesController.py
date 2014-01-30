@@ -16,12 +16,12 @@ import ConfigParser
 ##########################################
 class AttributesController(BoidBaseObject):
     
-    def __init__(self, leaderSelectMethod, sceneBounds1=None, sceneBounds2=None):
-        self._leaderSelectMethod = leaderSelectMethod
+    def __init__(self, particleShapeNode, sceneBounds1=None, sceneBounds2=None):
+#         self._leaderSelectMethod = leaderSelectMethod
         
-        self.globalAttributes = ga.GlobalAttributes(sceneBounds1, sceneBounds2)
-        self.agentMovementAttributes = ama.AgentMovementAttributes()
-        self.agentPerceptionAttributes = apa.AgentPerceptionAttributes()
+        self._globalAttributes = ga.GlobalAttributes(particleShapeNode, sceneBounds1, sceneBounds2)
+        self._agentMovementAttributes = ama.AgentMovementAttributes()
+        self._agentPerceptionAttributes = apa.AgentPerceptionAttributes()
         
         defaultBehaviourId = cbba.ClassicBoidBehaviourAttributes.BehaviourTypeName()
         self.defaultBehaviourAttributes = cbba.ClassicBoidBehaviourAttributes(defaultBehaviourId)
@@ -47,6 +47,21 @@ class AttributesController(BoidBaseObject):
         return ''.join(stringsList)
  
 #####################   
+    def _getGlobalAttributes(self):
+        return self._globalAttributes
+    globalAttributes = property(_getGlobalAttributes)
+    
+########
+    def _getAgentMovementAttributes(self):
+        return self._agentMovementAttributes
+    agentMovementAttributes = property(_getAgentMovementAttributes)
+    
+########
+    def _getAgentPerceptionAttributes(self):
+        return self._agentPerceptionAttributes
+    agentPerceptionAttributes = property(_getAgentPerceptionAttributes)
+
+########
     def behaviourAttributesForId(self, behaviourId):
         for attributes in self._behaviourAttributesList:
             if(attributes.behaviourId == behaviourId):
@@ -99,8 +114,8 @@ class AttributesController(BoidBaseObject):
             attributes.onBehaviourListUpdated(behaviourIDsList, defaultId)
 
 #####################            
-    def _onRequestLeaderSelect(self, requestingAttributes, isChangeRequest):
-        self._leaderSelectMethod(requestingAttributes.behaviourId, isChangeRequest)
+#     def _onRequestLeaderSelect(self, requestingAttributes, isChangeRequest):
+#         self._leaderSelectMethod(requestingAttributes.behaviourId, isChangeRequest)
             
 #####################       
     def _addNewBehaviourAttributes(self, newBehaviourAttributes):
@@ -129,16 +144,16 @@ class AttributesController(BoidBaseObject):
  
 ########       
     def addClassicBoidAttributes(self):
-        sectionTitle = self._getNewBehaviourIdForAttibutesClass(cbba.ClassicBoidBehaviourAttributes)
-        newBehaviourAttributes = cbba.ClassicBoidBehaviourAttributes(sectionTitle)
+        behaviourId = self._getNewBehaviourIdForAttibutesClass(cbba.ClassicBoidBehaviourAttributes)
+        newBehaviourAttributes = cbba.ClassicBoidBehaviourAttributes(behaviourId)
         self._addNewBehaviourAttributes(newBehaviourAttributes)
         
         return newBehaviourAttributes
  
 ########   
     def addGoalDrivenAttributes(self, wallLipGoal=None, basePyramidGoalHeight=None, finalGoal=None):
-        sectionTitle = self._getNewBehaviourIdForAttibutesClass(gdba.GoalDrivenBehaviourAttributes)
-        newBehaviourAttributes = gdba.GoalDrivenBehaviourAttributes(sectionTitle, self._onRequestLeaderSelect,
+        behaviourId = self._getNewBehaviourIdForAttibutesClass(gdba.GoalDrivenBehaviourAttributes)
+        newBehaviourAttributes = gdba.GoalDrivenBehaviourAttributes(behaviourId, self._globalAttributes,
                                                                     wallLipGoal, basePyramidGoalHeight, finalGoal)
         self._addNewBehaviourAttributes(newBehaviourAttributes)
         
@@ -146,8 +161,8 @@ class AttributesController(BoidBaseObject):
 
 ########    
     def addFollowPathAttributes(self, pathCurve=None):
-        sectionTitle = self._getNewBehaviourIdForAttibutesClass(fpba.FollowPathBehaviourAttributes)
-        newBehaviourAttributes = fpba.FollowPathBehaviourAttributes(sectionTitle, pathCurve)
+        behaviourId = self._getNewBehaviourIdForAttibutesClass(fpba.FollowPathBehaviourAttributes)
+        newBehaviourAttributes = fpba.FollowPathBehaviourAttributes(behaviourId, pathCurve)
         self._addNewBehaviourAttributes(newBehaviourAttributes)
         
         return newBehaviourAttributes

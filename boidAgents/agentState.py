@@ -1,6 +1,7 @@
 from boidBaseObject import BoidBaseObject
 
 import boidVectors.vector3 as bv3
+import boidTools.util as util
 
 
 
@@ -251,15 +252,22 @@ class AgentState(BoidBaseObject):
         elif(self._needsAveragesRecalc):
             self._recalculateAverages()
             self._needsAveragesRecalc = False
-    
+
+############################## 
     @staticmethod    
     def _getWeightingInverseSquareDistance(distanceVector):
-        return (1.0 / float(distanceVector.magnitudeSquared()))
-    
+        try:
+            return (1.0 / float(distanceVector.magnitudeSquared()))
+        except ZeroDivisionError:
+            util.LogWarning("Please check your Maya scene - 2 particles have identical locations!")
+            return 1000
+ 
+########   
     @staticmethod
     def _getWeightingLinearDistance(distanceVector, maxDistance):
         return ((maxDistance - distanceVector.magnitude()) / maxDistance)
 
+########
     @staticmethod    
     def _getWeightingAngular(angle, forwardAngle, blindAngle):
 #          return 1
@@ -269,6 +277,7 @@ class AgentState(BoidBaseObject):
             variableRange = blindAngle - forwardAngle
             return (float(variableRange - (angle - forwardAngle)) / variableRange)
     
+########
     @staticmethod
     def _calculateWeighting(distanceVector, angle, forwardAngle, blindAngle):
         return (AgentState._getWeightingInverseSquareDistance(distanceVector) +

@@ -3,13 +3,14 @@ import attributeTypes as at
 import boidTools.util as util
 import boidTools.uiBuilder as uib
 import boidTools.sceneInterface as scene
+import boidTools.agentSelectionWindow as asw
 
 
 
 ###########################################
-class GoalDrivenDataBlob(abo.DataBlobBaseObject):
+class GoalDrivenDataBlob(abo._DataBlobBaseObject):
     
-    _invalid, normal, pending, goalChase, inBasePyramid, atWallLip, overWallLip, reachedFinalGoal = range(8)
+    _uninitialised, normal, pending, goalChase, inBasePyramid, atWallLip, overWallLip, reachedFinalGoal = range(8)
     
 #####################    
     def __init__(self, agent):
@@ -21,7 +22,7 @@ class GoalDrivenDataBlob(abo.DataBlobBaseObject):
         self.pyramidJoinAtDistance = 0.0
         self.pyramidJumpOnDistance = 0.0
         
-        self.currentStatus = GoalDrivenDataBlob._invalid
+        self.currentStatus = GoalDrivenDataBlob._uninitialised
         
         self.didArriveAtBasePyramid = False
         self.goalChaseCountdown = -1
@@ -61,8 +62,10 @@ class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject, abo._FollowOnBehav
         return "Goal-Driven Behaviour"
     
 #####################    
-    def __init__(self, sectionTitle, leaderSelectCallback, wallLipGoal=None, basePyramidGoalHeight=None, finalGoal=None):
-        super(GoalDrivenBehaviourAttributes, self).__init__(sectionTitle)
+    def __init__(self, behaviourId, globalAttributes, wallLipGoal=None, basePyramidGoalHeight=None, finalGoal=None):
+        super(GoalDrivenBehaviourAttributes, self).__init__(behaviourId)
+        
+        self._globalAttributes = globalAttributes
         
         if(basePyramidGoalHeight is not None and type(basePyramidGoalHeight) != float):
             pyramidBaseVector = scene.Vector3FromLocator(basePyramidGoalHeight)
@@ -78,9 +81,12 @@ class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject, abo._FollowOnBehav
         self._finalGoal.excludeFromDefaults = True
         
         self._useInfectionSpread = at.BoolAttribute("Use Infection Spread", False, self)
+        
         self._leadersText = at.StringAttribute("Leader Agents", "")
-        self._leaderSelectDelegateCallback = leaderSelectCallback # should *not* be
-        self._selectCurrentLeadersButtonEnable = None             # included in Pickle save
+        self._selectCurrentLeadersButtonEnable = None                            # should *not* be
+        self._leaderSelectionWindow = asw.AgentSelectionWindow(globalAttributes) # included in Pickle save
+        self._leaderAgentIds = set()
+        
         self._incubationPeriod = at.IntAttribute("Incubation Period", 10, self)
         self._incubationPeriod_Random = at.RandomizeController(self._incubationPeriod)
         self._goalChaseSpeed = at.FloatAttribute("Goal Chase Speed", 10, self)
@@ -99,17 +105,59 @@ class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject, abo._FollowOnBehav
 #####################       
     def __getstate__(self):
         state = super(GoalDrivenBehaviourAttributes, self).__getstate__()
-        state["_leaderSelectDelegateCallback"] = None
+        
         state["_selectCurrentLeadersButtonEnable"] = None
+        state["_leaderSelectionWindow"] = None
         
         return state
 
 ########
     def __setstate__(self, state):
         super(GoalDrivenBehaviourAttributes, self).__setstate__(state)
-        self._leaderSelectDelegateCallback = None
+        
+        self._leaderSelectionWindow = asw.AgentSelectionWindow(self._globalAttributes)
         self._selectCurrentLeadersButtonEnable = None
         
+####################
+    def _getNumberOfLeaders(self):
+        return len(self._leaderAgentIds)
+    numberOfLeaders = property(_getNumberOfLeaders)
+    
+########
+    def makeLeader(self, agentId):
+        if(agentId in self._dataBlobs):
+            dataBlob = self._dataBlobs[agentId]
+            self._leaderAgentIds.add(agentId)
+            
+            if(not dataBlob.didArriveAtBasePyramid):
+                util.LogInfo("Agent %d made leader for behaviour \"%s\"" % (agentId, self.behaviourId))
+                return True
+            else:
+                util.LogWarning("Agent #%d as leader will have no effect - has already progressed to Pyramid-Join stage." % agentId)
+                return False
+        else:
+            raise ValueError("Cannot make leader - agent #%d is not assigned to behaviour \"%s\"" % 
+                             (agentId, self.behaviourId))
+    
+########
+    def unmakeLeader(self, agentId):
+        if(agentId in self._dataBlobs):
+            if(agentId in self._leaderAgentIds):
+                self._leaderAgentIds.remove(agentId)
+            else:
+                util.LogWarning("Agent #%d is not currently a leader agent." % agentId)
+        else:
+            raise ValueError("Cannot un-make leader - agent #%d is not assigned to behaviour \"%s\"" % 
+                             (agentId, self.behaviourId))
+         
+########   
+    def agentIsLeader(self, agentId):
+        return (agentId in self._leaderAgentIds)
+    
+########
+    def allLeaderIds(self):
+        return sorted(self._leaderAgentIds)
+                
 #####################
     def populateUiLayout(self):
         uib.MakeLocationField(self._wallLipGoal, True)
@@ -181,14 +229,19 @@ class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject, abo._FollowOnBehav
 
 #####################            
     def _leaderSelectRequestUiCallback(self, *args):
-        self._leaderSelectDelegateCallback(self, True)
-        
-    def _leaderGetSelectionRequestUiCallback(self, *args):
-        self._leaderSelectDelegateCallback(self, False)
+        self._leaderSelectionWindow.show(("Select leader agents for \"%s\"" % self.behaviourId),
+                                          self._leaderAgentIds, 
+                                          self._onLeaderSelectCompleted, 
+                                          self._dataBlobs.keys())
 
-#####################        
-    def setLeadersAgentsTextDisplay(self, text):
-        self._leadersText.value = text
+########        
+    def _onLeaderSelectCompleted(self, selectionWindow, selectedAgentsList, selectionDisplayString):
+        self._leadersText.value = selectionDisplayString
+        self._leaderAgentIds = set(selectedAgentsList)
+
+########        
+    def _leaderGetSelectionRequestUiCallback(self, *args):
+        scene.SelectParticlesInList(self._leaderAgentIds, self._globalAttributes.particleShapeNode.name())
     
 #####################
     def _updateDataBlobWithAttribute(self, dataBlob, attribute):

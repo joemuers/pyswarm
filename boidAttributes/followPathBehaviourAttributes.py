@@ -6,7 +6,7 @@ import boidTools.uiBuilder as uib
 
 
 ###########################################
-class FollowPathDataBlob(abo.DataBlobBaseObject):
+class FollowPathDataBlob(abo._DataBlobBaseObject):
     
     def __init__(self, agent):
         super(FollowPathDataBlob, self).__init__(agent)
@@ -32,8 +32,8 @@ class FollowPathBehaviourAttributes(abo.AttributesBaseObject, abo._FollowOnBehav
         return "Follow Path Behaviour"
 
 #####################    
-    def __init__(self, sectionTitle, pathCurve=None):
-        super(FollowPathBehaviourAttributes, self).__init__(sectionTitle)
+    def __init__(self, behaviourId, pathCurve=None):
+        super(FollowPathBehaviourAttributes, self).__init__(behaviourId)
         
         self._pathCurve = at.MayaObjectAttribute("Path Curve", pathCurve)
         if(pathCurve is None):

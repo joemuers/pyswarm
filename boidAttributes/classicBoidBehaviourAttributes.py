@@ -5,7 +5,7 @@ import boidTools.uiBuilder as uib
 
 
 ###########################################
-class ClassicBoidDataBlob(abo.DataBlobBaseObject):
+class ClassicBoidDataBlob(abo._DataBlobBaseObject):
     
     def __init__(self, agent):
         super(ClassicBoidDataBlob, self).__init__(agent)
@@ -31,8 +31,8 @@ class ClassicBoidBehaviourAttributes(abo.AttributesBaseObject):
         return "Classic Boid Behaviour"
     
 #####################    
-    def __init__(self, sectionTitle):
-        super(ClassicBoidBehaviourAttributes, self).__init__(sectionTitle)
+    def __init__(self, behaviourId):
+        super(ClassicBoidBehaviourAttributes, self).__init__(behaviourId)
         
         self._alignmentDirectionThreshold = at.IntAttribute("Alignment Threshold", 30, self, maximumValue=359)
         self._alignmentDirectionThreshold_Random = at.RandomizeController(self._alignmentDirectionThreshold)

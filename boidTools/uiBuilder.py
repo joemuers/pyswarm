@@ -449,18 +449,24 @@ def _MakeObjectSelectionList(objectAttribute):
         DestroyWindow(windowHandle)
 
     window = pm.window(windowHandle)
-    pm.paneLayout()
+    formLayout = MakeFormLayout()
+    
+    menuPaneLayout = pm.paneLayout()
     
     def _onObjectSelect(objectAttribute, objectList, objectNamesList, objectMenu):
         index = objectNamesList.index(objectMenu.getSelectItem()[0])
         objectAttribute.value = objectList[index]
     
     objectMenu = pm.iconTextScrollList(allowMultiSelection=False, append=objectNamesList)
-
     if(objectAttribute.getRawAttribute() in objectList):
         objectMenu.setSelectItem(objectNamesList[objectList.index(objectAttribute.getRawAttribute())])
-    
     objectMenu.selectCommand(lambda *args: _onObjectSelect(objectAttribute, objectList, objectNamesList, objectMenu))
+    SetAsChildLayout(menuPaneLayout)
+    
+    buttonLayout = MakeButtonStrip( (("Close", lambda *args: DestroyWindow(window)), ) )
+    SetAsChildLayout(buttonLayout)
+    
+    DistributeButtonedWindowInFormLayout(formLayout, menuPaneLayout, buttonLayout)
     
     window.show()
     
@@ -611,9 +617,10 @@ def MakeRadioButtonGroup(label, buttonTitlesTuple, onChangeCommand,
     buttonKwargs = { "label" : label,
                      ("labelArray%d" % numberOfButtons) : buttonTitlesTuple,
                      "numberOfRadioButtons" : numberOfButtons,
-                     "changeCommand" : onChangeCommand,
                      "columnAttach" : (2, "left", 0),
                      "select" : 1 }
+    if(onChangeCommand is not None):
+        buttonKwargs["changeCommand"] = onChangeCommand
     if(annotation is not None):
         buttonKwargs["annotation"] = annotation
     

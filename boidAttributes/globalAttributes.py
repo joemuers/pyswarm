@@ -3,6 +3,7 @@ import attributeTypes as at
 import boidTools.uiBuilder as uib
 import boidVectors.vector3 as bv3
 import boidTools.util as util
+import boidTools.sceneInterface as scene
 import boidResources.fileLocations as fl
 
 
@@ -39,7 +40,7 @@ class _PreferencesWindow(object):
         
         self._window = None
 
-#####################        
+########
     def __del__(self):
         self._closeWindow()
         
@@ -133,8 +134,10 @@ class GlobalAttributes(abo.AttributesBaseObject):
         return "Global Attributes"
     
 #####################    
-    def __init__(self, sceneBounds1=None, sceneBounds2=None):
+    def __init__(self, particleShapeNode, sceneBounds1=None, sceneBounds2=None):
         super(GlobalAttributes, self).__init__(GlobalAttributes.BehaviourTypeName())
+        
+        self._particleShapeNode = scene.PymelObjectFromObjectName(particleShapeNode)
         
         self._enabled = at.BoolAttribute("Enabled", True)
         self._sceneBounds1 = at.LocationAttribute("Scene Bounds 1", util.InitVal(sceneBounds1, (-20, -20, -20)), self)
@@ -152,6 +155,11 @@ class GlobalAttributes(abo.AttributesBaseObject):
         
         self._updateBoundsVectors()
 
+#####################
+    def _getParticleShapeNode(self):
+        return self._particleShapeNode
+    particleShapeNode = property(_getParticleShapeNode)
+    
 #####################        
     def _createDataBlobForAgent(self, agent):
         # Not needed for global attributes
