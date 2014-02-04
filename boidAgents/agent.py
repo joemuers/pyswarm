@@ -46,7 +46,7 @@ class Agent(BoidBaseObject):
     """
 
     def __init__(self, particleId, attributesController, startingBehaviour):
-        self.state = agt.AgentState(int(particleId), attributesController)
+        self.state = agt.AgentState(particleId, attributesController)
         
         self.currentBehaviour = None
         
@@ -72,24 +72,24 @@ class Agent(BoidBaseObject):
  
 #####################   
     def __eq__(self, other):
-        return (self.particleId == other.particleId) if(other is not None) else False
+        return (self.agentId == other.agentId) if(other is not None) else False
     
     def __ne__(self, other):
-        return (self.particleId != other.particleId) if(other is not None) else True
+        return (self.agentId != other.agentId) if(other is not None) else True
     
     def __lt__(self, other):
-        return self.particleId < other.particleId
+        return self.agentId < other.agentId
     
     def __gt__(self, other):
-        return self.particleId > other.particleId
+        return self.agentId > other.agentId
     
     def __hash__(self):
-        return hash(self.particleId)
+        return hash(self.agentId)
 
 #####################
-    def _getParticleId(self):
-        return self.state.particleId
-    particleId = property(_getParticleId)
+    def _getAgentId(self):
+        return self.state.agentId
+    agentId = property(_getAgentId)
 
     def _getCurrentPosition(self):
         return self.state.position
@@ -126,6 +126,10 @@ class Agent(BoidBaseObject):
     def _getIsTouchingGround(self):
         return self.state.isTouchingGround
     isTouchingGround = property(_getIsTouchingGround)
+    
+    def _getBehaviourAttributes(self):
+        return self.state.behaviourAttributes
+    behaviourAttributes = property(_getBehaviourAttributes)
     
 ##################### 
     def updateCurrentVectors(self, position, velocity):
@@ -169,10 +173,10 @@ class Agent(BoidBaseObject):
             desiredVelocity = bv3.Vector3(self.currentVelocity)
             desiredVelocity.add(self._desiredAcceleration)
             
-            sceneInterface.SetSingleParticleVelocity(particleShapeName, self.particleId, desiredVelocity)
+            sceneInterface.SetSingleParticleVelocity(particleShapeName, self.agentId, desiredVelocity)
             
             if(self._stickinessChanged):
-                sceneInterface.SetSingleParticleStickinessScale(particleShapeName, self.particleId, self.stickinessScale)
+                sceneInterface.SetSingleParticleStickinessScale(particleShapeName, self.agentId, self.stickinessScale)
                 self._stickinessChanged = False
             
             self._needsBehaviourCommit = False

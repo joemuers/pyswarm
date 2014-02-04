@@ -23,7 +23,7 @@ class AgentState(BoidBaseObject):
     """
     
     def __init__(self, particleId, attributesController):
-        self._particleId = particleId
+        self._agentId = int(particleId)
         self._position = bv3.Vector3()
         self._velocity = bv3.Vector3()
         self._acceleration = bv3.Vector3()
@@ -48,33 +48,34 @@ class AgentState(BoidBaseObject):
         
         self._movementAttributes = attributesController.agentMovementAttributes.getDataBlobForAgent(self)
         self._perceptionAttributes = attributesController.agentPerceptionAttributes.getDataBlobForAgent(self)
+        self._perceptionAttributeSet = attributesController.agentPerceptionAttributes
         self.behaviourAttributes = None  # data 'blob' for client behaviours to store instance-level data - not used internally
         self._globalAttributes = attributesController.globalAttributes
         
 ###################        
     def __str__(self):
         return ("id=%d, pos=%s, vel:(hdgH=%d, hdgV=%d, spd=%.2f), acln:(hdgH=%d, hdgV=%d, spd=%.2f), TG=%s" % 
-                (self._particleId, self._position, 
+                (self._agentId, self._position, 
                  self._velocity.degreeHeading(), self._velocity.degreeHeadingVertical(), self._velocity.magnitude(),
                  self._acceleration.degreeHeading(), self._acceleration.degreeHeadingVertical(), self._acceleration.magnitude(),
                  "Y" if(self._isTouchingGround) else "N"))
     
 ################### 
     def _getMetaStr(self):
-        nearStringsList = [("%d," % nearbyAgent.particleId) for nearbyAgent in self.nearbyList]
-        crowdStringsList = [("%d," % crowdingAgent.particleId) for crowdingAgent in self.crowdedList]
-        collisionStringsList = [("%d," % collidingAgent.particleId) for collidingAgent in self.collisionList]
+        nearStringsList = [("%d," % nearbyAgent.agentId) for nearbyAgent in self.nearbyList]
+        crowdStringsList = [("%d," % crowdingAgent.agentId) for crowdingAgent in self.crowdedList]
+        collisionStringsList = [("%d," % collidingAgent.agentId) for collidingAgent in self.collisionList]
         
         return ("id=%d, avP=%s, avV=:(hdgH=%d, hdgV=%d, spd=%.2f), avCP=%s, nextRbld=%d\n\t\tbhvrAtrbts=%s, nr=%s, cr=%s, col=%s" % 
-                (self._particleId, self._avPosition, 
+                (self._agentId, self._avPosition, 
                  self._avVelocity.degreeHeading(), self._avVelocity.degreeHeadingVertical(), self._avVelocity.magnitude(), 
                  self._avCrowdedPos, self._framesUntilNextRebuild, self.behaviourAttributes,
                  ''.join(nearStringsList), ''.join(crowdStringsList), ''.join(collisionStringsList)))       
     
 #####################
-    def getParticleId(self):
-        return self._particleId
-    particleId = property(getParticleId)
+    def _getAgentId(self):
+        return self._agentId
+    agentId = property(_getAgentId)
 
     def _getPosition(self):
         return self._position
@@ -212,7 +213,45 @@ class AgentState(BoidBaseObject):
         self._crowdingWeightedTotal = 0.0
     
         self._needsAveragesRecalc = True
+
+############################## 
+    @staticmethod    
+    def _getWeightingInverseSquareDistance(distanceVector):
+        try:
+            return (1.0 / float(distanceVector.magnitudeSquared()))
+        except ZeroDivisionError:
+            util.LogWarning("Please check your Maya scene - 2 particles have identical locations!")
+            return 1000
+ 
+########   
+    @staticmethod
+    def _getWeightingLinearDistance(distanceVector, maxDistance):
+        return ((maxDistance - distanceVector.magnitude()) / maxDistance)
+
+########
+    @staticmethod    
+    def _getWeightingAngular(angle, forwardAngle, blindAngle):
+        if(angle < forwardAngle):
+            return 1
+        else:
+            variableRange = blindAngle - forwardAngle
+            return (float(variableRange - (angle - forwardAngle)) / variableRange)
+    
+########
+    def _calculateWeighting(self, distanceVector, regionSize, angle, forwardAngle, blindAngle):
+        percetionAttributeSet = self._perceptionAttributeSet
+        if(percetionAttributeSet.useInverseSquareWeighting):
+            proximityWeighting = AgentState._getWeightingInverseSquareDistance(distanceVector)
+        elif(percetionAttributeSet.useLinearWeighting):
+            proximityWeighting = AgentState._getWeightingLinearDistance(distanceVector, regionSize)
+        elif(percetionAttributeSet.useNoWeighting):
+            proximityWeighting = 0
+        else:
+            raise RuntimeError("Unrecognised proximity weighting option.")
         
+        return (proximityWeighting +
+                AgentState._getWeightingAngular(angle, forwardAngle, blindAngle)) 
+             
 ##############################        
     def _onFrameUpdated(self):
         """Resets stats of nearby, crowded and collided agents."""
@@ -252,36 +291,6 @@ class AgentState(BoidBaseObject):
         elif(self._needsAveragesRecalc):
             self._recalculateAverages()
             self._needsAveragesRecalc = False
-
-############################## 
-    @staticmethod    
-    def _getWeightingInverseSquareDistance(distanceVector):
-        try:
-            return (1.0 / float(distanceVector.magnitudeSquared()))
-        except ZeroDivisionError:
-            util.LogWarning("Please check your Maya scene - 2 particles have identical locations!")
-            return 1000
- 
-########   
-    @staticmethod
-    def _getWeightingLinearDistance(distanceVector, maxDistance):
-        return ((maxDistance - distanceVector.magnitude()) / maxDistance)
-
-########
-    @staticmethod    
-    def _getWeightingAngular(angle, forwardAngle, blindAngle):
-#          return 1
-        if(angle < forwardAngle):
-            return 1
-        else:
-            variableRange = blindAngle - forwardAngle
-            return (float(variableRange - (angle - forwardAngle)) / variableRange)
-    
-########
-    @staticmethod
-    def _calculateWeighting(distanceVector, angle, forwardAngle, blindAngle):
-        return (AgentState._getWeightingInverseSquareDistance(distanceVector) +
-                AgentState._getWeightingAngular(angle, forwardAngle, blindAngle)) 
     
 ##############################
     def _recalculateListsAndAverages(self, parentAgent, otherAgents, neighbourhoodSize, 
@@ -296,11 +305,11 @@ class AgentState(BoidBaseObject):
         collisionRegionSquared = collisionRegionSize **2
         
         for otherAgent in otherAgents:
-            otherAgentParticleId = otherAgent.particleId
+            otherAgentParticleId = otherAgent.agentId
             otherAgentState = otherAgent.state
             otherAgentPosition = otherAgentState.position
             
-            if(otherAgentParticleId != self._particleId and
+            if(otherAgentParticleId != self._agentId and
                otherAgentState.isTouchingGround and
                otherAgentParticleId not in self._reciprocalNearbyChecks and
                self.withinCrudeRadiusOfPoint(otherAgentPosition, neighbourhoodSize)):
@@ -313,8 +322,8 @@ class AgentState(BoidBaseObject):
                     if(angleToOtherAgent < visibleAreaAngle):
                         # otherBoid is "nearby" if we're here
                         self.nearbyList.append(otherAgent)
-                        weighting = self._calculateWeighting(directionToOtherAgent, angleToOtherAgent, 
-                                                             forwardAreaAngle, visibleAreaAngle)
+                        weighting = self._calculateWeighting(directionToOtherAgent, neighbourhoodSize, 
+                                                             angleToOtherAgent, forwardAreaAngle, visibleAreaAngle)
                         self._otherAgentWeightingLookup[otherAgentParticleId] = weighting
                         
                         self._avVelocity.add(otherAgentState.velocity * weighting)
@@ -334,10 +343,9 @@ class AgentState(BoidBaseObject):
                                 self._avCollisionDirection.add(otherAgentPosition)
                     
                     directionToOtherAgent.invert()
-                    otherAgentState._makeReciprocalCheck(parentAgent, True, distanceToOtherAgentSquared, directionToOtherAgent,
-                                                         crowdedRegionSquared, collisionRegionSquared, visibleAreaAngle, forwardAreaAngle)
+                    otherAgentState._makeReciprocalCheck(parentAgent, distanceToOtherAgentSquared, directionToOtherAgent)
                     
-            elif(otherAgentParticleId != self._particleId and otherAgent.isTouchingGround):
+            elif(otherAgentParticleId != self._agentId and otherAgent.isTouchingGround):
                 otherAgentState._makeReciprocalCheck(parentAgent)
             # end - for loop
         
@@ -360,7 +368,7 @@ class AgentState(BoidBaseObject):
         """
         if(self.nearbyList):
             for otherAgent in self.nearbyList:
-                weighting = self._otherAgentWeightingLookup[otherAgent.particleId]
+                weighting = self._otherAgentWeightingLookup[otherAgent.agentId]
                 self._avVelocity.add(otherAgent.currentVelocity * weighting)
                 self._avPosition.add(otherAgent.currentPosition * weighting)
                 self._nearbyWeightedTotal += weighting
@@ -370,7 +378,7 @@ class AgentState(BoidBaseObject):
             
             if(self.crowdedList):
                 for otherAgent in self._crowdedList:
-                    weighting = self._otherAgentWeightingLookup[otherAgent.particleId]
+                    weighting = self._otherAgentWeightingLookup[otherAgent.agentId]
                     self._avCrowdedPos.add(otherAgent.currentPosition * weighting)
                     self._crowdingWeightedTotal += weighting
                     
@@ -383,36 +391,43 @@ class AgentState(BoidBaseObject):
                     self._avCollisionDirection.divide(len(self.collisionList))      
 
 ##############################
-    def _makeReciprocalCheck(self, otherAgent, isNearby=False, distanceToOtherAgentSquared=0, directionToOtherAgent=None, 
-                             crowdedRegionSquared=0, collisionRegionSquared=0, visibleAreaAngle=0, forwardAreaAngle=0):
+    def _makeReciprocalCheck(self, otherAgent, distanceToOtherAgentSquared=0, directionToOtherAgent=None):
         """Use this method where possible to avoid duplicating regional distance-checks that have already been made."""
-        self._reciprocalNearbyChecks.add(otherAgent.particleId)
+        self._reciprocalNearbyChecks.add(otherAgent.agentId)
         
-        if(isNearby):
-            angleToOtherAgent = abs(self._velocity.angleTo(directionToOtherAgent, True))
-            if(angleToOtherAgent < visibleAreaAngle):
-                otherAgentPosition = otherAgent.currentPosition
+        if(directionToOtherAgent is not None):
+            perceptionAttributes = otherAgent.state.perceptionAttributes
+            neighbourhoodRegion = perceptionAttributes.neighbourhoodSize
+            
+            if(distanceToOtherAgentSquared < neighbourhoodRegion **2):
+                angleToOtherAgent = abs(self._velocity.angleTo(directionToOtherAgent, True))
+                visibleAreaAngle = 180 - (perceptionAttributes.blindRegionAngle * 0.5)
                 
-                self.nearbyList.append(otherAgent)
-                
-                weighting = self._calculateWeighting(directionToOtherAgent, angleToOtherAgent, 
-                                                     forwardAreaAngle, visibleAreaAngle)
-                self._otherAgentWeightingLookup[otherAgent.particleId] = weighting
-                        
-                self._avVelocity.add(otherAgent.currentVelocity * weighting)
-                self._avPosition.add(otherAgentPosition * weighting)
-                self._nearbyWeightedTotal += weighting
-                
-                if(distanceToOtherAgentSquared < crowdedRegionSquared):
-                    self.crowdedList.append(otherAgent)
-                    self._avCrowdedPos.add(otherAgentPosition * weighting)
-                    self._crowdingWeightedTotal += weighting
+                if(angleToOtherAgent < visibleAreaAngle):
+                    otherAgentPosition = otherAgent.currentPosition
                     
-                    if(distanceToOtherAgentSquared < collisionRegionSquared and angleToOtherAgent < 90):
-                        #"collided" if we're here
-                        self._isCollided = True
-                        self.collisionList.append(otherAgent)
-                        self._avCollisionDirection.add(otherAgentPosition)
+                    self.nearbyList.append(otherAgent)
+                    
+                    forwardAreaAngle = perceptionAttributes.forwardVisionAngle * 0.5
+                    weighting = self._calculateWeighting(directionToOtherAgent, neighbourhoodRegion, 
+                                                         angleToOtherAgent, forwardAreaAngle, visibleAreaAngle)
+                    self._otherAgentWeightingLookup[otherAgent.agentId] = weighting
+                            
+                    self._avVelocity.add(otherAgent.currentVelocity * weighting)
+                    self._avPosition.add(otherAgentPosition * weighting)
+                    self._nearbyWeightedTotal += weighting
+                    
+                    if(distanceToOtherAgentSquared < perceptionAttributes.nearRegionSize **2):
+                        self.crowdedList.append(otherAgent)
+                        self._avCrowdedPos.add(otherAgentPosition * weighting)
+                        self._crowdingWeightedTotal += weighting
+                        
+                        if(distanceToOtherAgentSquared < perceptionAttributes.collisionRegionSize **2
+                            and angleToOtherAgent < 90):
+                            #"collided" if we're here
+                            self._isCollided = True
+                            self.collisionList.append(otherAgent)
+                            self._avCollisionDirection.add(otherAgentPosition)
                         
                         
 # END OF CLASS

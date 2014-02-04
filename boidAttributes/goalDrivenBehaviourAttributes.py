@@ -83,6 +83,7 @@ class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject, abo._FollowOnBehav
         self._useInfectionSpread = at.BoolAttribute("Use Infection Spread", False, self)
         
         self._leadersText = at.StringAttribute("Leader Agents", "")
+        self._leadersText.excludeFromDefaults = True
         self._selectCurrentLeadersButtonEnable = None                            # should *not* be
         self._leaderSelectionWindow = asw.AgentSelectionWindow(globalAttributes) # included in Pickle save
         self._leaderAgentIds = set()
@@ -169,8 +170,8 @@ class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject, abo._FollowOnBehav
         goalChaseFrameLayout = uib.MakeFrameLayout("Goal-Chase Stage")
         columnLayout = uib.MakeColumnLayout()
         uib.MakeCheckboxGroup(self._useInfectionSpread)
-        uib.MakePassiveTextField(self._leadersText, self._leaderSelectRequestUiCallback)
-        selectButtonRow = uib.MakeButtonStandalone("Scene Select", self._leaderGetSelectionRequestUiCallback)
+        uib.MakePassiveTextField(self._leadersText, self._didPressSelectLeaderAgents)
+        selectButtonRow = uib.MakeButtonStandalone("Scene Select", self._didPressSelectLeadersInScene)[0]
         self._selectCurrentLeadersButtonEnable = selectButtonRow.setEnable
         self._selectCurrentLeadersButtonEnable(self._useInfectionSpread.value)
         uib.MakeSliderGroup(self._incubationPeriod)
@@ -228,7 +229,7 @@ class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject, abo._FollowOnBehav
                 self._selectCurrentLeadersButtonEnable(changedAttribute.value)
 
 #####################            
-    def _leaderSelectRequestUiCallback(self, *args):
+    def _didPressSelectLeaderAgents(self, *args):
         self._leaderSelectionWindow.show(("Select leader agents for \"%s\"" % self.behaviourId),
                                           self._leaderAgentIds, 
                                           self._onLeaderSelectCompleted, 
@@ -240,7 +241,7 @@ class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject, abo._FollowOnBehav
         self._leaderAgentIds = set(selectedAgentsList)
 
 ########        
-    def _leaderGetSelectionRequestUiCallback(self, *args):
+    def _didPressSelectLeadersInScene(self, *args):
         scene.SelectParticlesInList(self._leaderAgentIds, self._globalAttributes.particleShapeNode.name())
     
 #####################

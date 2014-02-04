@@ -8,6 +8,10 @@ import agent as ag
 
 
 
+_CALCULATIONS_PER_UPDATE_REPORT_ = 20
+
+
+
 ##############################################
 class AgentsController(BoidBaseObject):
     """Main external interface to the boid system, basically the managing object for a group of boidAgents.  
@@ -21,7 +25,7 @@ class AgentsController(BoidBaseObject):
         self._idToAgentLookup = {}
         self._attributesController = attributesController
         self._behavioursController = behavioursController
-        self._zoneGraph = zg.ZoneGraph(self._attributesController)        
+        self._zoneGraph = zg.ZoneGraph(self._attributesController)     
         
         scene.AddStickinessPerParticleAttributeIfNecessary(self._particleShapeName)
 
@@ -50,8 +54,8 @@ class AgentsController(BoidBaseObject):
     zoneMetaStr = property(_getZoneMetaStr)
 
 #############################        
-    def agent(self, particleId):
-        return self._idToAgentLookup[particleId]
+    def agent(self, agentId):
+        return self._idToAgagentId[agentId]
 
 ########
     def _getAllAgents(self):
@@ -75,15 +79,15 @@ class AgentsController(BoidBaseObject):
         self._getAllParticlesInfo()
         
 #############################
-    def setStickiness(self, particleId, value):
-        self._idToAgentLookup[particleId].stickinessScale = value
-        scene.SetSingleParticleStickinessScale(self._particleShapeName, particleId, value) # do this right now - otherwise will wait until next frame update
+    def setStickiness(self, agentId, value):
+        self._idToAgentLookup[agentId].stickinessScale = value
+        scene.SetSingleParticleStickinessScale(self._particleShapeName, agentId, value) # do this right now - otherwise will wait until next frame update
         
 #############################                     
-    def _killSingleParticle(self, particleId):
+    def _killSingleParticle(self, agentId):
         """IMPORTANT - WILL NOT TAKE EFEECT UNTIL AFTER NEXT FRAME UPDATE"""
-        if(particleId in self._idToAgentLookup):
-            scene.KillParticle(self._particleShapeName, particleId)
+        if(agentId in self._idToAgentLookup):
+            scene.KillParticle(self._particleShapeName, agentId)
         
 #############################
     def onFrameUpdated(self):       
@@ -91,9 +95,25 @@ class AgentsController(BoidBaseObject):
         Should be called from Maya once per frame update.
         """
         self._zoneGraph.rebuildMapIfNecessary()
+        self._globalAttributes.setStatusReadoutWorking(2)
+
         self._getAllParticlesInfo()
-        self._calculateAgentsBehaviour()
+        self._globalAttributes.setStatusReadoutWorking(5)
+        
+        numberOfAgents = len(self._idToAgentLookup)
+        numberOfProgressUpdates = ((numberOfAgents / _CALCULATIONS_PER_UPDATE_REPORT_) 
+                                   if(numberOfAgents >= _CALCULATIONS_PER_UPDATE_REPORT_) else 1)
+        progressUpdateStepSize = 90 / numberOfProgressUpdates
+        self._calculateAgentsBehaviour(5, progressUpdateStepSize)
+        
+        self._globalAttributes.setStatusReadoutWorking(95)
         self._updateAllParticles()
+        
+        self._globalAttributes.setStatusReadoutWorking(100)
+        
+########
+    def onCalculationsCompleted(self):
+        pass
 
 #############################
     def _buildParticleList(self, fullRebuild=True):
@@ -105,11 +125,12 @@ class AgentsController(BoidBaseObject):
             
             if(self._particleCount > 0):
                 #particle IDs are NOT guaranteed to come in numerical order => have to use this list as reference
-                self._particleIdsOrdering = scene.ParticleIdsListForParticleShape(self._particleShapeName)             
+                self._particleIdsOrdering = scene.ParticleIdsListForParticleShape(self._particleShapeName)
+                startingBehaviour = self._behavioursController.defaultBehaviour
                 if(self._particleIdsOrdering is not None):
                     for particleId in self._particleIdsOrdering:
-                        newAgent = ag.Agent(int(particleId), self._attributesController, self._behavioursController.defaultBehaviour)
-                        self._idToAgentLookup[newAgent.particleId] = newAgent
+                        newAgent = ag.Agent(particleId, self._attributesController, startingBehaviour)
+                        self._idToAgentLookup[newAgent.agentId] = newAgent
         else:
             numParticles = self._particleCount
             
@@ -121,11 +142,12 @@ class AgentsController(BoidBaseObject):
                 keysList = sorted(self._idToAgentLookup.keys())
                 lastKey = keysList[-1] if keysList else -1
                 newAgentsList = []
+                startingBehaviour = self._behavioursController.defaultBehaviour
                 
                 for ptclId in reversed(sortedIdsList):
                     if(ptclId > lastKey):
-                        newAgent = ag.Agent(int(ptclId), self._attributesController, self._behavioursController.defaultBehaviour)
-                        self._idToAgentLookup[newAgent.particleId] = newAgent   
+                        newAgent = ag.Agent(int(ptclId), self._attributesController, startingBehaviour)
+                        self._idToAgentLookup[newAgent.agentId] = newAgent   
                         newAgentsList.append(newAgent)
                     else:
                         break
@@ -138,8 +160,8 @@ class AgentsController(BoidBaseObject):
                 particleSet = set(self._particleIdsOrdering)
                 boidAgentSet = set(self._idToAgentLookup.keys())
                 
-                for particleId in boidAgentSet.difference(particleSet):
-                    del self._idToAgentLookup[particleId]
+                for agentId in boidAgentSet.difference(particleSet):
+                    del self._idToAgentLookup[agentId]
             else:
                 util.LogWarning("Possible logic error - partial rebuild of %s but with no change in particle count." 
                                 % self._particleShapeName)
@@ -196,12 +218,19 @@ class AgentsController(BoidBaseObject):
             self._idToAgentLookup[particleId]._stickinessScale = stickiness
 
 #############################
-    def _calculateAgentsBehaviour(self):     
+    def _calculateAgentsBehaviour(self, progressCurrentValue, progressUpdateStepSize):     
         """Iterates through all agents & calculates desired behaviour based on boids rules."""
+
+        nextProgressUpdate = progressCurrentValue + progressUpdateStepSize
         for agent in self._idToAgentLookup.itervalues():
             regionGenerator = self._zoneGraph.nearbyAgentsIterableForAgent(agent)
             agent.calculateDesiredBehaviour(regionGenerator)
-
+            
+            progressCurrentValue += 1
+            if(progressCurrentValue == nextProgressUpdate):
+                self._globalAttributes.setStatusReadoutWorking(progressCurrentValue)
+                nextProgressUpdate += progressUpdateStepSize
+                
 #############################
     def _updateSingleParticle(self, particleId):
         singleParticle = self._idToAgentLookup[particleId]
@@ -221,12 +250,12 @@ class AgentsController(BoidBaseObject):
 #############################            
     def _paintBlack(self):
         for agent in self._idToAgentLookup.itervalues:
-            scene.SetParticleColour(self._particleShapeName, agent.particleId, 0)
+            scene.SetParticleColour(self._particleShapeName, agent.agentId, 0)
   
 ########          
     def setDebugColour(self, agent):
         if(self._globalAttributes.useDebugColours):
-            scene.SetParticleColour(self._particleShapeName, agent.particleId, agent.debugColour)     
+            scene.SetParticleColour(self._particleShapeName, agent.agentId, agent.debugColour)     
         
 #############################         
     def getAgentsFollowingBehaviour(self, behaviour):
@@ -251,7 +280,7 @@ class AgentsController(BoidBaseObject):
                 behaviour.assignAgent(agentObject)
                 
             except TypeError as e:
-                print e
+                util.LogError(e)
         
 ########        
     def makeAllAgentsFollowBehaviour(self, behaviour):
@@ -272,10 +301,10 @@ class AgentsController(BoidBaseObject):
         return
 
 #############################  
-    def makeJump(self, particleId):
-        """Makes agent with corresponding particleId 'jump'"""
-        self._getSingleParticleInfo(particleId)
-        agent = self._idToAgentLookup[particleId]
+    def makeJump(self, agentId):
+        """Makes agent with corresponding agentId 'jump'"""
+        self._getSingleParticleInfo(agentId)
+        agent = self._idToAgentLookup[agentId]
         agent._desiredAcceleration.reset()
         agent._jump()
         agent.commitNewBehaviour(self._particleShapeName)

@@ -30,7 +30,11 @@ class PerceptionAttributesDataBlob(abo._DataBlobBaseObject):
 
 ##########################################
 class AgentPerceptionAttributes(abo.AttributesBaseObject):
+    
+    _WeightingNone_, _WeightingLinear_, _WeightingInverseSquare_ = range(3)
+    _WeightingStrings_ = ["None", "Linear", "Inverse Square"]
  
+#####################
     @classmethod
     def BehaviourTypeName(cls):
         return "Agent Awareness"
@@ -39,6 +43,10 @@ class AgentPerceptionAttributes(abo.AttributesBaseObject):
     def __init__(self):
         super(AgentPerceptionAttributes, self).__init__(AgentPerceptionAttributes.BehaviourTypeName())
         
+        self._proximityWeightingOption = AgentPerceptionAttributes._WeightingInverseSquare_
+        self._proximityWeightingString = at.StringAttribute("Proximity Weighting", 
+                                                      AgentPerceptionAttributes._WeightingStrings_[self._proximityWeightingOption],
+                                                      self)
         self._neighbourhoodSize = at.FloatAttribute("Neighbourhood Size", 4.0, self)
         self._neighbourhoodSize_Random = at.RandomizeController(self._neighbourhoodSize)
         self._nearRegionSize = at.FloatAttribute("Near Region Size", 1.0, self)
@@ -58,6 +66,8 @@ class AgentPerceptionAttributes(abo.AttributesBaseObject):
         regionSizeFrame = uib.MakeFrameLayout("Region Size")
         columnLayout = uib.MakeColumnLayout()
         
+        uib.MakeStringOptionsField(self._proximityWeightingString, AgentPerceptionAttributes._WeightingStrings_)
+        uib.MakeSeparator()
         uib.MakeSliderGroup(self._neighbourhoodSize)
         uib.MakeRandomizerFields(self._neighbourhoodSize_Random)
         uib.MakeSeparator()
@@ -102,6 +112,8 @@ class AgentPerceptionAttributes(abo.AttributesBaseObject):
             self._nearRegionSize.maximumValue = self._neighbourhoodSize.value
         elif(changedAttribute is self._nearRegionSize):
             self._collisionRegionSize.maximumValue = self._nearRegionSize.value
+        elif(changedAttribute is self._proximityWeightingString):
+            self._proximityWeightingOption = AgentPerceptionAttributes._WeightingStrings_.index(changedAttribute.value)
 
 #####################         
     def _getMaxNeighbourhoodSize(self):
@@ -110,18 +122,37 @@ class AgentPerceptionAttributes(abo.AttributesBaseObject):
     maxNeighbourhoodSize = property(_getMaxNeighbourhoodSize)
 
 #####################
+    def _getUseNoWeighting(self):
+        return self._proximityWeightingOption == AgentPerceptionAttributes._WeightingNone_
+    useNoWeighting = property(_getUseNoWeighting)
+
+########    
+    def _getUseLinearWeighting(self):
+        return self._proximityWeightingOption == AgentPerceptionAttributes._WeightingLinear_
+    useLinearWeighting = property(_getUseLinearWeighting)
+
+########    
+    def _getUseInverseSquareWeighting(self):
+        return self._proximityWeightingOption == AgentPerceptionAttributes._WeightingInverseSquare_
+    useInverseSquareWeighting = property(_getUseInverseSquareWeighting)
+    
+########
     def _getNeighbourhoodSizeForBlob(self, dataBlob):
         return self._neighbourhoodSize_Random.valueForIntegerId(dataBlob.agentId)
     
+########
     def _getNearRegionSizeForBlob(self, dataBlob):
         return self._nearRegionSize_Random.valueForIntegerId(dataBlob.agentId)
     
+########
     def _getCollisionRegionSizeForBlob(self, dataBlob):
         return self._collisionRegionSize_Random.valueForIntegerId(dataBlob.agentId)
         
+########
     def _getBlindRegionAngleForBlob(self, dataBlob):
         return self._blindRegionAngle_Random.valueForIntegerId(dataBlob.agentId)
     
+########
     def _getForwardVisionAngleForBlob(self, dataBlob):
         return self._forwardVisionAngle_Random.valueForIntegerId(dataBlob.agentId)
 

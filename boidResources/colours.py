@@ -4,7 +4,11 @@ Tuples are RGB values.
 
 
 
-##########################
+#################################################
+#######    BEHAVIOUR DEBUG COLOURS   ############
+#################################################
+
+
 DefaultColour = (0, 0, 0)
 
 ##########################
@@ -32,6 +36,32 @@ GoalDriven_ReachedGoal = (0, 0.7, 0)
 
 ###########################
 FollowPath_OnPath = (0.5, 0.5, 0)
+
+###########################
+
+
+
+#################################################
+#######    STATUS TEXTFIELD COLOURS   ###########
+#################################################
+
+
+def _GetDefaultTextfieldBackground(brighten=0.0):
+    import pymel.core as pm
+    win = pm.window()
+    row = pm.rowLayout()
+    txtField = pm.textField()
+    backgroundColour = tuple(txtField.getBackgroundColor())
+    backgroundColour = (backgroundColour[0] + brighten, backgroundColour[1] + brighten, backgroundColour[2] + brighten)
+    
+    pm.deleteUI(win)
+    return backgroundColour
+
+#############################
+StatusTextfieldBackground_Default = _GetDefaultTextfieldBackground(0.1)
+
+StatusTextfieldBackground_Error = (0.8, 0, 0)
+
 
 
 # END OF MODULE

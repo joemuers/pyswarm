@@ -7,6 +7,7 @@ import boidTools.util as util
 import boidTools.agentSelectionWindow as asw
 import boidTools.sceneInterface as scene
 import boidResources.fileLocations as fl
+import boidResources.packageInfo as pi
 
 import os
 import sys
@@ -21,41 +22,63 @@ except:
 _SwarmInstances_ = []
 
 #####
-def InitialiseSwarm(particleShapeNode=None, sceneBounds1=None, sceneBounds2=None):
-    return util.SafeEvaluate(True, _InitialiseSwarm, particleShapeNode, sceneBounds1, sceneBounds2)
-
-#####
-def _InitialiseSwarm(particleShapeNode=None, sceneBounds1=None, sceneBounds2=None):
+def _InitialiseSwarm(particleShapeNode=None, boundingLocators=None):
     """Creates a new swarm instance for the given particle node.
     If a swarm already exists for that particle node, it will be replaced.
     """
     global _SwarmInstances_
-    _SceneSetup(False)
+    _SceneSetup(False)  
     
     if(particleShapeNode is None):
         selectedParticleNodes = scene.GetSelectedParticleShapeNodes()
         if(selectedParticleNodes):
-            newSwarms = [_InitialiseSwarm(particleNode, sceneBounds1, sceneBounds2) 
+            newSwarms = [_InitialiseSwarm(particleNode, boundingLocators) 
                          for particleNode in selectedParticleNodes]            
             return newSwarms if(len(newSwarms) > 1) else newSwarms[0]
         else:
-            raise RuntimeError("No particle node specified - you must either select one in the scene \
-or pass in a reference via the \"particleShapeNode\" argument to this method.")
+            raise RuntimeError("No particle node specified - you must either select one in the scene " +
+                               "or pass in a reference via the \"particleShapeNode\" argument to this method.")
     else:
         try:
             RemoveSwarmInstanceForParticle(particleShapeNode)
         except:
             pass
         
-        newSwarm = SwarmController(particleShapeNode, sceneBounds1, sceneBounds2)
+        if(isinstance(particleShapeNode, basestring)):
+            particleShapeNode = scene.PymelObjectFromObjectName(particleShapeNode, True, scene.ParticlePymelType())
+        elif(not isinstance(particleShapeNode, scene.ParticlePymelType())):
+            raise TypeError("particleShapeNode unrecognised (expected Maya object path to nParticle instance, " +
+                            (" or Pymel type %s, got %s)." % (scene.ParticlePymelType(), type(particleShapeNode))))
+        
+        if(boundingLocators is None):
+            selectedLocators = scene.GetSelectedLocators()
+            boundingLocators = selectedLocators if(len(selectedLocators) >= 2) else None
+        else:
+            if(not isinstance(boundingLocators, (tuple, list)) or len(boundingLocators) < 2):
+                raise ValueError("boundingLocators unrecognised (expected (Locator,Locator) tuple, or <None> - got: %s)." 
+                                 % boundingLocators)
+            elif(isinstance(boundingLocators[0], basestring) and isinstance(boundingLocators[1], basestring)):
+                locator1 = scene.PymelObjectFromObjectName(boundingLocators[0], True, scene.LocatorPymelType())
+                locator2 = scene.PymelObjectFromObjectName(boundingLocators[1], True, scene.LocatorPymelType())
+                boundingLocators = (locator1, locator2)
+            elif(not isinstance(boundingLocators[0], scene.LocatorPymelType()) or 
+                 not isinstance(boundingLocators[1], scene.LocatorPymelType())):
+                raise TypeError("boundingLocators unrecognised (expected tuple pair of Maya object paths to Locator instances, " +
+                                ("tuple pair of Pymel type %s, or <None> - got (%s,%s))." 
+                                 % (scene.LocatorPymelType(), type(boundingLocators[0]), type(boundingLocators[1]))))
+            
+        
+        newSwarm = SwarmController(particleShapeNode, boundingLocators)
         _SwarmInstances_.append(newSwarm)
         newSwarm.showUI()
         
-        util.LogInfo("Created new %s instance for nParticle %s" % (util.PackageName(), newSwarm.particleShapeName))
+        util.LogInfo("Created new %s instance for nParticle %s" % (pi.PackageName(), newSwarm.particleShapeName))
         
         return newSwarm
 
 #####
+def InitialiseSwarm(particleShapeNode=None, boundingLocators=None):
+    return util.SafeEvaluate(True, _InitialiseSwarm, particleShapeNode, boundingLocators)
 InitialiseSwarm.__doc__ = _InitialiseSwarm.__doc__ 
 
 #############################
@@ -76,32 +99,41 @@ def GetSwarmInstanceForParticle(particleShapeNode):
         if(pymelShapeNode.name() == swarmController.particleShapeName):
             return swarmController
         
-    return None
+    util.LogError("No %s instance exists for %s" (pi.PackageName(), particleShapeNode))
 
 ##############################
 def RemoveSwarmInstanceForParticle(particleShapeNode):
     RemoveSwarmInstance(GetSwarmInstanceForParticle(particleShapeNode))
 
 #####
-def RemoveSwarmInstance(swarmInstance):
+def _RemoveSwarmInstance(swarmInstance):
     global _SwarmInstances_
     
     if(swarmInstance in _SwarmInstances_):
         swarmInstance.hideUI()
         _SwarmInstances_.remove(swarmInstance)
+        name = swarmInstance.particleShapeName
+        swarmInstance._decommision()
         
-        util.LogInfo("%s instance for %s deleted." % (util.PackageName(), swarmInstance.particleShapeName))
+        util.LogInfo("%s instance for %s deleted." % (pi.PackageName(), name))
     elif(swarmInstance is not None and isinstance(swarmInstance, SwarmController)):
         swarmInstance.hideUI()
+        swarmInstance._decommision()
+        
         util.LogWarning("Attempt to delete unregistered swarm instance - likely causes:\n\
 swarmController module as been reloaded, leaving \'orphan\' instances, or,\n\
 an instance has been created indepedently by the user.\n\
 It is recommended that swarm management is done only via the module methods provided.")
     elif(str(type(swarmInstance) == str(SwarmController))):
         raise RuntimeError("%s module-level variables missing - likely due to reload. Recommend you re-initialise completely." 
-                           % util.PackageName())
+                           % pi.PackageName())
     else:
         raise TypeError("Got %s of type %s (expected %s)." % (swarmInstance, type(swarmInstance), SwarmController))
+
+#####
+def RemoveSwarmInstance(swarmInstance):
+    return util.SafeEvaluate(True, _RemoveSwarmInstance, swarmInstance)
+RemoveSwarmInstance.__doc__ = _RemoveSwarmInstance.__doc__
 
 #####
 def RemoveAllSwarmInstances():
@@ -112,7 +144,7 @@ def RemoveAllSwarmInstances():
 _PICKLE_PROTOCOL_VERSION_ = 2 # Safer to stick to constant version rather than using "highest"
 
 #####
-def SaveSceneToFile(fileLocation=None):
+def _SaveSceneToFile(fileLocation=None):
     global _PICKLE_PROTOCOL_VERSION_
     global _SwarmInstances_
     
@@ -121,10 +153,15 @@ def SaveSceneToFile(fileLocation=None):
     pickle.dump(_SwarmInstances_, saveFile, _PICKLE_PROTOCOL_VERSION_)
     saveFile.close()
     
-    util.LogInfo("Saved %s scene to file %s" % (util.PackageName(), fileLocation))
+    util.LogInfo("Saved %s scene to file %s" % (pi.PackageName(), fileLocation))
     
 #####
-def LoadSceneFromFile(fileLocation=None):
+def SaveSceneToFile(fileLocation=None):
+    return util.SafeEvaluate(True, _SaveSceneToFile, fileLocation)
+SaveSceneToFile.__doc__ = _SaveSceneToFile.__doc__
+    
+#####
+def _LoadSceneFromFile(fileLocation=None):
     global _SwarmInstances_
     
     fileLocation = util.InitVal(fileLocation, fl.SaveFileLocation())
@@ -134,7 +171,7 @@ def LoadSceneFromFile(fileLocation=None):
             newInstances = pickle.load(readFile)
         except Exception as e:
             util.LogWarning("Cannot restore %s session - error \"%s\" while reading file: %s" % 
-                            (util.PackageName(), e, fileLocation))
+                            (pi.PackageName(), e, fileLocation))
             raise e
         
         while(_SwarmInstances_):
@@ -144,10 +181,15 @@ def LoadSceneFromFile(fileLocation=None):
             swarmInstance.showUI()
             _SwarmInstances_.append(swarmInstance)
             
-        util.LogInfo("Opened %s scene from file %s" % (util.PackageName(), fileLocation))
+        util.LogInfo("Opened %s scene from file %s" % (pi.PackageName(), fileLocation))
     else:
         raise ValueError("Cannot open file %s" % fileLocation)
-    
+
+#####
+def LoadSceneFromFile(fileLocation=None):
+    return util.SafeEvaluate(True, _LoadSceneFromFile, fileLocation)
+LoadSceneFromFile.__doc__ = _LoadSceneFromFile.__doc__
+
 #############################        
 def _OnFrameUpdated():
     global _SwarmInstances_
@@ -167,10 +209,10 @@ def _SceneSetup(calledExternally=True):
         util.AddSceneSavedScriptJobIfNecessary(SaveSceneToFile)
         
         try:
-            LoadSceneFromFile()
+            _LoadSceneFromFile()
             util.LogInfo("Scene setup complete.")
         except:
-            message = ("Scene setup complete.\n\tNo previous %s scene file found" % util.PackageName())
+            message = ("Scene setup complete.\n\t\t\tNo previous %s scene file found" % pi.PackageName())
             if(not calledExternally):
                 message += '.'
             else:
@@ -194,7 +236,7 @@ def _SceneTeardown():
 if(__name__ == "__main__"):
     print "TODO - add unit tests"
 else:
-    util.LogInfo("%s initialised." % util.PackageName())
+    util.LogInfo("%s initialised." % pi.PackageName())
     _SceneSetup()
 
 # END OF MODULE METHODS
@@ -205,21 +247,11 @@ else:
 #========================================================
 class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
     
-    def __init__(self, particleShapeNode, sceneBounds1=None, sceneBounds2=None):
-        if(not isinstance(particleShapeNode, scene.ParticlePymelType())):
-            raise TypeError("Cannot create swarm with this node type (expected %s, got %s)." %
-                            scene.ParticlePymelType(), type(particleShapeNode))
-            
-        if(sceneBounds1 is None and sceneBounds2 is None):
-            locatorsList = scene.GetSelectedLocators()
-            if(len(locatorsList) >= 2):
-                sceneBounds1 = locatorsList[0]
-                sceneBounds2 = locatorsList[1]
-        
-        self._attributesController = bat.AttributesController(particleShapeNode, sceneBounds1, sceneBounds2)
+    def __init__(self, particleShapeNode, boundingLocators=None):
+        self._attributesController = bat.AttributesController(particleShapeNode, SaveSceneToFile, boundingLocators)
         self._behavioursController = bbc.BehavioursController(self._attributesController)
         self._agentsController = bac.AgentsController(self._attributesController, self._behavioursController)
-        self._uiController = uic.UiController(self)
+        self._uiController = uic.UiController(self._attributesController, self)
         self._behaviourAssignmentSelectionWindow = asw.AgentSelectionWindow(self._attributesController.globalAttributes)
         
         self._agentsController._buildParticleList()
@@ -242,13 +274,18 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
 ########        
     def __setstate__(self, state):
         super(SwarmController, self).__setstate__(state)
-        self._behaviourAssignmentSelectionWindow = asw.AgentSelectionWindow(self._attributesController.globalAttributes)
+        self._behaviourAssignmentSelectionWindow = asw.AgentSelectionWindow(self._globalAttributes)
                                                                             
         self.showUI()
 
+#############################
+    def _getGlobalAttributes(self):
+        return self._attributesController.globalAttributes
+    _globalAttributes = property(_getGlobalAttributes)
+    
 #############################    
     def _getParticleShapeName(self):
-        return self._attributesController.globalAttributes.particleShapeNode.name()
+        return self._globalAttributes.particleShapeNode.name()
     particleShapeName = property(_getParticleShapeName)
 
 #############################    
@@ -258,28 +295,50 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
     
 #############################        
     def _onFrameUpdated(self):
-        self._attributesController.onFrameUpdated()
-        
-        if(self._attributesController.globalAttributes.enabled):
-            self._behavioursController.onFrameUpdated()
-            self._agentsController.onFrameUpdated()
-        
+        try:
+            self._globalAttributes.setStatusReadoutWorking(1)
+            
+            self._attributesController.onFrameUpdated()
+            
+            if(self._globalAttributes.enabled):
+                self._behavioursController.onFrameUpdated()
+                self._agentsController.onFrameUpdated()
+            
+            self._globalAttributes.setStatusReadoutIdle()
+            
+            self._attributesController.onCalculationsCompleted()
+            self._behavioursController.onCalculationsCompleted()
+            self._agentsController.onCalculationsCompleted()
+            
+        except Exception as e:
+            self._globalAttributes.setStatusReadoutError()
+            util.StopPlayback()
+            util.LogException(e)
+
 #############################    
     def enable(self):
-        if(not self._attributesController.globalAttributes.enabled):
-            self._attributesController.globalAttributes.enabled = True
+        if(not self._globalAttributes.enabled):
+            self._globalAttributes.enabled = True
             util.LogInfo("updates are now ACTIVE.", self.particleShapeName)
         else:
             util.LogWarning("updates already enabled.", self.particleShapeName)
 
 ########
     def disable(self):
-        self._attributesController.globalAttributes.enabled = False
+        self._globalAttributes.enabled = False
         util.LogInfo("updates DISABLED.", self.particleShapeName)
         
 ########
+    def _decommision(self):
+        self._attributesController = None
+        self._behavioursController = None
+        self._agentsController = None
+        self._uiController = None
+        self._behaviourAssignmentSelectionWindow  = None
+        
+########
     def showUI(self):
-        self._uiController.buildUi(("%s - %s" % (util.PackageName(), self.particleShapeName)), self._attributesController)
+        self._uiController.buildUi()
 
 ########            
     def hideUI(self):
@@ -328,6 +387,12 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
         util.LogDebug("Re-setting default attribute values with current values...")
         self._attributesController.makeCurrentAttributeValuesDefault(behaviourId)
         
+########
+    def changeDefaultBehaviour(self, behaviourId):
+        oldDefaultBehaviourId = self._globalAttributes.defaultBehaviourId
+        if(self._attributesController.changeDefaultBehaviour(behaviourId)):
+            self._uiController.updateDefaultBehaviourInUI(oldDefaultBehaviourId, self._globalAttributes.defaultBehaviourId)
+        
 ########       
     def addNewBehaviour(self, behaviourTypeName):
         newBehaviour = self._attributesController.addBehaviourForTypeName(behaviourTypeName)
@@ -355,13 +420,13 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
             allAgents = set(self._agentsController.allAgents)
             currentSelection = list(allAgents.difference(set(currentSelection)))
         
-        particleIds = [agent.particleId for agent in currentSelection]
+        particleIds = [agent.agentId for agent in currentSelection]
         scene.SelectParticlesInList(particleIds, self.particleShapeName) 
         
 ########
     def showAssignAgentsWindowForBehaviour(self, behaviourId):
         behaviour = self._behavioursController.behaviourWithId(behaviourId)
-        currentSelection = [agent.particleId for agent in self._agentsController.getAgentsFollowingBehaviour(behaviour)]
+        currentSelection = [agent.agentId for agent in self._agentsController.getAgentsFollowingBehaviour(behaviour)]
         
         self._behaviourAssignmentSelectionWindow.dataBlob = behaviourId
         self._behaviourAssignmentSelectionWindow.show("Assign agents to \"%s\"" % behaviourId, 
@@ -375,7 +440,7 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
 ########    
     def getAssignedAgentIdsForBehaviour(self, behaviourId):
         behaviour = self._behavioursController.behaviourWithId(behaviourId)
-        return [agent.particleId 
+        return [agent.agentId 
                 for agent in sorted(self._agentsController.getAgentsFollowingBehaviour(behaviour))]
             
 #############################                  
@@ -403,7 +468,7 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
 #############################        
     def _onBehaviourAttributesDeleted(self, deletedAttributes):
         deletedBehaviourId = deletedAttributes.behaviourId
-        deletedBehaviour = self._behavioursController.removeBehaviourForId(deletedBehaviourId)
+        deletedBehaviour = self._behavioursController.removeBehaviourWithId(deletedBehaviourId)
         agentsFollowingOldBehaviour = self._agentsController.getAgentsFollowingBehaviour(deletedBehaviour)
         
         self._agentsController.makeAgentsFollowDefaultBehaviour(agentsFollowingOldBehaviour)
@@ -416,26 +481,26 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
         """Callback for agent selection window."""
         if(selectionWindow is self._behaviourAssignmentSelectionWindow):
             behaviourId = selectionWindow.dataBlob
-            behaviour = self._behavioursController.behaviourWithId(behaviourId)
-            defaultBehaviour = self._behavioursController.defaultBehaviour
+            defaultBehaviourId = self._globalAttributes.defaultBehaviourId
             
             toUnassign = selectionWindow.originalSelection.difference(selectedAgentsList)
             if(toUnassign):
-                if(behaviour is defaultBehaviour):
+                if(behaviourId == defaultBehaviourId):
                     util.LogWarning("Cannot implicitly un-assign agents from default behaviour \"%s\"." % 
                                     behaviourId)
                 else:
                     self._agentsController.makeAgentsFollowDefaultBehaviour(toUnassign)
-            
+
+            behaviour = self._behavioursController.behaviourWithId(behaviourId)            
             self._agentsController.makeAgentsFollowBehaviour(selectedAgentsList, behaviour)
             self._behaviourAssignmentSelectionWindow.dataBlob = None
             
             if(selectedAgentsList):
                 util.LogInfo("The following agents are now assigned to behaviour \"%s\": %s." %
                              (behaviourId, ', '.join([str(agentId) for agentId in selectedAgentsList])))
-            elif(behaviour is not defaultBehaviour):
+            elif(behaviourId != defaultBehaviourId):
                 util.LogInfo("All agents previously following \"%s\" now assigned to default behaviour \"%s\"." 
-                             % (behaviourId, defaultBehaviour.behaviourId))
+                             % (behaviourId, defaultBehaviourId))
                 
 
 # END OF CLASS - SwarmController

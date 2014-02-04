@@ -77,6 +77,9 @@ class Vector2(BoidBaseObject):
     
     def __gt__(self, other):
         return not IsVector2(other) or self.magnitudeSquared() > other.magnitudeSquared()
+    
+    def __nonzero__(self):
+        return not self.isNull()
 
 ####################### 
     def _get_u(self):
@@ -104,6 +107,13 @@ class Vector2(BoidBaseObject):
         self.u = value[0]
         self.v = value[1]
     valueAsTuple = property(_getValueAsTuple, _setValueAsTuple)
+    
+#######################
+    def setValueFromString(self, valueString):
+        tokens = valueString.strip(" <>").split(', ')
+        
+        self.u = float(tokens[0].lstrip('u='))
+        self.v = float(tokens[1].lstrip('v='))
     
 #######################     
     def isNull(self):

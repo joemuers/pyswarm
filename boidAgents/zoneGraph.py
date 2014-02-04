@@ -1,6 +1,7 @@
 from boidBaseObject import BoidBaseObject
 from boidAttributes.attributesBaseObject import AttributesListener
 import boidVectors.vector3 as bv3
+import boidTools.util as util
 
 import itertools
 
@@ -131,7 +132,8 @@ class ZoneGraph(BoidBaseObject, AttributesListener):
             if(resolutionX == 1 and resolutionZ == 1):
                 self._useSpatialHashing = False
                 self._zoneMap = []
-                print("WARNING - grid too small or agent neighbourhood region too large.  Agent lookups will NOT be optimised.")
+                
+                util.LogWarning("Grid too small or agent neighbourhood region too large. Agent lookups will NOT be optimised.")
             else:
                 zMinBase = self._zZoneOrigin
                 zMaxBase = zMinBase + zoneSize
@@ -166,7 +168,7 @@ class ZoneGraph(BoidBaseObject, AttributesListener):
                     xMin += zoneSize
                     xMax += zoneSize
                             
-                print("Rebuilt ZoneGraph - res= %dx%d (zone size=%.2f)\nX=%.2f to %2f,Z=%.2f to %.2f" %
+                util.LogDebug("Rebuilt ZoneGraph - res= %dx%d (zone size=%.2f)\nX=%.2f to %2f,Z=%.2f to %.2f" %
                     (self._resolutionX, self._resolutionZ, self._zoneSize, 
                      self._xZoneOrigin, xMax - zoneSize, self._zZoneOrigin, zMax - zoneSize))
                 
@@ -219,7 +221,7 @@ class ZoneGraph(BoidBaseObject, AttributesListener):
     def updateAgentPosition(self, agent):
         if(self._useSpatialHashing):
             spatialKey = self._spatialKeyFromVector(agent.currentPosition)
-            previousSpatialKey = self._previousKeyLookup.get(agent.particleId)
+            previousSpatialKey = self._previousKeyLookup.get(agent.agentId)
             
             if(spatialKey != previousSpatialKey):
                 agentZone = self._zoneForSpatialKey(spatialKey)
@@ -229,7 +231,7 @@ class ZoneGraph(BoidBaseObject, AttributesListener):
                     previousZone = self._zoneForSpatialKey(previousSpatialKey)
                     previousZone.removeAgent(agent)
 
-                self._previousKeyLookup[agent.particleId] = spatialKey
+                self._previousKeyLookup[agent.agentId] = spatialKey
             
 ########################################                
     def updateAllAgentPositions(self, agentsList):
@@ -250,7 +252,7 @@ class ZoneGraph(BoidBaseObject, AttributesListener):
 ########################################                
     def removeAgent(self, agent):
         if(self._useSpatialHashing):
-            spatialKey = self._previousKeyLookup.get(agent.particleId)
+            spatialKey = self._previousKeyLookup.get(agent.agentId)
             zone = self._zoneForSpatialKey(spatialKey)
             zone.removeAgent(agent)
         else:

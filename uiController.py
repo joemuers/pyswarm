@@ -2,9 +2,18 @@ from boidBaseObject import BoidBaseObject
 import boidTools.uiBuilder as uib
 import boidTools.util as util
 import boidResources.fileLocations as fl
+import boidResources.packageInfo as pi
 
 from abc import ABCMeta, abstractmethod
 import weakref
+
+
+
+_TOP_PANEL_COMPONENTS_WIDTH_ = 400
+
+_CHANGE_DEFAULT_ANNOTATION_ = "\"%s\" is already the default." 
+_REMOVE_BEHAVIOUR_ANNOTATION_ = "Remove this behaviour, assigned agents will revert to default behaviour."
+_CANNOT_REMOVE_BEHAVIOUR_ANNOTATION_ = "Default behaviour - cannot be deleted."
 
 
 
@@ -48,6 +57,10 @@ class UiControllerDelegate(object):
  
 ######## - Behaviours Menu
     @abstractmethod
+    def changeDefaultBehaviour(self, behaviourId):
+        raise NotImplemented
+    
+    @abstractmethod
     def addNewBehaviour(self, behaviourName):
         raise NotImplemented
     
@@ -76,12 +89,12 @@ class UiControllerDelegate(object):
 ########################################
 class UiController(BoidBaseObject):
     
-    def __init__(self, delegate):
+    def __init__(self, attributesController, delegate):
         if(not isinstance(delegate, UiControllerDelegate)):
             raise TypeError("Expected subclass of %s, got %s" (UiControllerDelegate, type(delegate)))
         else:
             self._delegate = weakref.ref(delegate)
-            self._defaultBehaviourId = None
+            self._attributesController = attributesController
             
             self._recreateUiComponents()
             self._needsUiRebuild = False
@@ -95,6 +108,7 @@ class UiController(BoidBaseObject):
         self._uiWindow = None
         self._uiComponentToAttributesLookup = {}
         self._tabLayout = None
+        self._changeDefaultBehaviourMenu = None
         self._removeBehaviourMenu = None
         self._selectAgentsWithMenu = None
         self._selectAgentsNotWithMenu = None
@@ -102,18 +116,23 @@ class UiController(BoidBaseObject):
 
 ######################
     def __getstate__(self):
-        state = (self.delegate, self._defaultBehaviourId)
+        state = (self.delegate, self._attributesController)
         return state
 
 ########    
     def __setstate__(self, state):
         if(state[0] is not None):
             self._delegate = weakref.ref(state[0])
-        self._defaultBehaviourId = state[1]
+        self._attributesController = state[1]
         
         self._recreateUiComponents()
         self._needsUiRebuild = True
-
+    
+########################    
+    def _getDefaultBehaviourId(self):
+        return self._attributesController.defaultBehaviourId
+    _defaultBehaviourId = property(_getDefaultBehaviourId)
+    
 ######################        
     def _getDelegate(self):
         return self._delegate() if(self._delegate is not None) else None
@@ -129,6 +148,7 @@ class UiController(BoidBaseObject):
         self._makeDeleteBehaviourMenuItem(newBehaviourAttributes)
         self._makeSelectAgentsWithBehaviourMenuItem(newBehaviourAttributes, False)
         self._makeSelectAgentsWithBehaviourMenuItem(newBehaviourAttributes, True)
+        self._makeChangeDefaultBehaviourMenuItem(newBehaviourAttributes)
         self._makeAssignAgentsToBehaviourMenuItem(newBehaviourAttributes)
         self._makeBehaviourTab(newBehaviourAttributes)
         
@@ -139,34 +159,64 @@ class UiController(BoidBaseObject):
         behaviourId = behaviourAttributes.behaviourId
         
         for uiComponent in self._uiComponentToAttributesLookup[behaviourId]:
-            uib.DeleteComponent(uiComponent)
+            try:
+                uib.DeleteComponent(uiComponent)
+            except:
+                pass
         del self._uiComponentToAttributesLookup[behaviourId]
+        
+#####################
+    def updateDefaultBehaviourInUI(self, oldDefaultId, newDefaultId):
+        for uiComponent in self._uiComponentToAttributesLookup[oldDefaultId]:
+            parent = uiComponent.getParent()
+            if(parent == self._changeDefaultBehaviourMenu or parent == self._removeBehaviourMenu):
+                uiComponent.setEnable(True)
+                uiComponent.setAnnotation("")
+            elif(parent == self._tabLayout):
+                self._tabLayout.setTabLabel((uiComponent, oldDefaultId))
+            elif(uiComponent.getAnnotation() == _CANNOT_REMOVE_BEHAVIOUR_ANNOTATION_):
+                uiComponent.setEnable(True)
+                uiComponent.setAnnotation(_CANNOT_REMOVE_BEHAVIOUR_ANNOTATION_)
+                
+        for uiComponent in self._uiComponentToAttributesLookup[newDefaultId]:
+            parent = uiComponent.getParent()
+            if(parent == self._changeDefaultBehaviourMenu):
+                uiComponent.setEnable(False)
+                uiComponent.setAnnotation(_CHANGE_DEFAULT_ANNOTATION_ % newDefaultId)
+            elif(parent == self._removeBehaviourMenu):
+                uiComponent.setEnable(False)
+                uiComponent.setAnnotation(_CANNOT_REMOVE_BEHAVIOUR_ANNOTATION_)
+            elif(parent == self._tabLayout):
+                self._tabLayout.setTabLabel((uiComponent, newDefaultId + '*'))
+            elif(uiComponent.getAnnotation() == _REMOVE_BEHAVIOUR_ANNOTATION_):
+                uiComponent.setEnable(False)
+                uiComponent.setAnnotation(_CANNOT_REMOVE_BEHAVIOUR_ANNOTATION_)
     
 #####################        
     def hideUI(self):
         if(self.uiVisible):
-            uib.DestroyWindow(self._uiWindow)
+            uib.DestroyWindowIfNecessary(self._uiWindow)
             self._recreateUiComponents()
             self._needsUiRebuild = False  
             
 #####################         
-    def buildUi(self, windowTitle, attributesController):
+    def buildUi(self):
         if(self._needsUiRebuild):
             self.hideUI()
         
         if(not self.uiVisible):
-            self._uiWindow = uib.MakeWindow(windowTitle)
+            particleName = self._attributesController.globalAttributes.particleShapeNode.name()
+            self._uiWindow = uib.MakeWindow(("%s - %s" % (pi.PackageName(), particleName)))
             
-            self._defaultBehaviourId = attributesController.defaultBehaviourAttributes.behaviourId
-            self._buildUiMenuBar(attributesController)
-            self._buildUiMainPanel(attributesController)
+            self._buildUiMenuBar()
+            self._buildUiMainPanel()
             
             self._needsUiRebuild = False
         
         self._uiWindow.show()
             
 #####################        
-    def _buildUiMenuBar(self, attributesController):
+    def _buildUiMenuBar(self):
         uib.MakeMenu("File")
         uib.MakeMenuItem("Open File...", self._didSelectOpenFile)
         uib.MakeMenuSeparator()
@@ -187,13 +237,21 @@ class UiController(BoidBaseObject):
         uib.MakeMenuItem("Make Values Default", lambda *args: self._didSelectMakeValuesDefault(None))
         
         uib.MakeMenu("Behaviours")
+        behaviourAttributesList = self._attributesController._behaviourAttributesList
+        
+        self._changeDefaultBehaviourMenu = uib.MakeMenuItemWithSubMenu("Change Default")
+        for behaviourAttributes in behaviourAttributesList:
+            self._makeChangeDefaultBehaviourMenuItem(behaviourAttributes)
+        uib.SetAsChildMenuLayout(self._changeDefaultBehaviourMenu)
+
+        uib.MakeMenuSeparator()
         createBehaviourMenu = uib.MakeMenuItemWithSubMenu("Create New Behaviour")
-        for behaviourName in attributesController.behaviourTypeNamesList():
+        for behaviourName in self._attributesController.behaviourTypeNamesList():
             self._makeCreateBehaviourMenuItem(behaviourName)
         uib.SetAsChildMenuLayout(createBehaviourMenu)
         
         self._removeBehaviourMenu = uib.MakeMenuItemWithSubMenu("Remove Behaviour")
-        for behaviourAttributes in attributesController._behaviourAttributesList:
+        for behaviourAttributes in behaviourAttributesList:
             self._makeDeleteBehaviourMenuItem(behaviourAttributes)
         uib.SetAsChildMenuLayout(self._removeBehaviourMenu)
         
@@ -201,24 +259,40 @@ class UiController(BoidBaseObject):
         
         uib.MakeMenu("Agents")
         self._selectAgentsWithMenu = uib.MakeMenuItemWithSubMenu("Select Agents With:")
-        for behaviourAttributes in attributesController._behaviourAttributesList:
+        for behaviourAttributes in behaviourAttributesList:
             self._makeSelectAgentsWithBehaviourMenuItem(behaviourAttributes, False)
         uib.SetAsChildMenuLayout(self._selectAgentsWithMenu)
         
         self._selectAgentsNotWithMenu = uib.MakeMenuItemWithSubMenu("Select Agents Without:")
-        for behaviourAttributes in attributesController._behaviourAttributesList:
+        for behaviourAttributes in behaviourAttributesList:
             self._makeSelectAgentsWithBehaviourMenuItem(behaviourAttributes, True)
         uib.SetAsChildMenuLayout(self._selectAgentsNotWithMenu)
          
         uib.MakeMenuSeparator()
         self._assignAgentsToMenu = uib.MakeMenuItemWithSubMenu("Assign Agents To:")
-        for behaviourAttributes in attributesController._behaviourAttributesList:
+        for behaviourAttributes in behaviourAttributesList:
             self._makeAssignAgentsToBehaviourMenuItem(behaviourAttributes)
         uib.SetAsChildMenuLayout(self._assignAgentsToMenu)
+        
+        uib.MakeMenu("Help")
+        uib.MakeMenuItem("Project Home Page...", self._didSelectShowDocs, 
+                         ("NOTE - will not work on Linux... (go to: %s)" % pi.PackageHomePage()))
+        uib.MakeMenuItem("About", self._didSelectAbout)
 
 ########
+    def _makeChangeDefaultBehaviourMenuItem(self, attributes):
+        behaviourId = attributes.behaviourId
+        uib.SetParentMenuLayout(self._changeDefaultBehaviourMenu)
+        
+        menuItem = uib.MakeMenuItem(behaviourId, lambda *args: self._didSelectChangeDefaultBehaviour(behaviourId))
+        if(behaviourId == self._defaultBehaviourId):
+            menuItem.setAnnotation(_CHANGE_DEFAULT_ANNOTATION_ % behaviourId)
+            menuItem.setEnable(False)
+        self._linkUiComponentToBehaviourId(menuItem, behaviourId)
+        
+########
     def _makeCreateBehaviourMenuItem(self, behaviourTypeName):
-        uib.MakeMenuItem(behaviourTypeName, lambda* args: self._didSelectAddNewBehaviour(behaviourTypeName))
+        uib.MakeMenuItem(behaviourTypeName, lambda *args: self._didSelectAddNewBehaviour(behaviourTypeName))
 
 ########
     def _makeDeleteBehaviourMenuItem(self, attributes):
@@ -228,7 +302,7 @@ class UiController(BoidBaseObject):
         menuItem = uib.MakeMenuItem(behaviourId, 
                                     lambda *args: self._didSelectRemoveBehaviour(behaviourId))
         if(behaviourId == self._defaultBehaviourId):
-            menuItem.setAnnotation("Default behaviour - cannot be deleted.")
+            menuItem.setAnnotation(_CANNOT_REMOVE_BEHAVIOUR_ANNOTATION_)
             menuItem.setEnable(False)
         self._linkUiComponentToBehaviourId(menuItem, behaviourId)
         
@@ -249,19 +323,26 @@ class UiController(BoidBaseObject):
         self._linkUiComponentToBehaviourId(menuItem, behaviourId)
 
 #####################       
-    def _buildUiMainPanel(self, attributesController):
+    def _buildUiMainPanel(self):
         uib.MakeBorderingLayout()
-            
+        
+        rowLayout = uib.MakeTopLevelRowLayout(_TOP_PANEL_COMPONENTS_WIDTH_)
         generalColumnLayout = uib.MakeColumnLayout()
-        attributesController.globalAttributes.populateUiLayout()
+        globalAttributes = self._attributesController.globalAttributes
+        globalAttributes.populateUiLayout()
+        globalAttributes.nameChangeCallback = (lambda name: self._uiWindow.setTitle(("%s - %s" % 
+                                                                                     (pi.PackageName(), name))))
         uib.SetAsChildLayout(generalColumnLayout)
+        
+        uib.MakeImage(fl.LogoImageLocation(), "It's going to get you.")
+        uib.SetAsChildLayout(rowLayout)
         
         self._tabLayout = uib.MakeTabLayout()
         
-        self._makeAgentAttributesTab(attributesController.agentMovementAttributes,
-                                     attributesController.agentPerceptionAttributes)
+        self._makeAgentAttributesTab(self._attributesController.agentMovementAttributes,
+                                     self._attributesController.agentPerceptionAttributes)
         
-        for behaviourAttributes in attributesController._behaviourAttributesList:
+        for behaviourAttributes in self._attributesController._behaviourAttributesList:
             self._makeBehaviourTab(behaviourAttributes, (behaviourAttributes.behaviourId == self._defaultBehaviourId))
             
         uib.SetAsChildLayout(self._tabLayout)
@@ -282,7 +363,7 @@ class UiController(BoidBaseObject):
         buttonStripLayout = uib.MakeButtonStrip((("Load Defaults",
                                                   lambda *args: self._didSelectRestoreAgentValues(movementAttributes.behaviourId, 
                                                                                                   perceptionAttributes.behaviourId),
-                                                  "Reset agent attributes to default values."),))
+                                                  "Reset agent attributes to default values."),))[0]
         
         uib.SetAsChildLayout(buttonStripLayout)
         uib.DistributeButtonedWindowInFormLayout(formLayout, scrollLayout, buttonStripLayout)
@@ -293,41 +374,36 @@ class UiController(BoidBaseObject):
         behaviourId = behaviourAttributes.behaviourId
         uib.SetParentLayout(self._tabLayout)
         
-        formLayout = uib.MakeFormLayout(behaviourId)
+        formLayout = uib.MakeFormLayout(behaviourId if(not isDefaultBehaviour) else behaviourId + '*')
         scrollLayout = uib.MakeScrollLayout()
         behaviourAttributes.populateUiLayout()
         uib.SetAsChildLayout(scrollLayout)
         
+        buttonStripTuple = uib.MakeButtonStrip((("Assign Agents...", 
+                                                  lambda *args: self.delegate.showAssignAgentsWindowForBehaviour(behaviourId),
+                                                "Assign selection of agents to follow this behaviour."),
+                                                 ("Select Agents", 
+                                                  lambda *args: self.delegate.makeAgentsWithBehaviourSelected(behaviourId, False),
+                                                  "Select corresponding particles of all agents following this behaviour."),
+                                                 ("Load Defaults",
+                                                  lambda *args: self._didSelectRestoreDefaultValues(behaviourId),
+                                                  "Reset behaviour attributes to default values."),
+                                                 ("Remove Behaviour",
+                                                  lambda *args: self._didSelectRemoveBehaviour(behaviourId),
+                                                  _REMOVE_BEHAVIOUR_ANNOTATION_)))
+        buttonStripLayout, buttonsList = buttonStripTuple
+        
         if(isDefaultBehaviour):
-            buttonStripLayout = uib.MakeButtonStrip((("Assign Agents...", 
-                                                      lambda *args: self.delegate.showAssignAgentsWindowForBehaviour(behaviourId),
-                                                      "Assign selection of agents to follow this behaviour."),
-                                                     ("Select Agents", 
-                                                      lambda *args: self.delegate.makeAgentsWithBehaviourSelected(behaviourId, False),
-                                                      "Select corresponding particles of all agents following this behaviour."),
-                                                     ("Load Defaults",
-                                                      lambda *args: self._didSelectRestoreDefaultValues(behaviourId),
-                                                      "Reset behaviour attributes to default values.")))
-  
-        else:
-            buttonStripLayout = uib.MakeButtonStrip((("Assign Agents...", 
-                                                      lambda *args: self.delegate.showAssignAgentsWindowForBehaviour(behaviourId),
-                                                      "Assign selection of agents to follow this behaviour."),
-                                                     ("Select Agents", 
-                                                      lambda *args: self.delegate.makeAgentsWithBehaviourSelected(behaviourId, False),
-                                                      "Select corresponding particles of all agents following this behaviour."),
-                                                     ("Load Defaults",
-                                                      lambda *args: self._didSelectRestoreDefaultValues(behaviourId),
-                                                      "Reset behaviour attributes to default values."),
-                                                     ("Remove Behaviour",
-                                                      lambda *args: self._didSelectRemoveBehaviour(behaviourId),
-                                                      "Remove this behaviour, assigned agents will revert to default behaviour.")))
-            
+            buttonsList[3].setEnable(False)
+            buttonsList[3].setAnnotation(_CANNOT_REMOVE_BEHAVIOUR_ANNOTATION_)
+        
         uib.SetAsChildLayout(buttonStripLayout)
         uib.DistributeButtonedWindowInFormLayout(formLayout, scrollLayout, buttonStripLayout)
         uib.SetAsChildLayout(formLayout)
         
         self._linkUiComponentToBehaviourId(formLayout, behaviourId)
+        for button in buttonsList:
+            self._linkUiComponentToBehaviourId(button, behaviourId)
         
 #####################         
     def _linkUiComponentToBehaviourId(self, component, behaviourId):
@@ -373,6 +449,10 @@ class UiController(BoidBaseObject):
         
         if(uib.GetUserConfirmation("Make Values Default", message)):
             self.delegate.makeValuesDefault(behaviourId)
+        
+########
+    def _didSelectChangeDefaultBehaviour(self, behaviourId):
+        util.EvalDeferred(self.delegate.changeDefaultBehaviour, behaviourId)
                   
 ########
     def _didSelectAddNewBehaviour(self, behaviourTypeName):
@@ -393,8 +473,16 @@ class UiController(BoidBaseObject):
 ########
     def _didSelectQuit(self, *args):
         if(uib.GetUserConfirmation("Quit", ("This will remove this %s instance from your scene.\nAre you sure?" 
-                                            % util.PackageName()))):
-            util.EvalDeferred(self.delegate.quitSwarmInstance)        
+                                            % pi.PackageName()))):
+            util.EvalDeferred(self.delegate.quitSwarmInstance)
+            
+########
+    def _didSelectShowDocs(self, *args):
+        util.LaunchWebPage(pi.PackageHomePage())
+    
+########
+    def _didSelectAbout(self, *args):
+        uib.DisplayInfoBox(pi.PackageInfo(), ("%s v%s" % (pi.PackageName(), pi.VersionNumber())))
             
 
 # END OF CLASS - UiController

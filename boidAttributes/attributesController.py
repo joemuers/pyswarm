@@ -16,17 +16,16 @@ import ConfigParser
 ##########################################
 class AttributesController(BoidBaseObject):
     
-    def __init__(self, particleShapeNode, sceneBounds1=None, sceneBounds2=None):
-#         self._leaderSelectMethod = leaderSelectMethod
+    def __init__(self, particleShapeNode, saveSceneMethod, boundingLocators=None):
         
-        self._globalAttributes = ga.GlobalAttributes(particleShapeNode, sceneBounds1, sceneBounds2)
+        self._globalAttributes = ga.GlobalAttributes(particleShapeNode, saveSceneMethod, boundingLocators)
         self._agentMovementAttributes = ama.AgentMovementAttributes()
         self._agentPerceptionAttributes = apa.AgentPerceptionAttributes()
         
         defaultBehaviourId = cbba.ClassicBoidBehaviourAttributes.BehaviourTypeName()
-        self.defaultBehaviourAttributes = cbba.ClassicBoidBehaviourAttributes(defaultBehaviourId)
-        
-        self._behaviourAttributesList = [self.defaultBehaviourAttributes]
+        defaultBehaviourAttributes = cbba.ClassicBoidBehaviourAttributes(defaultBehaviourId, self._globalAttributes)
+        self._behaviourAttributesList = [defaultBehaviourAttributes]        
+        self._globalAttributes.setDefaultBehaviourAttributes(defaultBehaviourAttributes)
         
         self.restoreDefaultAttributeValuesFromFile()
         self._notifyOnBehavioursListChanged()
@@ -35,7 +34,7 @@ class AttributesController(BoidBaseObject):
     def __str__(self):
         stringsList = ["Behaviours: "]
         stringsList.extend([("\"%s\", " % attributes.behaviourId) for attributes in self._allSections()])
-        stringsList.append("  (default=\"%s\")" % self.defaultBehaviourAttributes.behaviourId)
+        stringsList.append("  (default=\"%s\")" % self.defaultBehaviourId)
         
         return ''.join(stringsList)
  
@@ -50,6 +49,11 @@ class AttributesController(BoidBaseObject):
     def _getGlobalAttributes(self):
         return self._globalAttributes
     globalAttributes = property(_getGlobalAttributes)
+
+#####################    
+    def _getDefaultBehaviourId(self):
+        return self._globalAttributes.defaultBehaviourId
+    defaultBehaviourId = property(_getDefaultBehaviourId)
     
 ########
     def _getAgentMovementAttributes(self):
@@ -62,7 +66,7 @@ class AttributesController(BoidBaseObject):
     agentPerceptionAttributes = property(_getAgentPerceptionAttributes)
 
 ########
-    def behaviourAttributesForId(self, behaviourId):
+    def getBehaviourAttributesWithId(self, behaviourId):
         for attributes in self._behaviourAttributesList:
             if(attributes.behaviourId == behaviourId):
                 return attributes
@@ -84,6 +88,11 @@ class AttributesController(BoidBaseObject):
     def onFrameUpdated(self):
         for attributes in self._allSections():
             attributes.onFrameUpdated()
+            
+########
+    def onCalculationsCompleted(self):
+        for attributes in self._allSections():
+            attributes.onCalculationsCompleted()
 
 #####################            
     def showPreferencesWindow(self):
@@ -92,30 +101,28 @@ class AttributesController(BoidBaseObject):
 #####################
     def _getNewBehaviourIdForAttibutesClass(self, attributesClass):
         currentMaxIndex = -1
-        titleStem = attributesClass.BehaviourTypeName() + '_'
+        titleStem = attributesClass.BehaviourTypeName()
         
-        for attributes in filter(lambda at: at is not self.defaultBehaviourAttributes and 
-                                 type(at) == attributesClass, 
-                                 self._behaviourAttributesList):
+        for attributes in filter(lambda attbs: type(attbs) == attributesClass, self._behaviourAttributesList):
             try:
                 indexSuffix = int(attributes.behaviourId.replace(titleStem, ""))
                 currentMaxIndex = max(indexSuffix, currentMaxIndex)
             except:
-                pass
+                if(currentMaxIndex == -1):
+                    currentMaxIndex = 0
         
-        return ("%s%d" % (titleStem, currentMaxIndex + 1))
+        if(currentMaxIndex >= 0):
+            return ("%s_%d" % (titleStem, currentMaxIndex + 1))
+        else:
+            return titleStem
 
 #####################        
     def _notifyOnBehavioursListChanged(self):
         behaviourIDsList = [at.behaviourId for at in self._behaviourAttributesList]
-        defaultId = self.defaultBehaviourAttributes.behaviourId
+        defaultBehaviourId = self.defaultBehaviourId
         
         for attributes in self._behaviourAttributesList:
-            attributes.onBehaviourListUpdated(behaviourIDsList, defaultId)
-
-#####################            
-#     def _onRequestLeaderSelect(self, requestingAttributes, isChangeRequest):
-#         self._leaderSelectMethod(requestingAttributes.behaviourId, isChangeRequest)
+            attributes.onBehaviourListUpdated(behaviourIDsList, defaultBehaviourId)
             
 #####################       
     def _addNewBehaviourAttributes(self, newBehaviourAttributes):
@@ -145,7 +152,7 @@ class AttributesController(BoidBaseObject):
 ########       
     def addClassicBoidAttributes(self):
         behaviourId = self._getNewBehaviourIdForAttibutesClass(cbba.ClassicBoidBehaviourAttributes)
-        newBehaviourAttributes = cbba.ClassicBoidBehaviourAttributes(behaviourId)
+        newBehaviourAttributes = cbba.ClassicBoidBehaviourAttributes(behaviourId, self._globalAttributes)
         self._addNewBehaviourAttributes(newBehaviourAttributes)
         
         return newBehaviourAttributes
@@ -169,16 +176,28 @@ class AttributesController(BoidBaseObject):
 
 ########
     def removeBehaviour(self, behaviourAttributes):
-        if(isinstance(behaviourAttributes, str)):
-            behaviourAttributes = self.behaviourAttributesForId(behaviourAttributes)
+        if(isinstance(behaviourAttributes, basestring)):
+            behaviourAttributes = self.getBehaviourAttributesWithId(behaviourAttributes)
         
-        if(behaviourAttributes is self.defaultBehaviourAttributes):
-            raise ValueError("Default behaviour \"%s\" cannot be deleted." % self.defaultBehaviourAttributes.behaviourId)
+        if(behaviourAttributes.behaviourId == self.defaultBehaviourId):
+            raise ValueError("Default behaviour \"%s\" cannot be deleted." % self.defaultBehaviourId)
         else:
             self._behaviourAttributesList.remove(behaviourAttributes)
             self._notifyOnBehavioursListChanged()
             
         return behaviourAttributes
+    
+#####################
+    def changeDefaultBehaviour(self, newDefaultBehaviourId):
+        if(newDefaultBehaviourId == self.defaultBehaviourId):
+            util.LogWarning("\"%s\" is already the default - no changes made." % newDefaultBehaviourId)
+            return False
+        else:
+            newDefaultBehaviourAttributes = self.getBehaviourAttributesWithId(newDefaultBehaviourId)
+            self._globalAttributes.setDefaultBehaviourAttributes(newDefaultBehaviourAttributes)
+            self._notifyOnBehavioursListChanged()
+            
+            return True
     
 #####################
     def purgeRepositories(self):
@@ -187,8 +206,8 @@ class AttributesController(BoidBaseObject):
         
 #####################   
     def restoreDefaultAttributeValuesFromFile(self, section=None):
-        if(isinstance(section, str)):
-            section = self.behaviourAttributesForId(section)
+        if(isinstance(section, basestring)):
+            section = self.getBehaviourAttributesWithId(section)
             
         configReader = ConfigParser.ConfigParser()
         configReader.optionxform = str 
@@ -197,12 +216,12 @@ class AttributesController(BoidBaseObject):
         if(configReader.read(filePath)):
             util.LogDebug("Parsing file \'%s\' for default values..." % filePath)
             
-            if(section is None):
-                for sectionIterator in self._allSections():
-                    sectionIterator.getDefaultsFromConfigReader(configReader)
-            elif(not section.getDefaultsFromConfigReader(configReader)):
-                util.LogInfo("Found new attributes - writing \"%s\" section to defaults file..." % section.BehaviourTypeName())
-                self.makeCurrentAttributeValuesDefault(section)
+            sectionsList = self._allSections() if(section is None) else [section]
+            for sectionIterator in sectionsList:
+                result = sectionIterator.getDefaultsFromConfigReader(configReader)
+                if(not result):
+                    util.LogInfo("Found new attributes - writing \"%s\" section to defaults file..." % sectionIterator.BehaviourTypeName())
+                    self.makeCurrentAttributeValuesDefault(sectionIterator)
         else:
             util.LogWarning("Could not find default attribute values file %s, creating a new one..." % filePath)
             self.makeCurrentAttributeValuesDefault()
@@ -211,8 +230,8 @@ class AttributesController(BoidBaseObject):
     
 ########
     def makeCurrentAttributeValuesDefault(self, section=None):
-        if(isinstance(section, str)):
-            section = self.behaviourAttributesForId(section)
+        if(isinstance(section, basestring)):
+            section = self.getBehaviourAttributesWithId(section)
             
         filePath = fl.DefaultAttributeValuesLocation()
         configWriter = ConfigParser.ConfigParser()

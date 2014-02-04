@@ -13,17 +13,23 @@ class BehavioursController(BoidBaseObject, BehaviourDelegate):
     def __init__(self, attributesController):
         self._attributesController = attributesController
         self._behavioursLookup = {}
-        self.createBehaviourForNewAttributes(attributesController.defaultBehaviourAttributes)
+        defaultAttributes = attributesController.getBehaviourAttributesWithId(attributesController.defaultBehaviourId)
+        self.createBehaviourForNewAttributes(defaultAttributes)
         
 #############################
     def _getDefaultBehaviour(self):
-        return self.behaviourWithId(self._attributesController.defaultBehaviourAttributes.behaviourId)
+        return self.behaviourWithId(self._attributesController.defaultBehaviourId)
     defaultBehaviour = property(_getDefaultBehaviour)
          
 #############################    
     def onFrameUpdated(self):
         for behaviour in self._behavioursLookup.itervalues():
             behaviour.onFrameUpdated()
+            
+########
+    def onCalculationsCompleted(self):
+        for behaviour in self._behavioursLookup.itervalues():
+            behaviour.onCalculationsCompleted()
          
 #############################    
     def behaviourWithId(self, behaviourId):

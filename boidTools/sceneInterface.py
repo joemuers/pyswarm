@@ -7,15 +7,21 @@ import pymel.core.nodetypes as pmn  # Eclipse doesn't like pm.nodetypes for some
 
 
 ######################################
-def PymelObjectFromObjectName(objectName, bypassTransformNodes=True):
+def PymelObjectFromObjectName(objectName, bypassTransformNodes=True, pymelType=None):
     """Converts Maya object string to a Pymel object, if necessary.
     If the object is already a Pymel object, no action is taken.
     """
     if(isinstance(objectName, pm.PyNode)):
-        return _GetPymelObjectWithType(objectName, None) if(bypassTransformNodes) else objectName 
+        result = _GetPymelObjectWithType(objectName, pymelType) if(bypassTransformNodes) else objectName 
     else:
         value = pm.PyNode(objectName)
-        return _GetPymelObjectWithType(value, None) if(bypassTransformNodes) else value 
+        result = _GetPymelObjectWithType(value, pymelType) if(bypassTransformNodes) else value 
+        
+    if(pymelType is None or isinstance(result, pymelType)):
+        return result
+    else:
+        raise TypeError("Cannot make Pymel object from %s - needed type %s, got %s" % 
+                        (objectName, pymelType, type(objectName)))
     
 ######################################
 def GetSelectedParticleShapeNodes(particleShapeName=None):
@@ -126,7 +132,7 @@ def Vector3FromLocator(locator):
         coOrdsString = locator.getPosition()
         coOrds = coOrdsString.split()
         return bv3.Vector3(float(coOrds[0]), float(coOrds[1]), float(coOrds[2]))     
-    elif(isinstance(locator, str)):
+    elif(isinstance(locator, basestring)):
         return Vector3FromLocator(PymelObjectFromObjectName(locator))
     else:
         return None

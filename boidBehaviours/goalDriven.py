@@ -178,7 +178,7 @@ class GoalDriven(BehaviourBaseObject):
                     agentAttributes.didArriveAtBasePyramid = False
                 
                 if(not agentAttributes.didArriveAtBasePyramid):
-                    if(self._infectionSpreadMode and self.attributes.agentIsLeader(agent.particleId)):
+                    if(self._infectionSpreadMode and self.attributes.agentIsLeader(agent.agentId)):
                         # agent has been designated as a leader
                         self._leaderPositions.append(agent.currentPosition)
                         agentStatus = gdba.GoalDrivenDataBlob.goalChase
@@ -439,7 +439,7 @@ class GoalDriven(BehaviourBaseObject):
         numLeaders = self.attributes.numberOfLeaders
 
         if(agent.state.behaviourAttributes.didArriveAtBasePyramid or 
-           numLeaders == 0 or self.attributes.agentIsLeader(agent.particleId)):
+           numLeaders == 0 or self.attributes.agentIsLeader(agent.agentId)):
             returnValue = self.attributes.basePyramidGoal
         elif(numLeaders == 1):
             returnValue = self._leaderPositions[0]
@@ -497,7 +497,7 @@ class GoalDriven(BehaviourBaseObject):
                 else:
                     return currentStatus
         else:
-            raise RuntimeError(("Agent %d is following behaviour %s" % (agent.particleId, agent.currentBehaviour.behaviourId)))
+            raise RuntimeError(("Agent %d is following behaviour %s" % (agent.agentId, agent.currentBehaviour.behaviourId)))
             return gdba.GoalDrivenDataBlob._uninitialised
 
 #######################    
@@ -534,7 +534,7 @@ class GoalDriven(BehaviourBaseObject):
             if(status == gdba.GoalDrivenDataBlob.inBasePyramid):
                 agent.debugColour = colours.GoalDriven_InBasePyramid(agent)
             elif(status == gdba.GoalDrivenDataBlob.goalChase):
-                if(self.attributes.useInfectionSpread and self.attributes.agentIsLeader(agent.particleId)):
+                if(self.attributes.useInfectionSpread and self.attributes.agentIsLeader(agent.agentId)):
                     agent.debugColour =  colours.GoalDriven_IsLeader
                 else:
                     agent.debugColour = colours.GoalDriven_ChasingGoal

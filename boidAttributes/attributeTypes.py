@@ -307,6 +307,7 @@ class RandomizeController(_SingleAttributeBaseObject):
     @staticmethod
     def StringForOption(option):
         return RandomizeController.__OptionStrings__[option]
+    
     @staticmethod
     def OptionForString(optionString):
         return RandomizeController.__OptionStrings__.index(optionString)
@@ -329,6 +330,7 @@ class RandomizeController(_SingleAttributeBaseObject):
     def __str__(self):
         return ("opt=%s, mult=%s" % (super(RandomizeController, self).__str__(), self._randomizerAttribute.__str__()))
     
+########
     def _getMetaStr(self):
         return ("<opt=%s, mult=%s>" % (super(RandomizeController, self)._getMetaStr(), self._randomizerAttribute.metaStr))
 
@@ -358,7 +360,7 @@ class RandomizeController(_SingleAttributeBaseObject):
 
 ######################
     def _getValueFromInput(self, inputValue):
-        if(isinstance(inputValue, str)):
+        if(isinstance(inputValue, basestring)):
             return RandomizeController.OptionForString(inputValue)
         elif(isinstance(inputValue, int)):
             return inputValue
@@ -371,6 +373,7 @@ class RandomizeController(_SingleAttributeBaseObject):
         if(self._randomizerAttribute.uiEnableMethod is not None):
             self._randomizerAttribute.setEnabled(self._value != RandomizeController.__Off__)
         
+########
     def setEnabled(self, enabled):
         super(RandomizeController, self).setEnabled(enabled)
         self._randomizerAttribute.setEnabled(enabled and self._value != RandomizeController.__Off__)
@@ -400,7 +403,7 @@ class RandomizeController(_SingleAttributeBaseObject):
 class BoolAttribute(_SingleAttributeBaseObject):
     
     def _getValueFromInput(self, inputValue):
-        if(isinstance(inputValue, str)):
+        if(isinstance(inputValue, basestring)):
             return inputValue != str(False)
         else:
             return bool(inputValue)
@@ -487,12 +490,14 @@ class LocationAttribute(MayaObjectAttribute):
         pass
     objectType = property(_getObjectType, _setObjectType)
     
+########
     def _getAllowNoneType(self):
         return True
     def _setAllowNoneType(self, value):
         pass
     allowNoneType = property(_getAllowNoneType, _setAllowNoneType)
     
+########
     def getRawAttribute(self):
         return self._boundLocator
     
@@ -520,12 +525,14 @@ class LocationAttribute(MayaObjectAttribute):
         self.value = (xValue, self._value.y, self._value.z)
     x = property(_getX, _setX)
 
+########
     def _getY(self):
         return self._value.y        
     def _setY(self, yValue):
         self.value = (self._value.x, yValue, self._value.z)
     y = property(_getY, _setY)
         
+########
     def _getZ(self):
         return self._value.z
     def _setZ(self, zValue):
@@ -563,3 +570,48 @@ class LocationAttribute(MayaObjectAttribute):
 
 
 
+######################################
+class Vector3Attribute(_SingleAttributeBaseObject):
+        
+    def _getX(self):
+        return self._value.x      
+    def _setX(self, xValue):
+        self.value = (xValue, self._value.y, self._value.z)
+    x = property(_getX, _setX)
+
+########
+    def _getY(self):
+        return self._value.y        
+    def _setY(self, yValue):
+        self.value = (self._value.x, yValue, self._value.z)
+    y = property(_getY, _setY)
+        
+########
+    def _getZ(self):
+        return self._value.z
+    def _setZ(self, zValue):
+        self.value = (self._value.x, self._value.y, zValue)
+    z = property(_getZ, _setZ)
+    
+#####################
+    def _getValueFromInput(self, inputValue):
+        
+        if(isinstance(inputValue, bv3.Vector3)):
+            return inputValue
+        elif(isinstance(inputValue, basestring)):
+            result = bv3.Vector3()
+            result.setValueFromString(inputValue)
+            return result
+        elif(isinstance(inputValue, list) or isinstance(inputValue, tuple)):
+            result = bv3.Vector3()
+            result.valueAsTuple = inputValue
+            return result
+        else:
+            raise TypeError("Got %s, expected %s or %s" % (type(inputValue), bv3.Vector3, basestring))
+            
+# END OF CLASS - Vector3Attribute
+######################################           
+            
+            
+            
+            

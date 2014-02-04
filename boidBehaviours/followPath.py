@@ -136,6 +136,7 @@ class FollowPath(BehaviourBaseObject):
                 desiredAcceleration *= self.attributes.pathInfluenceMagnitude
                 desiredAcceleration.add(normalDesiredAcceleration)
             
+            self._matchPreferredVelocityIfNecessary(agent, desiredAcceleration)
             self._clampDesiredAccelerationIfNecessary(agent, 
                                          desiredAcceleration, 
                                          movementAttributes.maxAcceleration, 

@@ -1,6 +1,7 @@
 import boidAttributes.attributeTypes as at
 import boidTools.util as util
 import boidTools.sceneInterface as scene
+import boidResources.fileLocations as fl
 
 import pymel.core as pm
 import sys
@@ -13,6 +14,7 @@ __RIGHT_COLUMN_WIDTH__ = 235
 __FOURTH_COLUMN_WIDTH__ = 23
 
 __OPTIONS_MENUS_WIDTH__ = 100
+__CHECKBOX_OFFSET__ = 4
 
 
 
@@ -24,6 +26,10 @@ def WindowExists(windowReference):
     return(windowReference is not None and pm.window(windowReference, exists=True))
 
 #####################
+def WindowIsVisible(windowReference):
+    return (WindowExists(windowReference) and pm.window(windowReference, query=True, visible=True))
+
+#####################
 def MakeWindow(title, widthHeight=None):
     if(widthHeight is None):
         return pm.window(title, maximizeButton=False, resizeToFitChildren=True, menuBar=True)
@@ -31,8 +37,9 @@ def MakeWindow(title, widthHeight=None):
         return pm.window(title, maximizeButton=False, resizeToFitChildren=True, menuBar=True, widthHeight=widthHeight)
 
 #####################
-def DestroyWindow(windowReference):
-    pm.deleteUI(windowReference, window=True)
+def DestroyWindowIfNecessary(windowReference):
+    if(WindowExists(windowReference)):
+        pm.deleteUI(windowReference, window=True)
 
 #############################
 
@@ -78,6 +85,7 @@ def MakeMenuItemWithSubMenu(itemLabel, annotation=None):
     
     return newMenuItem
 
+#####################
 def MakeMenuSubItem(itemLabel):
     return pm.menuItem(label=itemLabel)
 
@@ -183,7 +191,7 @@ def MakeRowLayout(numColumns,
     elif(numColumns == 1):
         layout = pm.rowLayout(numberOfColumns=1, 
                               columnAlign=(1, 'left'), 
-                              columnAttach=(1, 'left', leftColumnWidth))
+                              columnAttach=(1, 'left', leftColumnWidth + 3))
         
         if(makeAdjustable):
             layout.adjustableColumn(1)
@@ -191,6 +199,16 @@ def MakeRowLayout(numColumns,
         return layout
     else:
         raise ValueError  
+    
+#####################
+def MakeTopLevelRowLayout(componentsSectionWidth):
+    rowLayout = pm.rowLayout(numberOfColumns=2, 
+                              adjustableColumn=1,
+                              columnWidth2=(componentsSectionWidth, fl.LogoImagePixelWidth()), 
+                              columnAlign=[(1, 'left'), (2, 'right')], 
+                              columnAttach=[(1, 'both', 0), (2, 'right', 0)])
+    
+    return rowLayout
 
 #########################
 def DistributeControlsHorizontallyInFormLayout(formLayout, controls):
@@ -316,16 +334,41 @@ def MakeRandomizerGroup(randomizerAttribute, annotation=None):
     
     return inputGroup
     
+    
+def MakeCheckboxStandalone(boxLabel, initialValue, extraLabel=None, changeCommand=None, 
+                           leftColumnWidth=__LEFT_COLUMN_WIDTH__, annotation=None):
+    rowLayout = MakeRowLayout(2 if(extraLabel is not None) else 1, 
+                              leftColumnWidth=leftColumnWidth + __CHECKBOX_OFFSET__, 
+                              rightColumnWidth=__MIDDLE_COLUMN_WIDTH__ + __RIGHT_COLUMN_WIDTH__)
+    
+    if(extraLabel is not None):
+        if(boxLabel): boxLabel += ':'
+        MakeText(boxLabel, annotation)
+        boxLabel = extraLabel
+    
+    checkbox = pm.checkBox(label=boxLabel, value=initialValue)
+    if(changeCommand is not None):
+        checkbox.changeCommand(changeCommand)
+    if(annotation is not None):
+        checkbox.setAnnotation(annotation)
+    
+    SetAsChildLayout(rowLayout)
+    
+    return (rowLayout, checkbox)
+    
 #####################
-def MakeCheckboxGroup(attribute, extraLabel=None, annotation=None):
+def MakeCheckboxGroup(attribute, extraLabel=None, annotation=None, leftColumnWidth=__LEFT_COLUMN_WIDTH__):
     if(type(attribute) != at.BoolAttribute):
         raise TypeError("Attempt to make checkbox group from non-boolean attribute.")
     
-    rowLayout = MakeRowLayout(2 if(extraLabel is not None) else 1, rightColumnWidth=__MIDDLE_COLUMN_WIDTH__ + __RIGHT_COLUMN_WIDTH__)
+    rowLayout = MakeRowLayout(2 if(extraLabel is not None) else 1, 
+                              leftColumnWidth=leftColumnWidth + __CHECKBOX_OFFSET__, 
+                              rightColumnWidth=__MIDDLE_COLUMN_WIDTH__ + __RIGHT_COLUMN_WIDTH__)
     
     boxLabel = attribute.attributeLabel
     if(extraLabel is not None):
-        MakeText(boxLabel + ':', annotation)
+        if(boxLabel): boxLabel += ':'
+        MakeText(boxLabel, annotation)
         boxLabel = extraLabel
     
     checkbox = pm.checkBox(label=boxLabel, value=attribute.value)
@@ -346,7 +389,7 @@ def MakeRandomizeOptionsMenu(randomizerController, annotation=None):
     
     rowLayout = MakeRowLayout(2, rightColumnWidth=__OPTIONS_MENUS_WIDTH__, makeAdjustable=False)
     
-    MakeText(randomizerController.attributeLabel, annotation)
+    text = MakeText(randomizerController.attributeLabel, annotation)
     
     optionMenu = pm.optionMenu()
     try:
@@ -357,7 +400,7 @@ def MakeRandomizeOptionsMenu(randomizerController, annotation=None):
     
     optionMenu.changeCommand(lambda *args: randomizerController._setValue(optionMenu.getValue()))
     randomizerController.updateUiCommand = optionMenu.setValue
-    randomizerController.uiEnableMethod = optionMenu.setEnable
+    randomizerController.uiEnableMethod = rowLayout.setEnable
     if(annotation is not None):
         optionMenu.setAnnotation(annotation)
     
@@ -397,6 +440,7 @@ def MakeStringOptionsField(stringAttribute, optionsListStrings, annotation=None)
     menuItemsList = []
     for option in optionsListStrings:
         menuItemsList.append(pm.menuItem(label=option))
+    optionMenu.setValue(stringAttribute.value)
     
     optionMenu.changeCommand(lambda *args: stringAttribute._setValue(optionMenu.getValue()))
     stringAttribute.updateUiCommand = optionMenu.setValue
@@ -445,8 +489,7 @@ def _MakeObjectSelectionList(objectAttribute):
     objectNamesList.extend(map(lambda obj: obj.name(), objectList[1:] if(allowNone) else objectList))
     
     windowHandle = ("Select %s" % objectType.__name__)
-    if(WindowExists(windowHandle)):
-        DestroyWindow(windowHandle)
+    DestroyWindowIfNecessary(windowHandle)
 
     window = pm.window(windowHandle)
     formLayout = MakeFormLayout()
@@ -463,7 +506,7 @@ def _MakeObjectSelectionList(objectAttribute):
     objectMenu.selectCommand(lambda *args: _onObjectSelect(objectAttribute, objectList, objectNamesList, objectMenu))
     SetAsChildLayout(menuPaneLayout)
     
-    buttonLayout = MakeButtonStrip( (("Close", lambda *args: DestroyWindow(window)), ) )
+    buttonLayout = MakeButtonStrip( (("Close", lambda *args: DestroyWindowIfNecessary(window)), ) )[0]
     SetAsChildLayout(buttonLayout)
     
     DistributeButtonedWindowInFormLayout(formLayout, menuPaneLayout, buttonLayout)
@@ -471,15 +514,16 @@ def _MakeObjectSelectionList(objectAttribute):
     window.show()
     
 #####################   
-def MakeLocationField(locationAttribute, withButton=False, annotation=None):
+def MakeLocationField(locationAttribute, withButton=False, leftColumnWidth=__LEFT_COLUMN_WIDTH__, annotation=None):
     if(not isinstance(locationAttribute, at.LocationAttribute)):
         raise TypeError("Attempt to make location field with wrong type (expected:%s, got: %s)" % 
                         (at.LocationAttribute, type(locationAttribute)))
     
     if(not withButton):
-        rowLayout = MakeRowLayout(2, rightColumnWidth=__MIDDLE_COLUMN_WIDTH__ + __RIGHT_COLUMN_WIDTH__)
+        rowLayout = MakeRowLayout(2, leftColumnWidth=leftColumnWidth, 
+                                  rightColumnWidth=__MIDDLE_COLUMN_WIDTH__ + __RIGHT_COLUMN_WIDTH__)
     else:
-        rowLayout = MakeRowLayout(3, middleColumnWidth=__RIGHT_COLUMN_WIDTH__, 
+        rowLayout = MakeRowLayout(3, leftColumnWidth=leftColumnWidth, middleColumnWidth=__RIGHT_COLUMN_WIDTH__, 
                                   rightColumnWidth=__FOURTH_COLUMN_WIDTH__, makeAdjustable=False)
         
     MakeText(locationAttribute.attributeLabel, annotation)
@@ -502,20 +546,42 @@ def MakeLocationField(locationAttribute, withButton=False, annotation=None):
     return locationField
 
 #########################
+def MakeVectorField(vectorAttribute, annotation=None):
+    if(not isinstance(vectorAttribute, at.Vector3Attribute)):
+        raise TypeError("Expected %s, got %s" % (at.Vector3Attribute, type(vectorAttribute)))
+    
+    rowLayout = MakeRowLayout(2)
+    
+    MakeText(vectorAttribute.attributeLabel, annotation)
+    vectorField = pm.floatFieldGrp(numberOfFields=3, precision=3, columnWidth3=(__MIDDLE_COLUMN_WIDTH__, __MIDDLE_COLUMN_WIDTH__, __MIDDLE_COLUMN_WIDTH__),
+                                   value1=vectorAttribute.x, value2=vectorAttribute.y, value3=vectorAttribute.z)
+    vectorField.changeCommand(lambda *args: vectorAttribute._setValue(vectorField.getValue()))
+    vectorAttribute.updateUiCommand = (lambda *args: vectorField.setValue((vectorAttribute.x, vectorAttribute.y, vectorAttribute.z, 0.0)))
+    vectorAttribute.uiEnableMethod = vectorField.setEnable
+    if(annotation is not None):
+        vectorField.setAnnotation(annotation)
+        
+    SetAsChildLayout(rowLayout)
+    
+    return vectorField
+
+#########################
 def MakePassiveTextField(stringAttribute, buttonCallback, annotation=None, isEditable=False,
-                         leftColumnWidth=__LEFT_COLUMN_WIDTH__, rightColumnWidth=__MIDDLE_COLUMN_WIDTH__):
+                         leftColumnWidth=__LEFT_COLUMN_WIDTH__, rightColumnWidth=__MIDDLE_COLUMN_WIDTH__ + __RIGHT_COLUMN_WIDTH__):
     
     if(not isinstance(stringAttribute, at.StringAttribute)):
         raise TypeError("Attempted to make text field (expected:%s, got:%s)" % 
                         (at.StringAttribute, type(stringAttribute)))
-    
-    rowLayout = MakeRowLayout(2, leftColumnWidth)
-    
-    MakeText(stringAttribute.attributeLabel, annotation)
 
+    rowLayout = MakeRowLayout(2, leftColumnWidth=leftColumnWidth, rightColumnWidth=rightColumnWidth)
+     
+    MakeText(stringAttribute.attributeLabel, annotation)
+    
+    buttonWidth = 50
     textField = pm.textFieldButtonGrp(editable=isEditable, text=stringAttribute.value,
                                       buttonLabel="...", buttonCommand=buttonCallback,
-                                      adjustableColumn=1, columnWidth2=(130, rightColumnWidth))
+                                      adjustableColumn=1, 
+                                      columnWidth2=(rightColumnWidth - buttonWidth, buttonWidth))
     if(annotation is not None):
         textField.setAnnotation(annotation)
     
@@ -532,6 +598,29 @@ def MakePassiveTextField(stringAttribute, buttonCallback, annotation=None, isEdi
     
     return rowLayout
     
+#########################
+def MakeSimpleIntField(intAttribute, annotation=None):
+    if(not isinstance(intAttribute, at.IntAttribute)):
+        raise TypeError("Expected %s, got %s" % (at.IntAttribute, type(intAttribute)))
+    
+    rowLayout = MakeRowLayout(3)
+    MakeText(intAttribute.attributeLabel, annotation)
+    intField = pm.intField(value=intAttribute.value)
+    if(intAttribute.minimumValue is not None):
+        intField.setMinValue(intAttribute.minimumValue)
+    if(intAttribute.maximumValue is not None):
+        intField.setMaxValue(intAttribute.maximumValue)
+    if(annotation is not None):
+        intField.setAnnotation(annotation)
+        
+    intField.changeCommand(lambda *args: intAttribute._setValue(intField.getValue()))
+    
+    intAttribute.updateUiCommand = intField.setValue
+    intAttribute.uiEnableMethod = intField.setEnable
+    
+    SetAsChildLayout(rowLayout)
+    
+    return (rowLayout, intField)
     
 #########################
 
@@ -565,7 +654,6 @@ def MakeButtonStandalone(label, callback, extraLabel=None, annotation=None):
         
         SetAsChildLayout(rowLayout)
         
-        return rowLayout
     else:
         rowLayout = MakeRowLayout(2, rightColumnWidth=__OPTIONS_MENUS_WIDTH__, makeAdjustable=False)
         MakeText(extraLabel, annotation)
@@ -574,7 +662,7 @@ def MakeButtonStandalone(label, callback, extraLabel=None, annotation=None):
         
         SetAsChildLayout(rowLayout)
         
-        return rowLayout
+    return (rowLayout, button)
 
 #######################
 def MakeButtonStrip(textCommandTupleList):
@@ -592,7 +680,7 @@ def MakeButtonStrip(textCommandTupleList):
     DistributeControlsHorizontallyInFormLayout(formLayout, controls)
     SetAsChildLayout(formLayout)
     
-    return formLayout
+    return (formLayout, controls)
 
 #####################
 def MakeTextInputField(label, enterCommand=None, placeholderText=None, leftColumnWidth=__LEFT_COLUMN_WIDTH__, annotation=None):
@@ -600,12 +688,10 @@ def MakeTextInputField(label, enterCommand=None, placeholderText=None, leftColum
 
     MakeText(label, annotation)
     textField = pm.textField()
-#     textField = pm.textFieldGrp(label=label, 
-#                                 adjustableColumn=2, 
-#                                 columnWidth=(1, leftColumnWidth),
-#                                 columnAttach2=('both', 'both'))
+    
     if(enterCommand is not None):
         textField.enterCommand(enterCommand)
+        textField.setAlwaysInvokeEnterCommandOnReturn(True)
     if(placeholderText is not None):
         textField.setText(placeholderText)
     if(annotation is not None):
@@ -614,11 +700,9 @@ def MakeTextInputField(label, enterCommand=None, placeholderText=None, leftColum
     SetAsChildLayout(rowLayout)
     
     return (rowLayout, textField)
-#         
-#     return textField
 
 #####################
-def MakeRadioButtonGroup(label, buttonTitlesTuple, onChangeCommand, 
+def MakeRadioButtonGroup(label, buttonTitlesTuple, onChangeCommand, vertical,
                          leftColumnWidth=__LEFT_COLUMN_WIDTH__, annotation=None):
     numberOfButtons = len(buttonTitlesTuple)
     if(numberOfButtons < 1 or numberOfButtons > 4):
@@ -628,6 +712,7 @@ def MakeRadioButtonGroup(label, buttonTitlesTuple, onChangeCommand,
                      ("labelArray%d" % numberOfButtons) : buttonTitlesTuple,
                      "numberOfRadioButtons" : numberOfButtons,
                      "columnAttach" : (2, "left", 0),
+                     "vertical" : vertical,
                      "select" : 1 }
     if(onChangeCommand is not None):
         buttonKwargs["changeCommand"] = onChangeCommand
@@ -653,6 +738,47 @@ def GetUserConfirmation(title, message):
 #####################
 def DisplayInfoBox(message, title=None):
     pm.informBox(title, message)
+
+#####################    
+def MakeImage(imageFilePath, annotation=None):
+    if(annotation is None):
+        return pm.image(image=imageFilePath)
+    else:
+        return pm.image(image=imageFilePath, annotation=annotation)
+
+#####################
+def MakeNodeNameField(label, shapeNode, nameChangeCommand, leftColumnWidth=__LEFT_COLUMN_WIDTH__, annotation=None):
+    rowLayout = MakeRowLayout(2, leftColumnWidth=leftColumnWidth, makeAdjustable=False)
+    
+    MakeText(label, annotation)
+    nameField = pm.nameField(object=shapeNode)
+    if(nameChangeCommand is not None):
+        nameField.setNameChangeCommand(nameChangeCommand)
+    if(annotation):
+        nameField.setAnnotation(annotation)
+    SetAsChildLayout(rowLayout)
+
+    return (rowLayout, nameField)
+
+#####################
+def MakeProgressBar(initialStatus, maxValue=100, leftColumnWidth=__LEFT_COLUMN_WIDTH__, 
+                    middleColumnWidth=__MIDDLE_COLUMN_WIDTH__, rightColumnWidth=__RIGHT_COLUMN_WIDTH__, annotation=None):
+
+    rowLayout = MakeRowLayout(3, leftColumnWidth=leftColumnWidth, middleColumnWidth=middleColumnWidth, 
+                              rightColumnWidth=rightColumnWidth, makeAdjustable=False)
+    
+    MakeText("Status:", annotation)
+    progressBar = pm.progressBar(maxValue=maxValue)
+    statusLabel = pm.textField(text=initialStatus, editable=False)
+#     if(barWidth is not None):
+#         progressBar.setWidth(barWidth)
+    if(annotation is not None):
+        statusLabel.setAnnotation(annotation)
+        progressBar.setAnnotation(annotation)
+    
+    SetAsChildLayout(rowLayout)
+    
+    return (rowLayout, statusLabel, progressBar)
 
 #####################    
 def GetFilePathFromUser(isReadOnly, initialFolderPath=None, fileExtensionMask=None):

@@ -85,49 +85,49 @@ class AgentSelectionWindow(BoidBaseObject):
     originalSelection = property(_getOriginalSelection)
     
 #####################    
-    def show(self, windowTitle, currentlySelectedAgentIdsList, selectionMadeCommand, validSelectionIdsList=None):
-        if(self._selectedOption != AgentSelectionWindow.__invalid__):
-            util.LogWarning("Overwriting previous agent selection session.")
+    def show(self, windowTitle, currentlySelectedAgentIdsList, selectionMadeCommand, validSelectionIdsList=None):            
+        if(not uib.WindowIsVisible(self._window)):
+        
+            self._currentlySelectedAgentsList = list(currentlySelectedAgentIdsList) # important to take a copy here - avoids modifying the original prematurely
+            self._originallySelectedAgentsSet = set(currentlySelectedAgentIdsList)
+            if(validSelectionIdsList is not None):
+                self._fullAgentsList = sorted(validSelectionIdsList)
+            else:
+                self._fullAgentsList = sorted(scene.ParticleIdsListForParticleShape(self._particleShapeName))
             
-        self.closeWindow()
-        
-        self._currentlySelectedAgentsList = list(currentlySelectedAgentIdsList) # important to take a copy here - avoids modifying the original prematurely
-        self._originallySelectedAgentsSet = set(currentlySelectedAgentIdsList)
-        if(validSelectionIdsList is not None):
-            self._fullAgentsList = sorted(validSelectionIdsList)
-        else:
-            self._fullAgentsList = sorted(scene.ParticleIdsListForParticleShape(self._particleShapeName))
-        
-        self._window = uib.MakeWindow(windowTitle)#, (450,80))
-        formLayout = uib.MakeFormLayout()
-        
-        borderLayout = uib.MakeBorderingLayout()
-        columnLayout = uib.MakeColumnLayout()
-        self._textInput = uib.MakeTextInputField("Agent IDs:", 
-                                                 self._okButtonWasPressed,
-                                                 self._getSelectionString(), 
-                                                 leftColumnWidth=_LeftColumnWidth_, 
-                                                 annotation=_TextFieldAnnotation_)[1]
-        self._selectionMethodRadioButtons = uib.MakeRadioButtonGroup("Selection Method:", 
-                                                                     AgentSelectionWindow.__SelectionOptionStrings__[1:], 
-                                                                     self._onSelectionRadioButtonChange,
-                                                                     leftColumnWidth=_LeftColumnWidth_,
-                                                                     annotation=_SelectionRadioButtonsAnnotation_)
-        self._selectionMethodRadioButtons.setSelect(AgentSelectionWindow.__textInputSelection__)
-        self._selectedOption = AgentSelectionWindow.__textInputSelection__
-        
-        self._updateTypeRadioButtons = uib.MakeRadioButtonGroup("Update Type:",
-                                                                AgentSelectionWindow.__UpdateTypeStrings__[1:],
-                                                                None,
-                                                                leftColumnWidth=_LeftColumnWidth_,
-                                                                annotation=_UpdateRadioButtonsAnnotation_)
-        uib.SetAsChildLayout(columnLayout, borderLayout)
-        
-        buttonStripLayout = uib.MakeButtonStrip((("OK", self._okButtonWasPressed), ("Cancel", self.closeWindow)))
-        self._selectionMadeCommand = selectionMadeCommand
-        uib.SetAsChildLayout(buttonStripLayout)
-        
-        uib.DistributeButtonedWindowInFormLayout(formLayout, borderLayout, buttonStripLayout)
+            self._window = uib.MakeWindow(windowTitle)#, (450,80))
+            formLayout = uib.MakeFormLayout()
+            
+            borderLayout = uib.MakeBorderingLayout()
+            columnLayout = uib.MakeColumnLayout()
+            self._textInput = uib.MakeTextInputField("Agent IDs:", 
+                                                     self._okButtonWasPressed,
+                                                     self._getSelectionString(), 
+                                                     leftColumnWidth=_LeftColumnWidth_, 
+                                                     annotation=_TextFieldAnnotation_)[1]
+            self._selectionMethodRadioButtons = uib.MakeRadioButtonGroup("Selection Method:", 
+                                                                         AgentSelectionWindow.__SelectionOptionStrings__[1:], 
+                                                                         self._onSelectionRadioButtonChange,
+                                                                         vertical=False,
+                                                                         leftColumnWidth=_LeftColumnWidth_,
+                                                                         annotation=_SelectionRadioButtonsAnnotation_)
+            self._selectionMethodRadioButtons.setSelect(AgentSelectionWindow.__textInputSelection__)
+            self._selectedOption = AgentSelectionWindow.__textInputSelection__
+            
+            self._updateTypeRadioButtons = uib.MakeRadioButtonGroup("Update Type:",
+                                                                    AgentSelectionWindow.__UpdateTypeStrings__[1:],
+                                                                    None,
+                                                                    vertical=True,
+                                                                    leftColumnWidth=_LeftColumnWidth_,
+                                                                    annotation=_UpdateRadioButtonsAnnotation_)
+            uib.SetAsChildLayout(columnLayout, borderLayout)
+            
+            buttonStripLayout = uib.MakeButtonStrip((("OK", self._okButtonWasPressed), ("Cancel", self.closeWindow)))[0]
+            self._selectionMadeCommand = selectionMadeCommand
+            uib.SetAsChildLayout(buttonStripLayout)
+            
+            uib.DistributeButtonedWindowInFormLayout(formLayout, borderLayout, buttonStripLayout)
+            
         self._window.show()
         
 #####################
@@ -234,7 +234,7 @@ class AgentSelectionWindow(BoidBaseObject):
             elif(self._selectedOption == AgentSelectionWindow.__selectAll__): 
                 del self._currentlySelectedAgentsList[:]
                 self._currentlySelectedAgentsList.extend(self._fullAgentsList)
-                self._textInput.setText("*")
+                self._textInput.setText(self._getSelectionString())
                 self._textInput.setEditable(False)
             elif(self._selectedOption == AgentSelectionWindow.__selectNone__): 
                 del self._currentlySelectedAgentsList[:]
@@ -254,8 +254,7 @@ class AgentSelectionWindow(BoidBaseObject):
     
 #####################        
     def closeWindow(self, *args):
-        if(uib.WindowExists(self._window)):
-            util.EvalDeferred(uib.DestroyWindow, self._window)
+        util.EvalDeferred(uib.DestroyWindowIfNecessary, self._window)
         
         del self._currentlySelectedAgentsList[:]
         self._originallySelectedAgentsSet.clear()

@@ -27,7 +27,7 @@ class _DataBlobBaseObject(object):
     """Convenience class to provide common agentId accessor for dataBlob objects.
     """
     def __init__(self, agent):
-        self._agentId = agent.particleId
+        self._agentId = agent.agentId
         self.onUnassignedCallback = None
         
 #####################        
@@ -89,16 +89,28 @@ class _FollowOnBehaviourAttributeInterface(object):
             while(self._followOnBehaviourMenuItems):
                 uib.DeleteComponent(self._followOnBehaviourMenuItems.pop())
             uib.SetParentMenuLayout(self._followOnBehaviourMenu)
-            for behaviourID in self._followOnBehaviourIDs:
-                self._followOnBehaviourMenuItems.append(uib.MakeMenuSubItem(behaviourID))
-                 
-            if(self._followOnBehaviour.value not in self._followOnBehaviourIDs):
+            
+            if(self._followOnBehaviourIDs):
+                for behaviourID in self._followOnBehaviourIDs:
+                    self._followOnBehaviourMenuItems.append(uib.MakeMenuSubItem(behaviourID))
+                
+                if(self._followOnBehaviour.value not in self._followOnBehaviourIDs):
+                    if(len(self._followOnBehaviourIDs) == 1 or self.behaviourId == defaultBehaviourId):
+                        self._followOnBehaviour.value = self._followOnBehaviourIDs[0]
+                    else:
+                        self._followOnBehaviour.value = self._defaultBehaviourID
+                else:
+                    self._followOnBehaviour._updateInputUiComponents()
+            else:
+                self._followOnBehaviour._value = None
+                self._followOnBehaviourMenuItems.append(uib.MakeMenuSubItem("<None>"))
+                util.LogWarning("All follow-on behaviour candidates for \"%s\" deleted." % self.behaviourId)
+
+        elif(self._followOnBehaviour.value not in self._followOnBehaviourIDs):
+            if(defaultBehaviourId != self.behaviourId):
                 self._followOnBehaviour.value = self._defaultBehaviourID
             else:
-                self._followOnBehaviour._updateInputUiComponents()
-                 
-        elif(self._followOnBehaviour.value not in self._followOnBehaviourIDs):
-            self._followOnBehaviour.value = self._defaultBehaviourID
+                self._followOnBehaviour.value = None
              
                  
 # END OF CLASS - FollowOnBehaviourAtrributeInterface
@@ -208,6 +220,13 @@ Recommend this is hard-coded rather than done at runtime." % attributeName)
         Implement in subclasses if any updates are needed.
         """
         pass
+    
+########
+    def onCalculationsCompleted(self):
+        """Called each time the swarm instance finishes calculating updates
+        for the current frame.
+        Override in subclasses if needed."""
+        pass
    
 #####################     
     def onBehaviourListUpdated(self, behaviourIDsList, defaultBehaviourId):
@@ -217,7 +236,7 @@ Recommend this is hard-coded rather than done at runtime." % attributeName)
            
 #####################     
     def getDataBlobForAgent(self, agent):
-        agentId = agent.particleId
+        agentId = agent.agentId
         if(agentId in self._dataBlobs):
             raise RuntimeError("Re-requesting dataBlob which is already assigned")
         

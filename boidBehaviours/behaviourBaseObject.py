@@ -80,6 +80,13 @@ class BehaviourBaseObject(BoidBaseObject):
     def onFrameUpdated(self):
         """Can be implemented by subclasses if necessary, to set up everything for a new frame."""
         pass  # default does nothing
+    
+########
+    def onCalculationsCompleted(self):
+        """Called each time the swarm instance finishes calculating updates
+        for the current frame.
+        Override in subclasses if needed."""
+        pass
  
 ##########################   
     def onAgentUpdated(self, agent):
@@ -201,6 +208,30 @@ class BehaviourBaseObject(BoidBaseObject):
             
             madeChanges = True
             
+        return madeChanges
+    
+######################             
+    def _matchPreferredVelocityIfNecessary(self, agent, desiredAcceleration):
+        """Will increase desiredAcceleration if agent is travelling/accelerating below 
+        the preferred minimum values.
+        """
+        madeChanges = False
+        movementAttributes = agent.state.movementAttributes
+        
+        if(agent.currentVelocity.magnitude() < movementAttributes.preferredVelocity and 
+           desiredAcceleration.magnitude() < movementAttributes.maxAcceleration):
+            if(desiredAcceleration.isNull()):
+                desiredAcceleration.resetToVector(agent.currentVelocity)
+                desiredAcceleration.normalise(movementAttributes.maxAcceleration)
+                
+                madeChanges = True
+            else:
+                accelerationMagnitude = desiredAcceleration.magnitude()
+                if(accelerationMagnitude < movementAttributes.maxAcceleration):
+                    desiredAcceleration *= (movementAttributes.maxAcceleration / accelerationMagnitude)
+                    
+                    madeChanges = True
+        
         return madeChanges
                     
 ##########################    

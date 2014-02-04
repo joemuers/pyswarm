@@ -138,6 +138,9 @@ class Vector3(BoidBaseObject):
     
     def __gt__(self, other):
         return not IsVector3(other) or self.magnitudeSquared() > other.magnitudeSquared()
+    
+    def __nonzero__(self):
+        return not self.isNull()
 
 ####################### 
     def _get_x(self):
@@ -176,6 +179,18 @@ class Vector3(BoidBaseObject):
         self.y = value[1]
         self.z = value[2]
     valueAsTuple = property(_getValueAsTuple, _setValueAsTuple)
+
+#######################    
+    def setValueFromString(self, valueString):
+        tokens = valueString.strip(" <>").split(', ')
+        
+        self.x = float(tokens[0].lstrip('x='))
+        self.y = float(tokens[1].lstrip('y='))
+        self.z = float(tokens[2].lstrip('z='))
+        
+#######################     
+    def isNull(self, ignoreVertical=False):
+        return (self.x == 0 and self.z == 0 and (ignoreVertical or self.y == 0))
     
 #######################
     def add(self, otherVector, ignoreVertical=False):
@@ -230,10 +245,6 @@ class Vector3(BoidBaseObject):
             return 0
         else:
             return 90 if self.y > 0 else -90
-
-#######################     
-    def isNull(self, ignoreVertical=False):
-        return (self.x == 0 and self.z == 0 and (ignoreVertical or self.y == 0))
 
 #######################         
     def reset(self, x=0, y=0, z=0):

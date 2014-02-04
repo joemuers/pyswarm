@@ -33,47 +33,72 @@ class ClassicBoid(BehaviourBaseObject):
         
 ######################         
     def getDesiredAccelerationForAgent(self, agent, nearbyAgentsList):
-        desiredAcceleration = bv3.Vector3()
-        self._doNotClampMovement = False
-        
-        if(agent.isTouchingGround):
-            agent.state.updateRegionalStatsIfNecessary(agent, nearbyAgentsList)
-            movementAttributes = agent.state.movementAttributes
+        if(self.attributes.shouldKickstartAgent(agent.agentId)):
+            return self.attributes.getKickstartVector()
+        else:
+            desiredAcceleration = bv3.Vector3()
+            self._doNotClampMovement = False
             
-            if(self._avoidMapEdgeBehaviour(agent, desiredAcceleration)):
-                self._clampMovementIfNecessary(agent, 
-                                               desiredAcceleration, 
-                                               movementAttributes.maxAcceleration, 
-                                               movementAttributes.maxVelocity, 
-                                               movementAttributes.maxTurnRate,
-                                               self._movementAttributes.maxTurnRateChange,
-                                               movementAttributes.preferredTurnVelocity)
-            elif(self._avoidNearbyAgentsBehaviour(agent, desiredAcceleration)):
-                self._clampMovementIfNecessary(agent, 
-                                               desiredAcceleration, 
-                                               movementAttributes.maxAcceleration, 
-                                               movementAttributes.maxVelocity, 
-                                               movementAttributes.maxTurnRate,
-                                               self._movementAttributes.maxTurnRateChange,
-                                               movementAttributes.preferredTurnVelocity)
-            else:
-                if(self._matchSwarmHeadingBehaviour(agent, desiredAcceleration)):
-                    self._matchSwarmPositionBehaviour(agent, desiredAcceleration)   # - TODO check if we want this or not???
-                elif(not self._matchSwarmPositionBehaviour(agent, desiredAcceleration) and not agent.hasNeighbours):
-                    self._searchForSwarmBehaviour(agent, desiredAcceleration)
+            if(agent.isTouchingGround):
+                agent.state.updateRegionalStatsIfNecessary(agent, nearbyAgentsList)
+                movementAttributes = agent.state.movementAttributes
                 
-                self._matchPreferredVelocityIfNecessary(agent, desiredAcceleration)
-                self._kickstartAgentMovementIfNecessary(agent, desiredAcceleration)
-                self._clampMovementIfNecessary(agent, 
-                                               desiredAcceleration, 
-                                               movementAttributes.maxAcceleration, 
-                                               movementAttributes.maxVelocity, 
-                                               movementAttributes.maxTurnRate,
-                                               self._movementAttributes.maxTurnRateChange,
-                                               movementAttributes.preferredTurnVelocity)
-        self._setDebugColoursForAgent(agent)
-        
-        return desiredAcceleration
+                if(self._avoidMapEdgeBehaviour(agent, desiredAcceleration)):
+                    self._clampMovementIfNecessary(agent, 
+                                                   desiredAcceleration, 
+                                                   movementAttributes.maxAcceleration, 
+                                                   movementAttributes.maxVelocity, 
+                                                   movementAttributes.maxTurnRate,
+                                                   self._movementAttributes.maxTurnRateChange,
+                                                   movementAttributes.preferredTurnVelocity)
+                elif(self._avoidNearbyAgentsBehaviour(agent, desiredAcceleration) and 
+                     self.attributes.separationIsMutuallyExclusive):
+                    
+                    self._clampMovementIfNecessary(agent, 
+                                                   desiredAcceleration, 
+                                                   movementAttributes.maxAcceleration, 
+                                                   movementAttributes.maxVelocity, 
+                                                   movementAttributes.maxTurnRate,
+                                                   self._movementAttributes.maxTurnRateChange,
+                                                   movementAttributes.preferredTurnVelocity)
+                else:
+                    behaviourAttributes = agent.state.behaviourAttributes
+                    tempVector = bv3.Vector3()
+                    if(desiredAcceleration):
+                        weightingTotal = behaviourAttributes.separationWeighting
+                    else:
+                        weightingTotal = 0
+                    
+                    if(self._matchSwarmHeadingBehaviour(agent, tempVector)):
+                        desiredAcceleration.add(tempVector)
+                        weightingTotal += behaviourAttributes.alignmentWeighting
+                        tempVector.reset()
+                        
+                        if(self._matchSwarmPositionBehaviour(agent, tempVector)):   # - TODO check if we want this or not???
+                            weightingTotal += behaviourAttributes.cohesionWeighting
+                            desiredAcceleration.add(tempVector)
+                            if(weightingTotal > 0):
+                                desiredAcceleration.divide(weightingTotal)
+                    elif(self._matchSwarmPositionBehaviour(agent, desiredAcceleration)):
+                        weightingTotal += behaviourAttributes.cohesionWeighting
+                        desiredAcceleration.add(tempVector)
+                        if(weightingTotal > 0):
+                            desiredAcceleration.divide(weightingTotal)
+                    else:
+                        self._searchForSwarmBehaviour(agent, desiredAcceleration)
+                    
+                    self._matchPreferredVelocityIfNecessary(agent, desiredAcceleration)
+                    self._kickstartAgentMovementIfNecessary(agent, desiredAcceleration)
+                    self._clampMovementIfNecessary(agent, 
+                                                   desiredAcceleration, 
+                                                   movementAttributes.maxAcceleration, 
+                                                   movementAttributes.maxVelocity, 
+                                                   movementAttributes.maxTurnRate,
+                                                   self._movementAttributes.maxTurnRateChange,
+                                                   movementAttributes.preferredTurnVelocity)
+            self._setDebugColoursForAgent(agent)
+            
+            return desiredAcceleration
         
 ######################         
     def _avoidMapEdgeBehaviour(self, agent, desiredAcceleration):
@@ -101,23 +126,31 @@ class ClassicBoid(BehaviourBaseObject):
         
 ######################                  
     def _avoidNearbyAgentsBehaviour(self, agent, desiredAcceleration):
-        if(agent.isCollided):  # Problem here - we're driving the velocity directly... should be done by Maya really
+        """Adds WEIGHTED result to desiredAcceleration, IF separation is not mutually exclusive (otherwise
+        result is not weighted)."""
+        if(self.attributes.separationIsMutuallyExclusive) : weighting = 1
+        else: weighting = agent.behaviourAttributes.separationWeighting
+
+        if(agent.isCollided and weighting > 0):  # Problem here - we're driving the velocity directly... should be done by Maya really
             ######### might not really need this if particle self-collisions are working properly... ??
             stopVector = bv3.Vector3(agent.currentVelocity)
             stopVector.invert()
             
-            desiredAcceleration.resetToVector(agent.state.avCollisionDirection)
-            desiredAcceleration.invert()
-            desiredAcceleration.normalise(agent.state.movementAttributes.maxAcceleration)
-            desiredAcceleration.add(stopVector)
+            avoidVector = bv3.Vector3(agent.state.avCollisionDirection)
+            avoidVector.resetToVector(agent.state.avCollisionDirection)
+            avoidVector.invert()
+            avoidVector.normalise(agent.state.movementAttributes.maxAcceleration)
+            avoidVector.add(stopVector)
+            
+            desiredAcceleration.add(weighting * avoidVector)
             #  self._desiredAcceleration.y = 0
             self._doNotClampMovement = True
             
             return True
         
-        elif(agent.isCrowded):   # note that we move AWAY from the avPos here
+        elif(agent.isCrowded and weighting > 0):   # note that we move AWAY from the avPos here
             differenceVector = agent.currentPosition - agent.state.avCrowdedPosition
-            desiredAcceleration.add(differenceVector)
+            desiredAcceleration.add(weighting * differenceVector)
 
             return True
 
@@ -126,15 +159,20 @@ class ClassicBoid(BehaviourBaseObject):
             
 ####################### 
     def _matchSwarmHeadingBehaviour(self, agent, desiredAcceleration):
+        """Adds WEIGHTED result to desiredAcceleration"""
         # just change the heading here, *not* the speed...
-        if(agent.hasNeighbours):
+        weighting = agent.behaviourAttributes.alignmentWeighting
+        
+        if(agent.hasNeighbours and weighting > 0):
             desiredRotationAngle = agent.currentVelocity.angleTo(agent.state.avVelocity)
             desiredAngleMagnitude = abs(desiredRotationAngle)
             
-            if(desiredAngleMagnitude > agent.state.behaviourAttributes.alignmentDirectionThreshold):
+            if(desiredAngleMagnitude > agent.behaviourAttributes.alignmentDirectionThreshold):
                 desiredVelocity = bv3.Vector3(agent.currentVelocity)
                 desiredVelocity.rotateInHorizontal(desiredRotationAngle)
-                desiredAcceleration.add(desiredVelocity - agent.currentVelocity)
+                result = desiredVelocity - agent.currentVelocity
+
+                desiredAcceleration.add(weighting * result)
                     
                 return True
 
@@ -142,12 +180,17 @@ class ClassicBoid(BehaviourBaseObject):
 
 #############################
     def _matchSwarmPositionBehaviour(self, agent, desiredAcceleration):
-        if(agent.hasNeighbours):
-            distanceFromSwarmAvrgSquared = agent.currentPosition.distanceSquaredFrom(agent.state.avPosition)
+        """Adds WEIGHTED result to desiredAcceleration"""
+        state = agent.state
+        weighting = state.behaviourAttributes.cohesionWeighting
+        
+        if(agent.hasNeighbours and weighting > 0):
+            distanceFromSwarmAvrgSquared = agent.currentPosition.distanceSquaredFrom(state.avPosition)
             
-            if(agent.state.behaviourAttributes.cohesionPositionThreshold **2 < distanceFromSwarmAvrgSquared):
-                differenceVector = agent.state.avPosition - agent.currentPosition
-                desiredAcceleration.add(differenceVector)
+            if(state.behaviourAttributes.cohesionPositionThreshold **2 < distanceFromSwarmAvrgSquared):
+                differenceVector = state.avPosition - agent.currentPosition
+                
+                desiredAcceleration.add(weighting * differenceVector)
                 
                 return True
 
@@ -172,30 +215,6 @@ class ClassicBoid(BehaviourBaseObject):
             return True
 
         return False            
-
-######################             
-    def _matchPreferredVelocityIfNecessary(self, agent, desiredAcceleration):
-        """Will increase desiredAcceleration if agent is travelling/accelerating below 
-        the preferred minimum values.
-        """
-        madeChanges = False
-        movementAttributes = agent.state.movementAttributes
-        
-        if(agent.currentVelocity.magnitude() < movementAttributes.preferredVelocity and 
-           desiredAcceleration.magnitude() < movementAttributes.maxAcceleration):
-            if(desiredAcceleration.isNull()):
-                desiredAcceleration.resetToVector(agent.currentVelocity)
-                desiredAcceleration.normalise(movementAttributes.maxAcceleration)
-                
-                madeChanges = True
-            else:
-                accelerationMagnitude = desiredAcceleration.magnitude()
-                if(accelerationMagnitude < movementAttributes.maxAcceleration):
-                    desiredAcceleration *= (movementAttributes.maxAcceleration / accelerationMagnitude)
-                    
-                    madeChanges = True
-        
-        return madeChanges
 
 ######################                     
     def _kickstartAgentMovementIfNecessary(self, agent, desiredAcceleration):
