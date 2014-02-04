@@ -104,7 +104,8 @@ class _FollowOnBehaviourAttributeInterface(object):
             else:
                 self._followOnBehaviour._value = None
                 self._followOnBehaviourMenuItems.append(uib.MakeMenuSubItem("<None>"))
-                util.LogWarning("All follow-on behaviour candidates for \"%s\" deleted." % self.behaviourId)
+                util.EvalDeferred(util.LogWarning, # deferred eval so that warning is the final log message in console output 
+                                  ("All follow-on behaviour candidates for \"%s\" deleted." % self.behaviourId))
 
         elif(self._followOnBehaviour.value not in self._followOnBehaviourIDs):
             if(defaultBehaviourId != self.behaviourId):
