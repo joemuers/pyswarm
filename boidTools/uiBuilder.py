@@ -336,12 +336,13 @@ def MakeRandomizerGroup(randomizerAttribute, annotation=None):
     
     
 def MakeCheckboxStandalone(boxLabel, initialValue, extraLabel=None, changeCommand=None, 
-                           leftColumnWidth=__LEFT_COLUMN_WIDTH__, annotation=None):
+                           leftColumnWidth=__LEFT_COLUMN_WIDTH__, annotation=None, switchLabels=False):
     rowLayout = MakeRowLayout(2 if(extraLabel is not None) else 1, 
                               leftColumnWidth=leftColumnWidth + __CHECKBOX_OFFSET__, 
                               rightColumnWidth=__MIDDLE_COLUMN_WIDTH__ + __RIGHT_COLUMN_WIDTH__)
     
     if(extraLabel is not None):
+        if(switchLabels) : boxLabel, extraLabel = extraLabel, boxLabel
         if(boxLabel): boxLabel += ':'
         MakeText(boxLabel, annotation)
         boxLabel = extraLabel
@@ -357,7 +358,7 @@ def MakeCheckboxStandalone(boxLabel, initialValue, extraLabel=None, changeComman
     return (rowLayout, checkbox)
     
 #####################
-def MakeCheckboxGroup(attribute, extraLabel=None, annotation=None, leftColumnWidth=__LEFT_COLUMN_WIDTH__):
+def MakeCheckboxGroup(attribute, extraLabel=None, annotation=None, leftColumnWidth=__LEFT_COLUMN_WIDTH__, switchLabels=False):
     if(type(attribute) != at.BoolAttribute):
         raise TypeError("Attempt to make checkbox group from non-boolean attribute.")
     
@@ -367,6 +368,7 @@ def MakeCheckboxGroup(attribute, extraLabel=None, annotation=None, leftColumnWid
     
     boxLabel = attribute.attributeLabel
     if(extraLabel is not None):
+        if(switchLabels) : boxLabel, extraLabel = extraLabel, boxLabel
         if(boxLabel): boxLabel += ':'
         MakeText(boxLabel, annotation)
         boxLabel = extraLabel

@@ -45,6 +45,8 @@ class _SingleAttributeBaseObject(BoidBaseObject):
         self._uiEnableMethod = None
         self._isUiEnabled = True
         
+        self.logValueChanges = True
+        
         self.excludeFromDefaults = False
 
 #####################         
@@ -103,7 +105,8 @@ class _SingleAttributeBaseObject(BoidBaseObject):
         self._updateInputUiComponents()
         self._updateDelegate()
         
-        util.LogInfo("Attribute value changed: %s=%s (was: %s)" % (self._attributeLabel, newValue, oldValue))
+        if(self.logValueChanges):
+            util.LogInfo("Attribute value changed: %s=%s (was: %s)" % (self._attributeLabel, newValue, oldValue))
 
 #####################           
     def _getUiEnableMethod(self):
@@ -134,12 +137,22 @@ class _SingleAttributeBaseObject(BoidBaseObject):
 #####################    
     def _updateInputUiComponents(self):
         if(self.updateUiCommand is not None):
-            self.updateUiCommand(self.value)
+            try:
+                self.updateUiCommand(self.value)
+            except RuntimeError:
+                self.updateUiCommand = None
+            except:
+                pass
  
 #####################
     def setEnabled(self, enabled):
         if(self.uiEnableMethod is not None):
-            self.uiEnableMethod(enabled)
+            try:
+                self.uiEnableMethod(enabled)
+            except RuntimeError:
+                self.uiEnableMethod = None
+            except:
+                pass
         elif(self.updateUiCommand is not None):
             util.LogWarning("uiEnableMethod not defined for attribute \"%s\", ignoring..." % self._attributeLabel)
 

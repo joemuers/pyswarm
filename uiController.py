@@ -80,6 +80,11 @@ class UiControllerDelegate(object):
     @abstractmethod
     def showAssignAgentsWindowForBehaviour(self, behaviourId):
         raise NotImplemented
+    
+######## - Other
+    @abstractmethod
+    def quickSceneSetup(self):
+        raise NotImplemented
 
 # END OF CLASS - UiControllerDelegate
 ###########################################
@@ -360,7 +365,10 @@ class UiController(BoidBaseObject):
         perceptionAttributes.populateUiLayout()
         uib.SetAsChildLayout(awarenessLayout, scrollLayout)
         
-        buttonStripLayout = uib.MakeButtonStrip((("Load Defaults",
+        buttonStripLayout = uib.MakeButtonStrip((("Quick Setup",
+                                                  self._didPressQuickSetup,
+                                                  "Makes some initial changes to the Maya scene to get up and running."),
+                                                 ("Load Defaults",
                                                   lambda *args: self._didSelectRestoreAgentValues(movementAttributes.behaviourId, 
                                                                                                   perceptionAttributes.behaviourId),
                                                   "Reset agent attributes to default values."),))[0]
@@ -425,6 +433,14 @@ class UiController(BoidBaseObject):
         filePath = uib.GetFilePathFromUser(False, fl.SaveFolderLocation(), fl.SaveFileExtension())
         if(filePath is not None):
             self.delegate.saveToFile(filePath)
+            
+########
+    def _didPressQuickSetup(self, *args):
+        if(uib.GetUserConfirmation("Quick Scene Setup", "This will set some of your nParticle attribute values within Maya "
+                                   + "(friction, self collision etc) to get the swarm up and running.\n"
+                                   + "***This includes changing the nucleus space scale and enabling it's ground plane.***"
+                                   + "\nContinue?")):
+            self.delegate.quickSceneSetup()
 
 ########            
     def _didSelectRestoreAgentValues(self, movementId, perceptionId):

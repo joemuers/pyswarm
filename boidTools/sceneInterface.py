@@ -241,6 +241,85 @@ def AddStickinessPerParticleAttributeIfNecessary(particleShapeName):
         pm.addAttr(particleShapeName, longName='stickinessScalePP0', dataType='doubleArray')
         util.LogDebug("Added PP attribute stickinessScalePP0 to %s" % particleShapeName)
         
+#######################################
+
+
+
+#######################################
+def QuickSceneSetup(particleShapeName, 
+                    enableSelfCollide=True, disableFriction=True, disableIgnoreGravity=True,
+                    changeRenderType=True, enableGroundPlane=True, changeSpaceScale=True,
+                    translateAbovePlane=True):
+    
+    util.LogInfo("Performing quick scene setup...")
+    changesMade = False
+    
+    selfCollide = particleShapeName + ".selfCollide"
+    if(enableSelfCollide and not pm.getAttr(selfCollide)):
+        pm.setAttr(selfCollide, True)
+        changesMade = True
+        util.LogInfo("Enabled %s selfCollide." % particleShapeName)
+    
+    friction = particleShapeName + ".friction"
+    if(disableFriction and pm.getAttr(friction) > 0):
+        pm.setAttr(friction, 0.0)
+        changesMade = True
+        util.LogInfo("Set %s friction = 0." % particleShapeName)
+        
+    ignoreSolverGravity = particleShapeName + ".ignoreSolverGravity"
+    if(disableIgnoreGravity and pm.getAttr(ignoreSolverGravity)):
+        pm.setAttr(ignoreSolverGravity, False)
+        changesMade = True
+        util.LogInfo("Disabled %s ignoreSolverGravity." % particleShapeName)
+        
+    renderType = particleShapeName + ".particleRenderType"
+    if(changeRenderType and pm.getAttr(renderType) != 4):
+        pm.setAttr(renderType, 4)
+        changesMade = True
+        util.LogInfo("Changed %s render type to spheres." % particleShapeName)
+        
+    nucleus = pm.ls(pm.mel.getActiveNucleusNode(False, True))[0]
+    nucleusName = nucleus.name()
+    if(enableGroundPlane and not nucleus.attr("usePlane").get()):
+        nucleus.setAttr("usePlane", True)
+        changesMade = True
+        util.LogInfo("Enabled %s ground plane" % nucleusName)
+    
+    if(enableGroundPlane and disableFriction and nucleus.attr("planeFriction").get() > 0):
+        nucleus.setAttr("planeFriction", 0.0)
+        changesMade = True
+        util.LogInfo("Set %s ground plane friction = 0" % nucleusName)
+    
+    if(changeSpaceScale and abs(GetNucleusSpaceScale() - 0.01) > 0.001):
+        nucleus.setAttr('spaceScale', 0.01)
+        changesMade = True
+        util.LogInfo("Set %s spaceScale to 0.01" % nucleusName)
+    
+    if(translateAbovePlane):
+        positions = ParticlePositionsListForParticleShape(particleShapeName)
+        if(positions):
+            yMin = float('inf')
+            for _, y, _ in zip(positions[0::3], positions[1::3], positions[2::3]):
+                if(y < yMin) : yMin = y
+            
+            particleRadius = pm.getAttr(particleShapeName + ".radius")
+            collideWidthScale = pm.getAttr(particleShapeName + ".collideWidthScale")
+            yMin -= (particleRadius * collideWidthScale) + 0.001
+            
+            groundOriginY = nucleus.attr('planeOriginY').get()
+            if(yMin < groundOriginY):
+                diff = groundOriginY - yMin
+                particleShapeObject = PymelObjectFromObjectName(particleShapeName)
+                particleTransform = particleShapeObject.parentAtIndex(0)
+                particleTransform.translateBy((0, diff, 0), space='world')
+                changesMade = True
+                util.LogInfo("Translated %s by %.3f in y to clear %s ground plane." 
+                             % (particleShapeName, diff, nucleusName))
+
+    # re-setting time slider in this way refreshes solver display etc.
+    pm.currentTime(util.GetCurrentFrameNumber(), update=True)
+    util.LogInfo("%sQuick scene setup complete." % ("" if(changesMade) else "No changes to make. "))
+
 
 # END OF MODULE
 ###################################################

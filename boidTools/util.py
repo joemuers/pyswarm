@@ -8,6 +8,8 @@ import pymel.core as pm
 
 ######################################
 __utilLogger__ = logging.getLogger(pi.PackageName())
+__utilLogger__.setLevel(logging.DEBUG)
+
 #####
 def LogDebug(message, prefix=None):
     __utilLogger__.debug(("(dbg) %s %s" % (prefix, message)) if(prefix is not None) 

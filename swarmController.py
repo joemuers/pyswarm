@@ -431,6 +431,14 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
         self._behaviourAssignmentSelectionWindow.dataBlob = behaviourId
         self._behaviourAssignmentSelectionWindow.show("Assign agents to \"%s\"" % behaviourId, 
                                                       currentSelection, self._onAgentSelectionCompleted)  
+        
+########
+    def quickSceneSetup(self):
+        scene.QuickSceneSetup(self.particleShapeName, 
+                              self._globalAttributes.quickSetupEnableSelfCollide, self._globalAttributes.quickSetupDisableFriction,
+                              self._globalAttributes.quickSetupDisableIgnoreGravity, self._globalAttributes.quickSetupChangeRenderType,
+                              self._globalAttributes.quickSetupEnableGroundPlane, self._globalAttributes.quickSetupChangeSpaceScale,
+                              self._globalAttributes.quickSetupTranslateAbovePlane)
 
 ########
     def assignAgentsToBehaviour(self, agentIdsList, behaviourId):
