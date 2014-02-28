@@ -8,7 +8,7 @@ In a nutshell though, I've always been kind of interested in emergent behaviours
 What I'm aiming to make here is a nice plug'n'play, cross-platform crowd system tool that will just work.  And not just a quick & dirty "boids" implementation that works in some contrived situation, but a proper pipeline tool that artists might actually want to use.  
 It's also an opportunity to become more familiar with Python and developing for Maya, both of which are relatively new to me.  
 
-So far I've just implemented it as a straight script, using Pymel, rather than as a full-blown plugin simply because there's been no real need to use the Maya API just yet, although that might change at some point we'll see how it goes.
+So far I've just implemented it as a straight script, using Pymel to interact with the Maya, rather than as a full-blown plugin simply because there's been no real need to use the Maya API just yet, although that might change at some point we'll see how it goes.
 Anyway, it's going OK so far, still got some work to do but it's getting there; & when it is there I'll also get round to writing a proper doc.
 
 thanks for looking.
