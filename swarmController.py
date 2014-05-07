@@ -168,14 +168,16 @@ def _LoadSceneFromFile(fileLocation=None):
     if(os.path.exists(fileLocation)):
         try:
             readFile = open(fileLocation, "rb")
+            
+            while(_SwarmInstances_): # it's VERY IMPORTANT to tear down the UI components *first* before rebuilding new ones because,
+                _SwarmInstances_.pop().hideUI() # in another little Pymel quirk, they are referenced by "handle" and not pointer address
+                                                # which means that the wires get crossed if we create the new before deleting the old
             newInstances = pickle.load(readFile)
         except Exception as e:
             util.LogWarning("Cannot restore %s session - error \"%s\" while reading file: %s" % 
                             (pi.PackageName(), e, fileLocation))
             raise e
         
-        while(_SwarmInstances_):
-            _SwarmInstances_.pop().hideUI()
         
         for swarmInstance in newInstances:
             swarmInstance.showUI()
@@ -231,13 +233,6 @@ def _SceneTeardown():
     
     util.LogInfo("Cleaned up resources.")
     _HaveRunSceneSetup = False
-    
-############################# 
-if(__name__ == "__main__"):
-    print "TODO - add unit tests"
-else:
-    util.LogInfo("%s initialised." % pi.PackageName())
-    _SceneSetup()
 
 # END OF MODULE METHODS
 #========================================================
@@ -248,6 +243,8 @@ else:
 class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
     
     def __init__(self, particleShapeNode, boundingLocators=None):
+        super(SwarmController, self).__init__()
+        
         self._attributesController = bat.AttributesController(particleShapeNode, SaveSceneToFile, boundingLocators)
         self._behavioursController = bbc.BehavioursController(self._attributesController)
         self._agentsController = bac.AgentsController(self._attributesController, self._behavioursController)
@@ -513,3 +510,15 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
 
 # END OF CLASS - SwarmController
 ##################################
+
+
+
+
+#############################
+# RUN ON IMPORT METHODS
+ 
+if(__name__ == "__main__"):
+    print "TODO - add unit tests"
+else:
+    util.LogInfo("%s initialised." % pi.PackageName())
+    _SceneSetup() # Note this must be run *after* everything else in this module has been defined.
