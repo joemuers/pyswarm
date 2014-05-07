@@ -335,5 +335,5 @@ class AgentsController(BoidBaseObject):
         return self.closestAgentToPoint(target.x, target.y, target.z, ignoreVertical)
     
     
-# ## END OF CLASS 
+### END OF CLASS 
 ################################################################################

@@ -19,17 +19,29 @@ except:
 
 
 ###########################################
-_SwarmInstances_ = []
+_SwarmInstances_ = [] # the list of SwarmController instances active within the Maya scene
 
 #####
 def _InitialiseSwarm(particleShapeNode=None, boundingLocators=None):
-    """Creates a new swarm instance for the given particle node.
-    If a swarm already exists for that particle node, it will be replaced.
+    """Create new PySwarm instance.
+    
+    Creates a new swarm instance for the given nParticle node.
+    If a swarm instance already exists for that nParticle node, it will be replaced.
+    
+    :param particleShapeNode: The nParticle shape node, can be: 
+                                - string giving full Maya scene path to instance
+                                - Pymel nParticle PyNode
+                                - None (in which case the method will check for a selected nParticle node within the Maya scene).
+    :param boundingLocators: *Two* locators, representing opposite corners of the bounding box for the PySwarm instance. Can be:
+                                - List of strings giving full Maya paths to locator instances
+                                - List of PyMel Locator Nodes
+                                - None (in which case, method will look for selected Locator nodes in the scene).
     """
+    
     global _SwarmInstances_
     _SceneSetup(False)  
     
-    if(particleShapeNode is None):
+    if(particleShapeNode is None): # look for selected nParticle node in Maya scene, if none passed as arguments
         selectedParticleNodes = scene.GetSelectedParticleShapeNodes()
         if(selectedParticleNodes):
             newSwarms = [_InitialiseSwarm(particleNode, boundingLocators) 
@@ -44,16 +56,16 @@ def _InitialiseSwarm(particleShapeNode=None, boundingLocators=None):
         except:
             pass
         
-        if(isinstance(particleShapeNode, basestring)):
+        if(isinstance(particleShapeNode, basestring)): # if a string, we assume it's a Maya path to an nParticle node...
             particleShapeNode = scene.PymelObjectFromObjectName(particleShapeNode, True, scene.ParticlePymelType())
-        elif(not isinstance(particleShapeNode, scene.ParticlePymelType())):
+        elif(not isinstance(particleShapeNode, scene.ParticlePymelType())): # ...otherwise it better be a PyMel node
             raise TypeError("particleShapeNode unrecognised (expected Maya object path to nParticle instance, " +
                             (" or Pymel type %s, got %s)." % (scene.ParticlePymelType(), type(particleShapeNode))))
         
-        if(boundingLocators is None):
+        if(boundingLocators is None): # look for selected Locators in the scene, if none passed as arguments...
             selectedLocators = scene.GetSelectedLocators()
             boundingLocators = selectedLocators if(len(selectedLocators) >= 2) else None
-        else:
+        else: # ...otherwise, assuming is either list of Maya paths to Locators, or PyMel Locator nodes
             if(not isinstance(boundingLocators, (tuple, list)) or len(boundingLocators) < 2):
                 raise ValueError("boundingLocators unrecognised (expected (Locator,Locator) tuple, or <None> - got: %s)." 
                                  % boundingLocators)
@@ -83,15 +95,20 @@ InitialiseSwarm.__doc__ = _InitialiseSwarm.__doc__
 
 #############################
 def Show():
-    """Will make the UIs visible (if not already) for all existing swarm instances."""
+    """
+    Will make the UIs visible (if not already) for all existing swarm instances.
+    """
     global _SwarmInstances_
     for swarmInstance in _SwarmInstances_:
         swarmInstance.showUI()
 
 #############################
 def GetSwarmInstanceForParticle(particleShapeNode):
-    """Gets the corresponding swarm instance for the given particle node,
+    """
+    Gets the corresponding swarm instance for the given particle node,
     if it exists (otherwise returns None).
+    
+    :param particleShapeNode: Full Maya path, or PyMel node, for nParticle shape node.
     """
     global _SwarmInstances_
     pymelShapeNode = scene.PymelObjectFromObjectName(particleShapeNode, True)
@@ -103,10 +120,21 @@ def GetSwarmInstanceForParticle(particleShapeNode):
 
 ##############################
 def RemoveSwarmInstanceForParticle(particleShapeNode):
+    """
+    Deletes PySwarm instance for given nParticle node, if it exists.
+    The nParticle node itself is not affected.
+    
+    :param particleShapeNode: Full Maya path, or PyMel node, for nParticle shape node.
+    """
     RemoveSwarmInstance(GetSwarmInstanceForParticle(particleShapeNode))
 
 #####
 def _RemoveSwarmInstance(swarmInstance):
+    """
+    Deletes the given PySwarm instance from the Maya scene.
+    
+    :param swarmInstance: a SwarmController instance.
+    """
     global _SwarmInstances_
     
     if(swarmInstance in _SwarmInstances_):
@@ -120,12 +148,13 @@ def _RemoveSwarmInstance(swarmInstance):
         swarmInstance.hideUI()
         swarmInstance._decommision()
         
-        util.LogWarning("Attempt to delete unregistered swarm instance - likely causes:\n\
-swarmController module as been reloaded, leaving \'orphan\' instances, or,\n\
-an instance has been created indepedently by the user.\n\
-It is recommended that swarm management is done only via the module methods provided.")
+        util.LogWarning("Attempt to delete unregistered swarm instance - likely causes:\n"
+                        "swarmController module as been reloaded after the initial import, leaving \'orphan\' instances, or,\n"
+                        "an instance has been created indepedently by the user.\n"
+                        "It is recommended that swarm management is done only via the swarmController module methods provided.")
     elif(str(type(swarmInstance) == str(SwarmController))):
-        raise RuntimeError("%s module-level variables missing - likely due to reload. Recommend you re-initialise completely." 
+        raise RuntimeError("%s module-level variables missing - likely due to module being reloaded. "
+                           "Recommend you close down & re-initialise completely." 
                            % pi.PackageName())
     else:
         raise TypeError("Got %s of type %s (expected %s)." % (swarmInstance, type(swarmInstance), SwarmController))
@@ -137,6 +166,9 @@ RemoveSwarmInstance.__doc__ = _RemoveSwarmInstance.__doc__
 
 #####
 def RemoveAllSwarmInstances():
+    """
+    Removes every active PySwarm instance within the current scene.
+    """
     for swarmInstance in _SwarmInstances_[:]:
         RemoveSwarmInstance(swarmInstance)
 
@@ -145,6 +177,19 @@ _PICKLE_PROTOCOL_VERSION_ = 2 # Safer to stick to constant version rather than u
 
 #####
 def _SaveSceneToFile(fileLocation=None):
+    """
+    Saves all active PySwarm instances to a file.
+    
+    This will save the current state of all active PySwarm instances to a file, attribute settings, preferences,
+    agent parameters, basically everything.  Note that it will not save any part of the Maya scene - just the 
+    PySwarm setup. Ideally this will be done each time you save your Maya scene, in order to keep everything in sync. 
+    
+    It's probably worth noting that this used Pickle - which is great, but also a little picky in terms of what can
+    be saved and what can't.  If you are extending this code and this method is throwing errors, read up on what can be 
+    Pickled and what can't (it's usually lambda's and weakref's that cause problems).
+    
+    :param fileLocation: desired file location as string, or None (in which case the 'default' location will be used).
+    """
     global _PICKLE_PROTOCOL_VERSION_
     global _SwarmInstances_
     
@@ -166,6 +211,11 @@ SaveSceneToFile.__doc__ = _SaveSceneToFile.__doc__
     
 #####
 def _LoadSceneFromFile(fileLocation=None):
+    """
+    Loads a previously saved PySwarm state from a file (i.e. from a previous 'SaveSceneToFile' operation).
+    
+    :param fileLocation: path to a previous save, or None, in which case the 'default' location will be checked.
+    """
     global _SwarmInstances_
     
     fileLocation = util.InitVal(fileLocation, fl.SaveFileLocation())
@@ -198,15 +248,30 @@ LoadSceneFromFile.__doc__ = _LoadSceneFromFile.__doc__
 
 #############################        
 def _OnFrameUpdated():
+    """
+    Processes one iteration of a frame-number change in the Maya scene.
+    
+    Updates all current PySwarm instances with current Maya scene info, processes it, then updates the Maya scene.
+    Should be called once every time the frame number changes in the Maya scene.
+    """
     global _SwarmInstances_
     for swarmInstance in _SwarmInstances_:
         swarmInstance._onFrameUpdated()
 
 ###########################################
-_HaveRunSceneSetup = False
+_HaveRunSceneSetup = False # static to ensure that _SceneSetup operations are not duplicated
 
 #####
 def _SceneSetup(calledExternally=True):
+    """
+    Configures the current Maya scene to work properly, and automatically, with PySwarm.
+    
+    Adds script nodes (which can be viewed in Maya's expression editor) and script jobs (which can be viewed
+    using the Mel command 'scriptJob') which will automatically save/load the PyMel instances when the Maya
+    scene is saved/opened, and will automatically update each time the scene frame number is changed. 
+    
+    :param calledExternally: should be False if called from the automotically generated script nodes, True otherwise.
+    """
     global _HaveRunSceneSetup
     
     if(not _HaveRunSceneSetup):
@@ -229,6 +294,9 @@ def _SceneSetup(calledExternally=True):
 
 #####
 def _SceneTeardown():
+    """
+    Should be called when the Maya scene is closed, will close & clean up the PySwarm UI and auto-generated script jobs.
+    """
     global _HaveRunSceneSetup
     
     util.ClearSceneSavedScriptJobReference()
@@ -245,8 +313,26 @@ def _SceneTeardown():
 
 #========================================================
 class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
+    """
+    Essentially the entry point for PySwarm, each SwarmController instance corresponds to an nParticle node 
+    within the Maya scene, and presents a public API for controlling more or less everything that PySwarm 
+    can do via code, should you wish to do so (though using the UI is recommended).
+    
+    The SwarmController is responsible for coordinating all the different "sub"controllers (agents controller, 
+    ui controller, et cetera) together and passing information between them.
+    
+    SwarmControllers should not be instantiated directly unless you know what you're doing.  Instead, you should
+    use the module-level methods defined above - InitialiseSwarm, GetSwarmInstanceForParticle, 
+    RemoveSwarmInstance and so on, to create or access the PySwarm instances in your scene.
+    """
     
     def __init__(self, particleShapeNode, boundingLocators=None):
+        """
+        The bounding locators represent opposite corners of a bounding box the this PySwarm instance.
+        
+        :param particleShapeNode: nParticle shape node, must be either full Maya path (string), or a PyMel PyNode object.
+        :param boundingLocators: *two* locators as either full Maya path or PyMel Locator objects, or None for default bounding box.
+        """
         super(SwarmController, self).__init__()
         
         self._attributesController = bat.AttributesController(particleShapeNode, SaveSceneToFile, boundingLocators)
@@ -296,6 +382,12 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
     
 #############################        
     def _onFrameUpdated(self):
+        """
+        Processes one iteration of a frame-number change in the Maya scene.
+        
+        Reads info from the scene & updates internal state, process the info, then updates the nParticle
+        instance within the scene with the results. 
+        """
         try:
             self._globalAttributes.setStatusReadoutWorking(1, "Reading...")
             
@@ -318,6 +410,10 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
 
 #############################    
     def enable(self):
+        """
+        Re-enables if previously disabled (when disabled, will *not* process or update when the 
+        Maya scene frame number changes). 
+        """
         if(not self._globalAttributes.enabled):
             self._globalAttributes.enabled = True
             util.LogInfo("updates are now ACTIVE.", self.particleShapeName)
@@ -326,11 +422,18 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
 
 ########
     def disable(self):
+        """
+        If disabled, will *not* process or update when the Maya scene frame number changes.
+        Can be re-enabled with the 'enable' method.
+        """
         self._globalAttributes.enabled = False
         util.LogInfo("updates DISABLED.", self.particleShapeName)
         
 ########
     def _decommision(self):
+        """
+        Kind of a destructor, cleans up internal resources used by this SwarmController instance.
+        """
         self._attributesController = None
         self._behavioursController = None
         self._agentsController = None
@@ -339,23 +442,47 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
         
 ########
     def showUI(self):
+        """
+        Shows the PySwarm UI for this swarm instance, if not showing already.
+        """
         self._uiController.buildUi()
 
 ########            
     def hideUI(self):
+        """
+        Hides the PySwarm UI for this swarm instance, if not hidden already.
+        """
         self._uiController.hideUI()
         self._behaviourAssignmentSelectionWindow.closeWindow()
  
 ########       
     def openFile(self, filePath):
+        """
+        Will load a PySwarm scene from the given file.  Note - will load *entire* PySwarm state, i.e. for multiple
+        instances if they exist, not just this instance in isolation.
+        
+        :param filePath: path to previously saved PySwarm state. 
+        """
         util.EvalDeferred(LoadSceneFromFile, filePath)
 
 ######## 
     def saveToFile(self, filePath=None):
+        """
+        Saves current PySwarm state to the given filepath.  Will save the *entire* PySwarm state, i.e. for multiple
+        instance if they exist, not just this one in isolation.
+        
+        :param filePath: path to save the state, or None to use 'default' location.
+        """
         SaveSceneToFile(filePath)
         
 ########
     def showDebugLogging(self, show):
+        """
+        Enables/disables verbose debug logging to the Maya script editor.  If disabled, warnings
+        and errors will still show up. 
+        
+        :param show: True == enable dubug logging, False == disable debug logging.
+        """
         if(show):
             util.SetLoggingLevelDebug()
         else:
@@ -363,14 +490,24 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
         
 ########
     def showPreferencesWindow(self):
+        """
+        Shows the user preferences UI window.
+        """
         self._attributesController.showPreferencesWindow()
  
 ########
     def quitSwarmInstance(self):
+        """
+        Removes this SwarmController instance from the Maya scene.  The corresponding nParticle node
+        in the scene will not be affected.
+        """
         util.EvalDeferred(RemoveSwarmInstance, self)
         
 ########
     def refreshInternals(self):
+        """
+        Re-reads information from the Maya scene and updates the internal state. 
+        """
         self._attributesController.onFrameUpdated()
         self._behavioursController.onFrameUpdated()
         self._agentsController.refreshInternals()
@@ -381,27 +518,60 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
 
 ########        
     def restoreDefaultValues(self, behaviourId=None):
+        """
+        Will change attribute values back the their defaults, similar to Maya's 'reset settings'.
+        
+        :param behaviourId: Specific behaviour ID to only reset attributes for that behaviour, or 
+                            None to reset all behaviours. 
+        """
         self._attributesController.restoreDefaultAttributeValuesFromFile(behaviourId)
         
 ########
     def makeValuesDefault(self, behaviourId=None):
+        """
+        Makes the current attribute values the default ones, i.e. subsequent calls to 'restoreDefaultValues'
+        will reset attributes values to how they are now.
+        
+        Note that if multiple instances for a given behaviour type exist, values will be taken from the 
+        one that was created first. 
+        
+        :param behaviourId: Specific behaviour ID to only set attributes values for that behaviour, or 
+                            None to set attribute all behaviours (note that any behaviour types not currently
+                            instantiated will not be affected). 
+        """
         util.LogDebug("Re-setting default attribute values with current values...")
         self._attributesController.makeCurrentAttributeValuesDefault(behaviourId)
         
 ########
     def changeDefaultBehaviour(self, behaviourId):
+        """
+        Sets the given behaviour to be the default.
+        
+        :param behaviourId: Behaviour ID of behaviour instance to be the default. 
+        """
         oldDefaultBehaviourId = self._globalAttributes.defaultBehaviourId
         if(self._attributesController.changeDefaultBehaviour(behaviourId)):
             self._uiController.updateDefaultBehaviourInUI(oldDefaultBehaviourId, self._globalAttributes.defaultBehaviourId)
         
 ########       
     def addNewBehaviour(self, behaviourTypeName):
+        """
+        Creates a new behaviour instance of the given type. 
+        
+        :param behaviourTypeName: Behaviour type, e.g. "ClassicBoid", "FollowPath".
+        """
         newBehaviour = self._attributesController.addBehaviourForTypeName(behaviourTypeName)
         if(newBehaviour is not None):
             self._onNewBehaviourAttributesAdded(newBehaviour)
             
 ########
     def removeBehaviour(self, behaviourId):
+        """
+        Removes the behaviour instance with the given behaviour ID.  Though if you try 
+        to delete the default behaviour, it will have no effect.
+        
+        :param behaviourId: Behaviour ID of behaviour instance to be deleted. 
+        """
         deletedAttributes = self._attributesController.removeBehaviour(behaviourId)
         if(deletedAttributes is not None):
             self._onBehaviourAttributesDeleted(deletedAttributes)
@@ -410,11 +580,21 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
 
 ########           
     def removeAllBehaviours(self):
+        """
+        Removes all current behaviour instances except for the default. 
+        """
         for behaviourId in self._attributesController.behaviourTypeNamesList():
             self.removeBehaviour(behaviourId)
 
 ########          
     def makeAgentsWithBehaviourSelected(self, behaviourId, invertSelection):
+        """
+        Will make all agents that are currently following the given behaviour selected within
+        the Maya scene (useful for quickly identifying agents following a behaviour in Maya's viewport).
+        
+        :param behaviourId: Behaviour ID of the behaviour instance.
+        :param invertSelection: if False, all agents *not* following the behaviour will be selected.
+        """
         behaviour = self._behavioursController.behaviourWithId(behaviourId)
         currentSelection = self._agentsController.getAgentsFollowingBehaviour(behaviour)
         if(invertSelection):
@@ -426,6 +606,11 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
         
 ########
     def showAssignAgentsWindowForBehaviour(self, behaviourId):
+        """
+        Shows the UI window for assigning agents to a given behaviour.
+        
+        :param behaviourId: Behaviour ID of the behaviour instance.
+        """
         behaviour = self._behavioursController.behaviourWithId(behaviourId)
         currentSelection = [agent.agentId for agent in self._agentsController.getAgentsFollowingBehaviour(behaviour)]
         
@@ -435,6 +620,10 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
         
 ########
     def quickSceneSetup(self):
+        """
+        Quickly configures the swarm instance with some basic 'vanilla' settings that should get the PySwarm 
+        setup up & running with the current Maya scene (these settings can be changed in the preferences).  
+        """
         scene.QuickSceneSetup(self.particleShapeName, 
                               self._globalAttributes.quickSetupEnableSelfCollide, self._globalAttributes.quickSetupDisableFriction,
                               self._globalAttributes.quickSetupDisableIgnoreGravity, self._globalAttributes.quickSetupChangeRenderType,
@@ -443,32 +632,64 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
 
 ########
     def assignAgentsToBehaviour(self, agentIdsList, behaviourId):
+        """
+        Assigns the given agents to the given behaviour instance. 
+        
+        :param agentIdsList: List of agent IDs (as integers), or Agent instances.
+        :param behaviourId: Behaviour ID of the behaviour instance.
+        """
         behaviour = self._behavioursController.behaviourWithId(behaviourId)
         self._agentsController.makeAgentsFollowBehaviour(agentIdsList, behaviour)
  
 ########    
     def getAssignedAgentIdsForBehaviour(self, behaviourId):
+        """
+        Returns sorted list of agent IDs (as integers) of Agents current assigned to the given behaviour instance.
+        
+        :param behaviourId: Behaviour ID of the behaviour instance.
+        """
         behaviour = self._behavioursController.behaviourWithId(behaviourId)
         return [agent.agentId 
                 for agent in sorted(self._agentsController.getAgentsFollowingBehaviour(behaviour))]
             
 #############################                  
     def addClassicBoidBehaviour(self):
+        """
+        Creates a behaviour instance of type ClassicBoid. 
+        """
         newBehaviour = self._attributesController.addClassicBoidAttributes()
         self._onNewBehaviourAttributesAdded(newBehaviour)
         
 ########
     def addGoalDrivenBehaviour(self, wallLipGoal=None, basePyramidGoalHeight=None, finalGoal=None):
+        """
+        Creates a behaviour instance of type GoalDriven.
+        
+        :param wallLipGoal: Locator (Maya path, or PyMel Locator) giving location of intermediate 'wall-lip' goal.
+        :param basePyramidGoalHeight: Height, in Maya scene units, from ground-level base of wall to wall-lip goal.
+        :param finalGoal: Locator giving location of final beyond-the-wall goal.
+        """
         newBehaviour = self._attributesController.addGoalDrivenAttributes(wallLipGoal, basePyramidGoalHeight, finalGoal)
         self._onNewBehaviourAttributesAdded(newBehaviour)
         
 ########        
     def addFollowPathBehaviour(self, pathCurve=None):
+        """
+        Creates a behaviour instance of type FollowPath.
+        
+        :param pathCurve: Nurbs curve (Maya path, or PyMel PyNode instance) giving the path to follow; or None to select it later.
+        """
         newBehaviour = self._attributesController.addFollowPathAttributes(pathCurve)
         self._onNewBehaviourAttributesAdded(newBehaviour)
 
 #############################      
     def _onNewBehaviourAttributesAdded(self, newBehaviourAttributes):
+        """
+        Creates a new corresponding behaviour instance for the given behaviour attributes set.
+        Should be called when a new attributes set has been created.
+        
+        :param newBehaviourAttributes: newly created attributes instance (AttributesBoseObject subclass).
+        """
         self._behavioursController.createBehaviourForNewAttributes(newBehaviourAttributes)
         self._uiController.addNewBehaviourToUI(newBehaviourAttributes)
         
@@ -476,6 +697,13 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
 
 #############################        
     def _onBehaviourAttributesDeleted(self, deletedAttributes):
+        """
+        Deletes the corresponding behaviour instance for the given attriutes set, and re-assigns
+        any agents that were following it to the default behaviour.
+        Should be called when the attributes set has been deleted.
+        
+        :param deletedAttributes: recently deleted attributes instance (AttributesBoseObject subclass).
+        """
         deletedBehaviourId = deletedAttributes.behaviourId
         deletedBehaviour = self._behavioursController.removeBehaviourWithId(deletedBehaviourId)
         agentsFollowingOldBehaviour = self._agentsController.getAgentsFollowingBehaviour(deletedBehaviour)
@@ -487,7 +715,17 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
         
 ##############################
     def _onAgentSelectionCompleted(self, selectionWindow, selectedAgentsList, selectionDisplayString):
-        """Callback for agent selection window."""
+        """
+        Callback method for agent selection window, should be called when assignation process (using the window) completes.
+        
+        Assigns the agents selected via the UI window to it's corresponding behaviour instance.  Any deselected agents 
+        with no explicit behaviour will be assigned to the default behaviour.
+        
+        :param selectionWindow: the selection window making the callback, an AgentSelectionWindow instance. 
+        :param selectedAgentsList: List of agent IDs (integers) to be assigned.
+        :param selectionDisplayString: String that can be used to describe the selection in any UI displays.
+        """
+
         if(selectionWindow is self._behaviourAssignmentSelectionWindow):
             behaviourId = selectionWindow.dataBlob
             defaultBehaviourId = self._globalAttributes.defaultBehaviourId
