@@ -64,7 +64,7 @@ class _SingleAttributeBaseObject(BoidBaseObject):
         state = super(_SingleAttributeBaseObject, self).__getstate__()
         state["_delegate"] = self.delegate
         state["updateUiCommand"] = None
-        state["uiEnableMethod"] = None
+        state["_uiEnableMethod"] = None
         
         return state
   

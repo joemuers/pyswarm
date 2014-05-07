@@ -42,10 +42,10 @@ class BehaviourBaseObject(BoidBaseObject):
     
 #############################        
     def __getstate__(self):
-        selfDict = self.__dict__.copy()
-        selfDict["_delegate"] = self.delegate
+        state = super(BehaviourBaseObject, self).__getstate__()
+        state["_delegate"] = self.delegate
         
-        return selfDict
+        return state
 
 ########    
     def __setstate__(self, selfDict):

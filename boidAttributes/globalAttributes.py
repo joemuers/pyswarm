@@ -274,11 +274,13 @@ class GlobalAttributes(abo.AttributesBaseObject):
         
 ########
     def __del__(self):
-        self._preferencesWindow._closeWindow()
+        if(self._preferencesWindow is not None):
+            self._preferencesWindow._closeWindow()
         
 #####################
     def __getstate__(self):
         state = super(GlobalAttributes, self).__getstate__()
+        state["nameChangeCallback"] = None
         state["_statusLabel"] = None
         state["_progressBar"] = None
         state["_preferencesWindow"] = None
@@ -295,7 +297,7 @@ class GlobalAttributes(abo.AttributesBaseObject):
         self._preferencesWindow = _PreferencesWindow(self._accelerationDueToGravity, self._listRebuildFrequency, 
                                                      self._onPreferencesUpdated, sceneSaveMethod,
                                                      self._quickSetupEnableSelfCollide, self._quickSetupDisableFriction,
-                                                     self._quickSetupEnableGravity, self._quickSetupChangeRenderType,
+                                                     self._quickSetupDisableIgnoreGravity, self._quickSetupChangeRenderType,
                                                      self._quickSetupEnableGroundPlane, self._quickSetupChangeSpaceScale,
                                                      self._quickSetupTranslateAbovePlane)
         if(not state["statusEnabled"]):
