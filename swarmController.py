@@ -150,10 +150,14 @@ def _SaveSceneToFile(fileLocation=None):
     
     fileLocation = util.InitVal(fileLocation, fl.SaveFileLocation())
     saveFile = open(fileLocation, "wb")
-    pickle.dump(_SwarmInstances_, saveFile, _PICKLE_PROTOCOL_VERSION_)
-    saveFile.close()
-    
-    util.LogInfo("Saved %s scene to file %s" % (pi.PackageName(), fileLocation))
+    try:
+        pickle.dump(_SwarmInstances_, saveFile, _PICKLE_PROTOCOL_VERSION_)
+        saveFile.close()
+        util.LogInfo("Saved %s scene to file %s" % (pi.PackageName(), fileLocation))
+    except Exception, e:
+        saveFile.close()
+        os.remove(saveFile.name)
+        util.LogError("Could not save PySwarm scene - Pickling error: %s" % e)
     
 #####
 def SaveSceneToFile(fileLocation=None):
@@ -293,7 +297,7 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
 #############################        
     def _onFrameUpdated(self):
         try:
-            self._globalAttributes.setStatusReadoutWorking(1)
+            self._globalAttributes.setStatusReadoutWorking(1, "Reading...")
             
             self._attributesController.onFrameUpdated()
             
