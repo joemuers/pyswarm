@@ -274,8 +274,10 @@ class GlobalAttributes(abo.AttributesBaseObject):
         
 ########
     def __del__(self):
-        if(self._preferencesWindow is not None):
+        try:
             self._preferencesWindow._closeWindow()
+        except:
+            pass
         
 #####################
     def __getstate__(self):
