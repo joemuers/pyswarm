@@ -374,7 +374,12 @@ def MakeCheckboxGroup(attribute, extraLabel=None, annotation=None, leftColumnWid
         boxLabel = extraLabel
     
     checkbox = pm.checkBox(label=boxLabel, value=attribute.value)
-    checkbox.changeCommand(lambda *args: attribute._setValue(checkbox.getValue()))
+    
+    try: # change in Pymel API from Maya 2013 to 2015: checkBox changeCommand -> setChangeCommand
+        checkbox.changeCommand(lambda *args: attribute._setValue(checkbox.getValue()))
+    except:
+        checkbox.setChangeCommand(lambda *args: attribute._setValue(checkbox.getValue()))
+        
     attribute.updateUiCommand = checkbox.setValue
     attribute.uiEnableMethod = checkbox.setEnable
     if(annotation is not None):
