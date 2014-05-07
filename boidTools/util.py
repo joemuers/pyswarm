@@ -3,6 +3,7 @@ import boidResources.packageInfo as pi
 import logging
 import os
 import pymel.core as pm
+import pymel.core.system as sm
 
 
 
@@ -73,7 +74,7 @@ def GetProjectWorkingDirectory():
 
 #####
 def GetCurrentSceneName():
-    sceneFile = pm.system.sceneName()
+    sceneFile = sm.sceneName()
     sceneFile = os.path.split(sceneFile)[1]
     
     return os.path.splitext(sceneFile)[0]
