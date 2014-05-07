@@ -128,6 +128,8 @@ class UiController(BoidBaseObject):
     def __setstate__(self, state):
         if(state[0] is not None):
             self._delegate = weakref.ref(state[0])
+        else:
+            self._delegate = None
         self._attributesController = state[1]
         
         self._recreateUiComponents()
