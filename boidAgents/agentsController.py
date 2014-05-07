@@ -81,7 +81,7 @@ class AgentsController(BoidBaseObject):
 #############################
     def setStickiness(self, agentId, value):
         self._idToAgentLookup[agentId].stickinessScale = value
-        scene.SetSingleParticleStickinessScale(self._particleShapeName, agentId, value) # do this right now - otherwise will wait until next frame update
+        scene.SetSingleParticleStickinessScale(self._particleShapeName, agentId, value)  # do this right now - otherwise will wait until next frame update
         
 #############################                     
     def _killSingleParticle(self, agentId):
@@ -94,8 +94,8 @@ class AgentsController(BoidBaseObject):
         """Performs one full iteration of updating all boidAgent behaviour.
         Should be called from Maya once per frame update.
         """
+        self._globalAttributes.setStatusReadoutWorking(2, "Startup")
         self._zoneGraph.rebuildMapIfNecessary()
-        self._globalAttributes.setStatusReadoutWorking(2)
 
         self._getAllParticlesInfo()
         self._globalAttributes.setStatusReadoutWorking(5)
@@ -106,10 +106,10 @@ class AgentsController(BoidBaseObject):
         progressUpdateStepSize = 90 / numberOfProgressUpdates
         self._calculateAgentsBehaviour(5, progressUpdateStepSize)
         
-        self._globalAttributes.setStatusReadoutWorking(95)
+        self._globalAttributes.setStatusReadoutWorking(95, "Updating...")
         self._updateAllParticles()
         
-        self._globalAttributes.setStatusReadoutWorking(100)
+        self._globalAttributes.setStatusReadoutWorking(100, "Done!")
         
 ########
     def onCalculationsCompleted(self):
@@ -124,7 +124,7 @@ class AgentsController(BoidBaseObject):
             self._idToAgentLookup.clear()
             
             if(self._particleCount > 0):
-                #particle IDs are NOT guaranteed to come in numerical order => have to use this list as reference
+                # particle IDs are NOT guaranteed to come in numerical order => have to use this list as reference
                 self._particleIdsOrdering = scene.ParticleIdsListForParticleShape(self._particleShapeName)
                 startingBehaviour = self._behavioursController.defaultBehaviour
                 if(self._particleIdsOrdering is not None):
@@ -168,11 +168,11 @@ class AgentsController(BoidBaseObject):
             
 #############################            
     def _getSingleParticleInfo(self, particleId):            
-        position =  scene.GetSingleParticlePosition(self._particleShapeName, particleId) 
-        velocity =  scene.GetSingleParticleVelocity(self._particleShapeName, particleId) 
+        position = scene.GetSingleParticlePosition(self._particleShapeName, particleId) 
+        velocity = scene.GetSingleParticleVelocity(self._particleShapeName, particleId) 
         agent = self._idToAgentLookup[particleId]
         
-        agent.updateCurrentVectors(bv3.Vector3(position[0], position[1], position[2]), 
+        agent.updateCurrentVectors(bv3.Vector3(position[0], position[1], position[2]),
                                    bv3.Vector3(velocity[0], velocity[1], velocity[2]))
         self._zoneGraph.updateAgentPosition(agent)
  
@@ -186,16 +186,16 @@ class AgentsController(BoidBaseObject):
             self._buildParticleList(True)
         elif(numParticles != len(self._idToAgentLookup)):
             self._buildParticleList(False)
-        #elif(numParticles < len(self._idToAgentLookup)):
-            #print("XXXXXXXXXX WARNING - MISSING PARTICLES IN LIST!!!, REBUILDING FROM SCRATCH... XXXXX")
-            #self._buildParticleList(True)
+        # elif(numParticles < len(self._idToAgentLookup)):
+            # print("XXXXXXXXXX WARNING - MISSING PARTICLES IN LIST!!!, REBUILDING FROM SCRATCH... XXXXX")
+            # self._buildParticleList(True)
         
         if(numParticles > 0):
             positions = scene.ParticlePositionsListForParticleShape(self._particleShapeName)
             velocities = scene.ParticleVelocitiesListForParticleShape(self._particleShapeName)
             
             if(len(positions) < numParticles * 3):
-                #repeated call here because of shitty Maya bug whereby sometimes only get first item in request for goalsU...
+                # repeated call here because of shitty Maya bug whereby sometimes only get first item in request for goalsU...
                 positions = scene.ParticlePositionsListForParticleShape(self._particleShapeName) 
     
             for i in xrange(numParticles):
@@ -203,8 +203,8 @@ class AgentsController(BoidBaseObject):
                 particleId = self._particleIdsOrdering[i]
                 agent = self._idToAgentLookup[particleId]
                 
-                agent.updateCurrentVectors(bv3.Vector3(positions[j], positions[j+1], positions[j+2]),
-                                           bv3.Vector3(velocities[j], velocities[j+1], velocities[j+2]))
+                agent.updateCurrentVectors(bv3.Vector3(positions[j], positions[j + 1], positions[j + 2]),
+                                           bv3.Vector3(velocities[j], velocities[j + 1], velocities[j + 2]))
                 self._zoneGraph.updateAgentPosition(agent)
                 
             if(queryExtraInfo):
@@ -293,7 +293,7 @@ class AgentsController(BoidBaseObject):
 
 #############################       
     def onNewBoidsCreated(self, newBoidsList):
-        #TODO - use this? or delete??
+        # TODO - use this? or delete??
 #         if(self._pathCurveBehaviour is not None):
 #             for newBoid in newBoidsList:
 #                 newBoid.makeFollowCurvePath(self._pathCurveBehaviour)
@@ -335,5 +335,5 @@ class AgentsController(BoidBaseObject):
         return self.closestAgentToPoint(target.x, target.y, target.z, ignoreVertical)
     
     
-### END OF CLASS 
+# ## END OF CLASS 
 ################################################################################
