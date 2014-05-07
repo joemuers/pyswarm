@@ -3,8 +3,7 @@ import boidTools.util as util
 
 import pymel.core as pm
 import pymel.core.nodetypes as pmn  # Eclipse doesn't like pm.nodetypes for some reason... (perhaps an issue with the Pymel predefinitions?)
-
-
+import pymel.core.language as la
 
 ######################################
 def PymelObjectFromObjectName(objectName, bypassTransformNodes=True, pymelType=None):
@@ -109,7 +108,7 @@ def _GetPymelObjectWithType(pymelObject, pymelType):
 
 ######################################
 def GetNucleusSpaceScale():
-    nucleus = pm.ls(pm.mel.getActiveNucleusNode(False, True))[0]
+    nucleus = pm.ls(la.mel.getActiveNucleusNode(False, True))[0]
     return nucleus.attr('spaceScale').get()
 
 ######################################
@@ -278,7 +277,7 @@ def QuickSceneSetup(particleShapeName,
         changesMade = True
         util.LogInfo("Changed %s render type to spheres." % particleShapeName)
         
-    nucleus = pm.ls(pm.mel.getActiveNucleusNode(False, True))[0]
+    nucleus = pm.ls(la.mel.getActiveNucleusNode(False, True))[0]
     nucleusName = nucleus.name()
     if(enableGroundPlane and not nucleus.attr("usePlane").get()):
         nucleus.setAttr("usePlane", True)
