@@ -16,7 +16,9 @@ def IsVector3(otherVector):
 __MAGNITUDE_UNDEFINED__ = -1.0
 
 class Vector3(BoidBaseObject):
-    """3D vector with various trig functions.  
+    """
+    3D vector with various trig functions.  
+    
     Most classes in this package now use vector3, not 2. Although
     Vector3 has been written to be more or less backwards compatable
     (i.e. can be used in place of a bv2 and will still behave correctly).
@@ -27,7 +29,8 @@ class Vector3(BoidBaseObject):
     """
     
     def __init__(self, x=0, y=0, z=0):
-        """Note that you can either: 
+        """
+        Note that you can either: 
         - pass in a vector object as an argument to create a (deep) copy
         - pass in numerical values for each axis
         - pass nothing for default values (0,0,0).
@@ -182,6 +185,11 @@ class Vector3(BoidBaseObject):
 
 #######################    
     def setValueFromString(self, valueString):
+        """
+        Mainly for compatability with attribute types.
+        
+        :param valueString: example string: <x=1.0,y=2.5,z=5.0>
+        """
         tokens = valueString.strip(" <>").split(', ')
         
         self.x = float(tokens[0].lstrip('x='))
@@ -190,10 +198,19 @@ class Vector3(BoidBaseObject):
         
 #######################     
     def isNull(self, ignoreVertical=False):
+        """
+        Returns True if x, y and z are all == zero, False otherwise.
+        """
         return (self.x == 0 and self.z == 0 and (ignoreVertical or self.y == 0))
     
 #######################
     def add(self, otherVector, ignoreVertical=False):
+        """
+        Adds self to another vector.
+        :param otherVector: Vector2 or Vector3.
+        :param ignoreVertical: ignores y if True.
+        """
+        
         self.x += otherVector.u
         self.z += otherVector.v
         if(not ignoreVertical): # and not IsVector2(otherVector):
@@ -201,6 +218,11 @@ class Vector3(BoidBaseObject):
 
 #######################
     def subtract(self, otherVector, ignoreVertical=False):
+        """
+        Subtracts another vector from self.
+        :param otherVector: Vector2 or Vector3.
+        :param ignoreVertical: ignores y if True.
+        """
         self.x -= otherVector.u
         self.z -= otherVector.v
         if(not ignoreVertical): # and not IsVector2(otherVector):
@@ -208,6 +230,11 @@ class Vector3(BoidBaseObject):
 
 #######################                 
     def divide(self, scalarVal, ignoreVertical=False):
+        """
+        Divides self by a scalar amount.
+        :param scalarVal: float, scalar amount to divide by.
+        :param ignoreVertical: ignores y if True.
+        """
         scalarMult = 1.0 / scalarVal
         
         self._x *= scalarMult
@@ -228,15 +255,27 @@ class Vector3(BoidBaseObject):
 
 #######################
     def horizontalVector(self):
+        """
+        Returns Vector2 equivalent of self.
+        """
         return bv2.Vector2(self.x, self.z)
     
 #######################
     def degreeHeading(self):
-        """Absolute, horizontal, degree heading of the vector (where <x=0,z=1> is 0 degrees)."""
+        """
+        Returns absolute, horizontal, degree heading of the vector (where <x=0,z=1> is 0 degrees).
+        Ignores vertical component.
+        """
         return self.horizontalVector().degreeHeading()
 
 #######################
     def degreeHeadingVertical(self):
+        """
+        Returns "vertical" heading in degrees, where:
+            - +90 = vertical up
+            - -90 = vertical down
+            -   0 = horizontal.
+        """
         horizontalMag = self.horizontalVector().magnitude()
         
         if(horizontalMag > 0):
@@ -248,12 +287,25 @@ class Vector3(BoidBaseObject):
 
 #######################         
     def reset(self, x=0, y=0, z=0):
+        """
+        Resets x, y, z to given values.
+        
+        :param x: float, x val.
+        :param y: float, y val.
+        :param z: float, z val.
+        """
         self.x = float(x)
         self.y = float(y)
         self.z = float(z)
 
 ####################### 
     def resetToVector(self, otherVector, ignoreVertical=False):
+        """
+        Resets self to other vector's values, including magnitude if calculated.
+        
+        :param otherVector: Vector2 or Vector3.
+        :param ignoreVertical: ignores y if True.
+        """
         self._x = otherVector.u
         self._z = otherVector.v
         if(not ignoreVertical):
@@ -272,12 +324,18 @@ class Vector3(BoidBaseObject):
 
 ####################### 
     def invert(self):
+        """
+        Inverts self, magnitude remains unchanged.
+        """
         self._x = -(self._x) # magnitude won't change, so don't use the property setter
         self._y = -(self._y) #
         self._z = -(self._z) #
         
 ##################### 
     def inverseVector(self):
+        """
+        Returns copy of self with inverted values. 
+        """
         invertedVector = Vector3(-(self.x), -(self.y), -(self.z))
         invertedVector._magnitude = self._magnitude
         invertedVector._magnitudeSquared = self._magnitudeSquared
@@ -288,6 +346,12 @@ class Vector3(BoidBaseObject):
 
 ####################### 
     def magnitude(self, ignoreVertical=False):
+        """
+        Returns scalar magnitude of self, recalculating if necessary.
+        Prefer magnitudeSquared where possible for performance reasons. 
+        
+        :param ignoreVertical: ignores y if True.
+        """
         if(not ignoreVertical):
             if(self._magnitude == __MAGNITUDE_UNDEFINED__ or self._magnitudeSquared == __MAGNITUDE_UNDEFINED__):
                 self._magnitude = mth.sqrt(self.magnitudeSquared(ignoreVertical))
@@ -299,6 +363,12 @@ class Vector3(BoidBaseObject):
         
 #######################   
     def magnitudeSquared(self, ignoreVertical=False):
+        """
+        Returns square of scalar magnitude of self, recalculating if necessary.
+        Prefer to magnitude if possible, for performance reasons.
+        
+        :param ignoreVertical: ignores y if True.
+        """
         if(not ignoreVertical):
             if(self._magnitudeSquared == __MAGNITUDE_UNDEFINED__):
                 self._magnitudeSquared = (self.x **2) + (self.y **2) + (self.z **2)
@@ -310,6 +380,11 @@ class Vector3(BoidBaseObject):
 
 ####################### 
     def dot(self, otherVector, ignoreVertical=False):
+        """
+        Returns dot product of self with other vector.
+        :param otherVector: Vector2 or Vector3.
+        :param ignoreVertical: ignores y if True.
+        """
         if(ignoreVertical or IsVector2(otherVector)):
             return (self.x * otherVector.u) + (self.z * otherVector.v)
         else:
@@ -317,6 +392,11 @@ class Vector3(BoidBaseObject):
 
 #######################        
     def cross(self, otherVector, ignoreVertical=False):
+        """
+        Returns cross product of self with other vector. 
+        :param otherVector: Vector2 or Vector3.
+        :param ignoreVertical: ignores y if True.
+        """
         if(ignoreVertical or IsVector2(otherVector)):
             return (self.u * otherVector.v) - (self.v * otherVector.u)
         else:
@@ -326,6 +406,11 @@ class Vector3(BoidBaseObject):
 
 #######################
     def normalise(self, scaleFactor=1.0):
+        """
+        Normalises self into a unit vector equal in magnitude to given scale factor.
+        
+        :param scaleFactor:   float, will be the magnitude of the normalised vector.
+        """
         if(self._magnitude != scaleFactor and not self.isNull()):
             multiple = scaleFactor / self.magnitude()
             self.x *= multiple
@@ -337,6 +422,11 @@ class Vector3(BoidBaseObject):
  
 #######################            
     def normalisedVector(self, scaleFactor=1.0):
+        """
+        Returns a normalised copy of self, equal in magnitude to given scale factor.
+        
+        :param scaleFactor:  float, will be the magnitude of the normalised vector.
+        """
         normalisedVector = Vector3(self.x, self.y, self.z)
         normalisedVector._magnitude = self._magnitude
         normalisedVector._magnitudeSquared = self._magnitudeSquared
@@ -346,7 +436,12 @@ class Vector3(BoidBaseObject):
 
 ####################### 
     def angleTo(self, otherVector, ignoreVertical=True):
-        """angle TO other vector FROM this vector in DEGREES (negative for anti-clockwise)."""
+        """
+        Returns angle TO other vector FROM this vector in DEGREES (negative for anti-clockwise).
+        
+        :param otherVector: Vector2 or Vector3.
+        :param ignoreVertical:  ignores y if True.
+        """
         if(self.isNull(ignoreVertical) or otherVector.isNull(ignoreVertical)):
             return 0
         elif(ignoreVertical or IsVector2(otherVector)):
@@ -368,13 +463,23 @@ class Vector3(BoidBaseObject):
         else:
             return self.angleFrom3DVector(otherVector)
     
+########
     def angleFrom(self, otherVector, ignoreVertical=True):
-        """angle FROM other vector TO this vector in DEGREES (negative for anti-clockwise)."""
+        """
+        Returns angle FROM other vector TO this vector in DEGREES (negative for anti-clockwise).
+                
+        :param otherVector: Vector2 or Vector3.
+        """
         angleTo = self.angleTo(otherVector, ignoreVertical)
         return -angleTo
 
 ####################### 
     def angleFrom3DVector(self, otherVector):
+        """
+        Returns angle, in degrees, between the two vectors in 3D space.
+        
+        :param otherVector: Vector3 instance.
+        """
         vector1 = self.normalisedVector()
         vector2 = otherVector.normalisedVector()
         
@@ -387,9 +492,24 @@ class Vector3(BoidBaseObject):
 
 #######################     
     def distanceFrom(self, otherVector, ignoreVertical=True): 
+        """
+        Returns scalar magnitude of distance to other vector.
+        Prefer distanceSquaredFrom where possible for performance reasons.
+        
+        :param otherVector:  Vector2 or Vector3.
+        :param ignoreVertical: ignores y if True.
+        """
         return mth.sqrt(self.distanceSquaredFrom(otherVector, ignoreVertical))
         
+########
     def distanceSquaredFrom(self, otherVector, ignoreVertical=True):
+        """
+        Returns distance magnitude squared to other vector.
+        Prefer to distanceFrom where possible for performance reasons.
+        
+        :param otherVector: Vector2 or Vector3.
+        :param ignoreVertical: ignores y if True.
+        """
         if(ignoreVertical or IsVector2(otherVector)):
             tempU = (self.x - otherVector.u) ** 2
             tempV = (self.z - otherVector.v) ** 2
@@ -404,6 +524,11 @@ class Vector3(BoidBaseObject):
  
 #######################       
     def isAbove(self, otherVector):
+        """
+        Returns True if above (y dimension) other vector, false otherwise.
+        
+        :param otherVector: Vector2 or Vector3.
+        """
         if(IsVector2(otherVector)):
             return self.y > 0
         else:
@@ -411,7 +536,11 @@ class Vector3(BoidBaseObject):
 
 #######################  
     def rotateInHorizontal(self, angle):
-        """Rotates vector in horizontal plane ONLY"""
+        """
+        Rotates vector in horizontal plane ONLY, by given angle.
+        
+        :param angle:  float, angle to rotate in DEGREES.  Negative values for anti-clockwise.
+        """
         theta = mth.radians(-angle) #formula I'm using gives an inverted angle for some reason...??
         cosTheta = mth.cos(theta)
         sinTheta = mth.sin(theta)
@@ -423,6 +552,13 @@ class Vector3(BoidBaseObject):
 
 ####################### 
     def moveTowards(self, toVector, byAmount, ignoreVertical=True):
+        """
+        Moves towards a given position by given scalar amount.
+        
+        :param toVector: Vector2 or Vector3. Treated as a coordinate, not a vector.
+        :param byAmount: float, distance to move.
+        :param ignoreVertical: ignores y if True.
+        """
         diffVec = toVector - self
         diffMagSquared = diffVec.magnitudeSquared(ignoreVertical)
         
@@ -437,6 +573,12 @@ class Vector3(BoidBaseObject):
 
 #######################                 
     def jitter(self, maxAmount, ignoreVertical=True):
+        """
+        Makes a random change to both U and V by given amount.
+        
+        :param maxAmount: float, +/- (i.e. absolute) maximum value of change.
+        :param ignoreVertical: ignores y if True.
+        """
         self.x += rand.uniform(-maxAmount, maxAmount)
         if(not ignoreVertical):
             self.y += rand.uniform(-maxAmount, maxAmount)
