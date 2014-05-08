@@ -1,4 +1,17 @@
-"""Colours used by agent objects for the 'debugColour' property.
+#
+# PySwarm, a swarming simulation tool for Autodesk Maya
+#
+# created 2013-2014
+#
+# @author: Joe Muers  (joemuers@hotmail.com)
+# 
+# All rights reserved.
+#
+# ------------------------------------------------------------
+
+
+"""
+Colours used by agent objects for the 'debugColour' property.
 Tuples are RGB values.
 """
 

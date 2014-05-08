@@ -1,3 +1,15 @@
+#
+# PySwarm, a swarming simulation tool for Autodesk Maya
+#
+# created 2013-2014
+#
+# @author: Joe Muers  (joemuers@hotmail.com)
+# 
+# All rights reserved.
+#
+# ------------------------------------------------------------
+
+
 from boidBaseObject import BoidBaseObject
 
 import random as rand
@@ -103,6 +115,9 @@ class Vector2(BoidBaseObject):
     
 #######################
     def _getValueAsTuple(self):
+        """
+        Gets/sets value as tuple (u,v).
+        """
         return (self.u, self.v)
     def _setValueAsTuple(self, value):
         self.u = value[0]

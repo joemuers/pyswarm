@@ -1,3 +1,15 @@
+#
+# PySwarm, a swarming simulation tool for Autodesk Maya
+#
+# created 2013-2014
+#
+# @author: Joe Muers  (joemuers@hotmail.com)
+# 
+# All rights reserved.
+#
+# ------------------------------------------------------------
+
+
 import boidVectors.vector3 as bv3
 import boidTools.util as util
 
