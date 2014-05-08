@@ -311,7 +311,7 @@ def _SceneTeardown():
     """
     global _HaveRunSceneSetup
     
-    util.ClearSceneSavedScriptJobReference()
+    util.OnSceneTeardown()
     for swarmInstance in _SwarmInstances_:
         swarmInstance.hideUI()
     
