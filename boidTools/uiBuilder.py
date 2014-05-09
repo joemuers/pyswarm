@@ -9,6 +9,17 @@
 #
 # ------------------------------------------------------------
 
+"""
+uiBuilder module is a collection of functions for constructing a UI from components.
+
+Many of the functions here are wrappers around PyMel UI creation methods with standardised
+parameters, callbacks etc.  
+There are also methods for building composite UI components and some convenience methods 
+for UI related calls.
+
+The module is roughly split into sections:  
+ Windows, Menus, Layouts, Input Fields (biggest section by far), Miscellaneous Items.
+"""
 
 import boidAttributes.attributeTypes as at
 import boidTools.util as util
@@ -35,14 +46,30 @@ __CHECKBOX_OFFSET__ = 4
 #################################################
 
 def WindowExists(windowReference):
+    """
+    Returns True if window for the given handle exists, False otherwise.
+    
+    :param windowReference: PyMel window reference. 
+    """
     return(windowReference is not None and pm.window(windowReference, exists=True))
 
 #####################
 def WindowIsVisible(windowReference):
+    """
+    Returns True if window exists and is visible, False otherwise.
+    
+    :param windowReference: PyMel window reference. 
+    """
     return (WindowExists(windowReference) and pm.window(windowReference, query=True, visible=True))
 
 #####################
 def MakeWindow(title, widthHeight=None):
+    """
+    Creates a new PyMel window instance.
+     
+    :param title: string, the display title for the window.
+    :param widthHeight: a (width,height) tuple (floats), or None.
+    """
     if(widthHeight is None):
         return pm.window(title, maximizeButton=False, resizeToFitChildren=True, menuBar=True)
     else:
@@ -50,6 +77,11 @@ def MakeWindow(title, widthHeight=None):
 
 #####################
 def DestroyWindowIfNecessary(windowReference):
+    """
+    Trashes the window for the given reference, if it exists.
+    
+    :param windowReference: PyMel window reference. 
+    """
     if(WindowExists(windowReference)):
         pm.deleteUI(windowReference, window=True)
 
@@ -62,24 +94,54 @@ def DestroyWindowIfNecessary(windowReference):
 #################################################
 
 def SetParentMenuLayout(parentMenuLayout):
+    """
+    Sets the given menu layout instance to be the parent of any subsequently created menu items. 
+    
+    :param parentMenuLayout: PyMel menu reference. 
+    """
     if(not IsCurrentMenuParent(parentMenuLayout)):
         pm.setParent(parentMenuLayout, menu=True)
 
 #####################        
 def SetAsChildMenuLayout(*childLayouts):
+    """
+    Sets the menu items in the argument list to be children of a previously 'setParent' menu item.
+    
+    Note that it's the number of objects in the list rather than the actual references that is important
+    here, i.e. if you create 3 menu instances that need to be children, you could simply call this method
+    with 3 random objects in the argument list and it would have the same effect. 
+    """
     for _ in childLayouts:
         pm.setParent("..", menu=True)
 
 #####################
 def IsCurrentMenuParent(menuControl):
+    """
+    Returns True if the given menu instance is the currently set parent (i.e. will be parent to any subsequently
+    created menu items).
+    
+    :param menuControl: PyMel reference to a menu instance.
+    """
     return (menuControl == pm.currentMenuParent())
 
 #####################
 def MakeMenu(menuTitle):
+    """
+    Creates & returns a new menu instance.
+    
+    :param menuTitle: string, title for the menu.
+    """
     return pm.menu(menuTitle)
     
 #####################    
 def MakeMenuItem(itemLabel, onSelectCommand, annotation=None):
+    """
+    Creates & returns a new menu item under a parent menu.
+    
+    :param itemLabel: string, title for the menu item.
+    :param onSelectCommand: bound method to be called when item is chosen.
+    :param annotation: annotation to be displayed when user hovers over the item, or None. 
+    """
     newMenuItem = pm.menuItem(label=itemLabel)
     
     if(onSelectCommand is not None):
@@ -91,6 +153,12 @@ def MakeMenuItem(itemLabel, onSelectCommand, annotation=None):
 
 #####################
 def MakeMenuItemWithSubMenu(itemLabel, annotation=None):
+    """
+    Creates & returns a new menu item with it's own flash-up sub menu.
+    
+    :param itemLabel: string, title for the menu item.
+    :param annotation: annotation to be displayed when user hovers over the item, or None. 
+    """
     newMenuItem = pm.menuItem(label=itemLabel, subMenu=True)
     if(annotation is not None):
         newMenuItem.setAnnotation(annotation)
@@ -99,10 +167,18 @@ def MakeMenuItemWithSubMenu(itemLabel, annotation=None):
 
 #####################
 def MakeMenuSubItem(itemLabel):
+    """
+    Creates & returns a new menu sub-item under a parent menu item with sub-menu.
+    
+    :param itemLabel: string, title for the menu sub-item.
+    """
     return pm.menuItem(label=itemLabel)
 
 #####################
 def MakeMenuSeparator():
+    """
+    Creates & returns a menu seperator under a parent menu or sub-menu.
+    """
     return pm.menuItem(divider=True)
 
 #########################
@@ -114,20 +190,43 @@ def MakeMenuSeparator():
 #################################################
 
 def SetParentLayout(parentLayout):
+    """
+    Sets the given layout instance to be the parent of any subsequently created menu items. 
+    
+    :param parentLayout: PyMel layout reference. 
+    """
     if(not IsCurrentParent(parentLayout)):
         pm.setParent(parentLayout)
 
 #####################
 def SetAsChildLayout(*childLayouts):
+    """
+    Sets the control/layout instances in the argument list to be children of a previously 'setParent' layout.
+    
+    Note that it's the number of objects in the list rather than the actual references that is important
+    here, i.e. if you create 3 layout instances that need to be children, you could simply call this method
+    with 3 random objects in the argument list and it would have the same effect. 
+    """
     for _ in childLayouts:
         pm.setParent("..")
 
 #####################        
 def IsCurrentParent(control):
+    """
+    Returns True if the given control instance is the currently set parent (i.e. will be parent to any subsequently
+    created layout/control items).
+    
+    :param control: PyMel reference to a control instance.
+    """
     return (control == pm.currentParent())
 
 #####################
 def MakeFormLayout(title=None):
+    """
+    Creates & returns a new PyMel form layout.
+    
+    :param title: string, title of the layout, or None.
+    """
     if(title is not None):
         return pm.formLayout(title)
     else:
@@ -135,6 +234,11 @@ def MakeFormLayout(title=None):
 
 ##################### 
 def MakeScrollLayout(title=None):
+    """
+    Creates & returns a new PyMel scroll layout.
+    
+    :param title:  string, title of the layout, or None.
+    """
     if(title is not None):
         return pm.scrollLayout(title, childResizable=True)
     else:
@@ -142,10 +246,19 @@ def MakeScrollLayout(title=None):
 
 #####################
 def MakeBorderingLayout():
+    """
+    Creates & returns a plain layout with an etched border (PyMel frame layout).
+    """
     return pm.frameLayout(labelVisible=False, borderStyle='etchedIn', marginWidth=2, marginHeight=3)
 
 #####################
 def MakeFrameLayout(title, makeCollapsable=True):
+    """
+    Creates & returns a PyMel frame layout.
+    
+    :param title: string, title of the layout.
+    :param makeCollapsable: True = layout has a collapse/expand button, False = fixed size.
+    """
     frame = pm.frameLayout(title, borderStyle='out')
     if(makeCollapsable):
         frame.setCollapsable(True)
@@ -153,6 +266,11 @@ def MakeFrameLayout(title, makeCollapsable=True):
 
 #####################
 def MakeTabLayout(height=None):
+    """
+    Creates & returns a PyMel tab layout.
+    
+    :param height: float, specific height, or None for default.
+    """
     if(height is not None):
         return pm.tabLayout(height=height)
     else:
@@ -160,6 +278,11 @@ def MakeTabLayout(height=None):
 
 ##################### 
 def MakeColumnLayout(title=None):
+    """
+    Creates and returns a PyMel column layout.
+    
+    :param title: string, title of the layout, or None.
+    """
     if(title is not None):
         return pm.columnLayout(title, adjustableColumn=True)
     else:
@@ -171,6 +294,15 @@ def MakeRowLayout(numColumns,
                   middleColumnWidth=__MIDDLE_COLUMN_WIDTH__, 
                   rightColumnWidth=__RIGHT_COLUMN_WIDTH__,
                   makeAdjustable=True):
+    """
+    Creates & returns a PyMel row layout. 
+    
+    :param numColumns: number of columns in the layout, min=1 max=4 (<1 or >4 will raise a ValueError).
+    :param leftColumnWidth: float, width of left column.
+    :param middleColumnWidth: float, width of middle column, ignored if numColumns = 1.
+    :param rightColumnWidth: float, width of right column, ignored if numColumsn < 3.
+    :param makeAdjustable: True = right-most column (up to 3rd) will have flexible width, False = all columns fixed.
+    """
     
     if(numColumns == 4):
         layout = pm.rowLayout(numberOfColumns=4, 
@@ -214,6 +346,12 @@ def MakeRowLayout(numColumns,
     
 #####################
 def MakeTopLevelRowLayout(componentsSectionWidth):
+    """
+    Creates & returns a row layout suitable for the upper section of the UI (as opposed to the agent/behaviour attributes sections).
+    2 columns, left one flexible width, right one suitable for 'swarm' image. 
+    
+    :param componentsSectionWidth: float, width for UI compnent (left) column.  
+    """
     rowLayout = pm.rowLayout(numberOfColumns=2, 
                               adjustableColumn=1,
                               columnWidth2=(componentsSectionWidth, fl.LogoImagePixelWidth()), 
@@ -224,6 +362,13 @@ def MakeTopLevelRowLayout(componentsSectionWidth):
 
 #########################
 def DistributeControlsHorizontallyInFormLayout(formLayout, controls):
+    """
+    Lays out given controls in a horizontal 'flow' within the given form layout.
+    i.e. controls given equal size and made resizable.
+    
+    :param formLayout: a PyMel form layout reference. 
+    :param controls: list of PyMel controls (e.g. buttons).
+    """
     formLayout.attachForm(controls[0], 'left', 2)
 
     numControls = len(controls)   
@@ -237,7 +382,15 @@ def DistributeControlsHorizontallyInFormLayout(formLayout, controls):
         
     formLayout.attachForm(controls[-1], 'right', 2)
     
+###################
 def DistributeButtonedWindowInFormLayout(formLayout, windowLayout, buttonsLayout):
+    """
+    Creates & returns a panel-and-buttons layout within a form layout.
+    
+    :param formLayout: containing PyMel form layout.
+    :param windowLayout: layout containing the main panel of the window, would usually be result from MakeBorderingLayout.
+    :param buttonsLayout: layout containing strip of buttons for bottom of the window, probably be result from MakeButtonStrip.
+    """
     map(lambda x: formLayout.attachForm(*x), [(windowLayout, 'top', 1), 
                                               (windowLayout, 'left', 1), (windowLayout, 'right', 1),
                                               (buttonsLayout, 'bottom', 1), 
@@ -254,6 +407,12 @@ def DistributeButtonedWindowInFormLayout(formLayout, windowLayout, buttonsLayout
 #################################################   
    
 def MakeSliderGroup(attribute, annotation=None):
+    """
+    Creates & returns a slider-and-input-field control for a given numerical attribute.
+    
+    :param attribute: attribute hooked up to the control - an IntAttribute or FloatAttribute instance.
+    :param annotation: toolTip annotation, or None. 
+    """
     isFloatField = None
     groupCreationMethod = None
     
@@ -309,6 +468,14 @@ def MakeSliderGroup(attribute, annotation=None):
 def MakeFieldGroup(attribute, annotation=None, 
                    leftColumnWidth=__LEFT_COLUMN_WIDTH__, 
                    rightColumnWidth=__MIDDLE_COLUMN_WIDTH__):
+    """
+    Creates & returns a simple label-and-input-field control for a given numerical attribute.
+    
+    :param attribute: attribute hooked up to the control - an IntAttribute or FloatAttribute instance.
+    :param annotation: toolTip annotation, or None. 
+    :param leftColumnWidth: float, width of label column.
+    :param rightColumnWidth: float, width of input field column.
+    """
     isFloatField = None
     groupCreationMethod = None
     
@@ -342,13 +509,30 @@ def MakeFieldGroup(attribute, annotation=None,
 
 #####################
 def MakeRandomizerGroup(randomizerAttribute, annotation=None):
+    """
+    Creates & returns a slider group for a given randomiser attribute.
+    
+    :param randomizerAttribute: a RandomiserAttribute instance.
+    :param annotation: toolTip annotation, or None. 
+    """
     inputGroup = MakeSliderGroup(randomizerAttribute, annotation)
     
     return inputGroup
     
-    
+##################### 
 def MakeCheckboxStandalone(boxLabel, initialValue, extraLabel=None, changeCommand=None, 
                            leftColumnWidth=__LEFT_COLUMN_WIDTH__, annotation=None, switchLabels=False):
+    """
+    Creates & returns a PyMel checkbox that is not specifically linked to an attribute.
+    
+    :param boxLabel: string, label to right of checkbox (or to left of checkbox, with colon, if extraLabel is also defined).
+    :param initialValue: bool, initial value.
+    :param extraLabel: string, label to the right of the checkbox if boxLabel is also defined.  
+    :param changeCommand: bound method to be executd when checkbox value changes, or None.
+    :param leftColumnWidth: float, width of left-hand label.
+    :param annotation: toolTip annotation, or None. 
+    :param switchLabels: True = extraLabel to left (with colon) & boxLabel to right, False = vice versa.
+    """
     rowLayout = MakeRowLayout(2 if(extraLabel is not None) else 1, 
                               leftColumnWidth=leftColumnWidth + __CHECKBOX_OFFSET__, 
                               rightColumnWidth=__MIDDLE_COLUMN_WIDTH__ + __RIGHT_COLUMN_WIDTH__)
@@ -371,6 +555,15 @@ def MakeCheckboxStandalone(boxLabel, initialValue, extraLabel=None, changeComman
     
 #####################
 def MakeCheckboxGroup(attribute, extraLabel=None, annotation=None, leftColumnWidth=__LEFT_COLUMN_WIDTH__, switchLabels=False):
+    """
+    Creates & returns a PyMel checkbox tied to a boolean attribute.
+    
+    :param attribute: BoolAttribute instance. 
+    :param extraLabel: extra label if both label to left with colon and label to right of checkbox are required.
+    :param annotation: toolTip annotation, or None. 
+    :param leftColumnWidth: float, width of left-hand label.
+    :param switchLabels: True = extraLabel to left (with colon) & attribute description to right, False = vice versa.
+    """
     if(type(attribute) != at.BoolAttribute):
         raise TypeError("Attempt to make checkbox group from non-boolean attribute.")
     
@@ -403,8 +596,14 @@ def MakeCheckboxGroup(attribute, extraLabel=None, annotation=None, leftColumnWid
 
 #####################
 def MakeRandomizeOptionsMenu(randomizerController, annotation=None):
+    """
+    Creates & returns a menu group giving the the randomiser options for a given randomizeController. 
+    
+    :param randomizerController: RandomiseController instance. 
+    :param annotation: toolTip annotation, or None. 
+    """
     if(type(randomizerController) != at.RandomizeController):
-        raise TypeError("Attempt to make randomizer menu from non-randomizerController attribute.")
+        raise TypeError("Attempt to make randomizer menu from non-RandomizeController attribute.")
     
     rowLayout = MakeRowLayout(2, rightColumnWidth=__OPTIONS_MENUS_WIDTH__, makeAdjustable=False)
     
@@ -429,12 +628,18 @@ def MakeRandomizeOptionsMenu(randomizerController, annotation=None):
 
 #####################
 def MakeRandomizerFields(randomizerController, annotation=None):
+    """
+    Creates & returns a whole attribute randomiser group (i.e. slider and options menu combined) for a given randomiseController. 
+    
+    :param randomizerController: RandomiseController instance. 
+    :param annotation: toolTip annotation, or None (gives default annotation). 
+    """
     if(annotation is None):
-        annotation = ("Input modes:\n\
-Off = value taken directly from %s.\n\
-By Agent ID = value offset by constant amount (same across all attributes) - which is randomized per-agent.\n\
-Pure Random = value offset by constant amount, randomized per-agent *and* per-attribute." 
-% randomizerController._parentAttribute.attributeLabel)
+        annotation = ("Input modes:\n"
+                      "Off = value taken directly from %s.\n"
+                      "By Agent ID = value offset by constant amount (same across all attributes) - which is randomized per-agent.\n"
+                      "Pure Random = value offset by constant amount, randomized per-agent *and* per-attribute." 
+                      % randomizerController._parentAttribute.attributeLabel)
 
     optionsMenuRowLayout = MakeRandomizeOptionsMenu(randomizerController, annotation)
     randomizerSliderGroup = MakeRandomizerGroup(randomizerController._randomizerAttribute, 
@@ -445,6 +650,13 @@ Pure Random = value offset by constant amount, randomized per-agent *and* per-at
     
 #########################
 def MakeStringOptionsField(stringAttribute, optionsListStrings, annotation=None):
+    """
+    Creates & returns a menu with a given list of options for corresponding stringAttribute.
+    
+    :param stringAttribute: StringAttribute instance. 
+    :param optionsListStrings: List of possible values for string attribute, will be presented as menu options. 
+    :param annotation: toolTip annotation, or None. 
+    """
     if(not isinstance(stringAttribute, at.StringAttribute)):
         raise TypeError("Attempted to make string options (expected:%s, got:%s)" % 
                         (at.StringAttribute, type(stringAttribute)))
@@ -473,6 +685,13 @@ def MakeStringOptionsField(stringAttribute, optionsListStrings, annotation=None)
     
 #########################
 def MakeObjectSelectorField(objectAttribute, annotation=None):
+    """
+    Creates & returns a composite UI component, for the given MayaObjectAttribute, which allows 
+    the user to select from objects in the Maya scene of a given type. 
+    
+    :param objectAttribute: MayaObjectAttribute instance. 
+    :param annotation: toolTip annotation, or None. 
+    """
     if(not isinstance(objectAttribute, at.MayaObjectAttribute)):
         raise TypeError("Attempted to make object selector (expected:%s, got:%s)" % 
                         (at.MayaObjectAttribute, type(objectAttribute)))
@@ -496,6 +715,13 @@ def MakeObjectSelectorField(objectAttribute, annotation=None):
 
 #########################
 def _MakeObjectSelectionList(objectAttribute):
+    """
+    Helper function for constructing object selector fields.  Constructs selectable list of objects in the Maya scene
+    of the type determined by the MayaObjectAttribute. 
+    Will be shown when user presses button linked to the parent object selection UI component. 
+    
+    :param objectAttribute: MayaObjectAttribute instance. 
+    """
     objectAttribute._updateInputUiComponents()
     
     allowNone = objectAttribute.allowNoneType
@@ -534,6 +760,15 @@ def _MakeObjectSelectionList(objectAttribute):
     
 #####################   
 def MakeLocationField(locationAttribute, withButton=False, leftColumnWidth=__LEFT_COLUMN_WIDTH__, annotation=None):
+    """
+    Creates & returns a UI component, linked to given LocationAttribute, which allows user to manually enter coordinate
+    values, or select a Maya Locator within the scene to determine the location. 
+    
+    :param locationAttribute: LocationAttribute instance. 
+    :param withButton: True = has button to show Maya Locator selection menu, False = button not available (input fields only).
+    :param leftColumnWidth: float, width of label column. 
+    :param annotation: toolTip annotation, or None. 
+    """
     if(not isinstance(locationAttribute, at.LocationAttribute)):
         raise TypeError("Attempt to make location field with wrong type (expected:%s, got: %s)" % 
                         (at.LocationAttribute, type(locationAttribute)))
@@ -566,6 +801,12 @@ def MakeLocationField(locationAttribute, withButton=False, leftColumnWidth=__LEF
 
 #########################
 def MakeVectorField(vectorAttribute, annotation=None):
+    """
+    Creates & returns an input field, linked to given Vector3Attribute, which allows user to input x,y,z values. 
+    
+    :param vectorAttribute: Vector3Attribute instance. 
+    :param annotation: toolTip annotation, or None.
+    """
     if(not isinstance(vectorAttribute, at.Vector3Attribute)):
         raise TypeError("Expected %s, got %s" % (at.Vector3Attribute, type(vectorAttribute)))
     
@@ -587,6 +828,16 @@ def MakeVectorField(vectorAttribute, annotation=None):
 #########################
 def MakePassiveTextField(stringAttribute, buttonCallback, annotation=None, isEditable=False,
                          leftColumnWidth=__LEFT_COLUMN_WIDTH__, rightColumnWidth=__MIDDLE_COLUMN_WIDTH__ + __RIGHT_COLUMN_WIDTH__):
+    """
+    Creates & returns PyMel textFieldButtonGroup linked to given StringAttribute.
+    
+    :param stringAttribute: StringAttribute instance. 
+    :param buttonCallback: bound method to be called when textField button is pressed. 
+    :param annotation: toolTip annotation, or None. 
+    :param isEditable: True = user can input text directly, False = user cannot type in text. 
+    :param leftColumnWidth: float, width of label to left of text field.
+    :param rightColumnWidth: float, width of text field itself. 
+    """
     
     if(not isinstance(stringAttribute, at.StringAttribute)):
         raise TypeError("Attempted to make text field (expected:%s, got:%s)" % 
@@ -619,6 +870,12 @@ def MakePassiveTextField(stringAttribute, buttonCallback, annotation=None, isEdi
     
 #########################
 def MakeSimpleIntField(intAttribute, annotation=None):
+    """
+    Creates & returns a labelled integer input field for given IntAttribute instance. 
+    
+    :param intAttribute: IntAttribute instance. 
+    :param annotation: toolTip annotation, or None. 
+    """
     if(not isinstance(intAttribute, at.IntAttribute)):
         raise TypeError("Expected %s, got %s" % (at.IntAttribute, type(intAttribute)))
     
@@ -650,6 +907,12 @@ def MakeSimpleIntField(intAttribute, annotation=None):
 #################################################   
 
 def MakeText(text, annotation=None):
+    """
+    Create & returns a simple text label.
+    
+    :param text: string, text to display.
+    :param annotation: toolTip annotation, or None. 
+    """
     text = pm.text(text)
     if(annotation is not None):
         text.setAnnotation(annotation)
@@ -658,6 +921,13 @@ def MakeText(text, annotation=None):
 
 #####################
 def MakeButton(text, callback, annotation=None):
+    """
+    Creates & returns a pressable button.
+    
+    :param text: string, label to display on the button.
+    :param callback: bound method to be invoke when user presses button.
+    :param annotation: toolTip annotation, or None. 
+    """
     button = pm.button(label=text, command=callback)
     if(annotation is not None):
         button.setAnnotation(annotation)
@@ -666,6 +936,14 @@ def MakeButton(text, callback, annotation=None):
 
 #######################
 def MakeButtonStandalone(label, callback, extraLabel=None, annotation=None):
+    """
+    Creates & returns a pressable button with optional extra text label.
+    
+    :param label: string, displayed on button itself.
+    :param callback:  bound method to be invoke when user presses button.
+    :param extraLabel: string to be displayed to left of button, or None. 
+    :param annotation: toolTip annotation, or None. 
+    """
     if(extraLabel is None):
         rowLayout = MakeRowLayout(1, makeAdjustable=False)
         button = MakeButton(label, callback, annotation)
@@ -685,6 +963,12 @@ def MakeButtonStandalone(label, callback, extraLabel=None, annotation=None):
 
 #######################
 def MakeButtonStrip(textCommandTupleList):
+    """
+    Creates & returns a strip of pressable buttons embedded in a PyMel form layout. 
+    
+    :param textCommandTupleList: list of tuples of the form:
+                                 (<button text>,<onPress bound method>,<optional toolTip annotation>).
+    """
     formLayout = MakeFormLayout()
     controls = []
     
@@ -703,6 +987,15 @@ def MakeButtonStrip(textCommandTupleList):
 
 #####################
 def MakeTextInputField(label, enterCommand=None, placeholderText=None, leftColumnWidth=__LEFT_COLUMN_WIDTH__, annotation=None):
+    """
+    Creates & returns an editable text input field.
+    
+    :param label: text label to left of input field.
+    :param enterCommand: bound method to be called when user presses <enter>, or None.
+    :param placeholderText: text field placeholder string, or None.
+    :param leftColumnWidth: float, width of label column.
+    :param annotation: toolTip annotation, or None. 
+    """
     rowLayout = MakeRowLayout(2, leftColumnWidth)
 
     MakeText(label, annotation)
@@ -723,6 +1016,16 @@ def MakeTextInputField(label, enterCommand=None, placeholderText=None, leftColum
 #####################
 def MakeRadioButtonGroup(label, buttonTitlesTuple, onChangeCommand, vertical,
                          leftColumnWidth=__LEFT_COLUMN_WIDTH__, annotation=None):
+    """
+    Creates a radio button group.
+    
+    :param label: text label for the group as a whole. 
+    :param buttonTitlesTuple: tuple (or list) of titles for each button.
+    :param onChangeCommand: bound method to be called when a button is selected.
+    :param vertical: True = group will be laid out vertically, False = horizontally.
+    :param leftColumnWidth: float, width of label column.
+    :param annotation: toolTip annotation, or None. 
+    """
     numberOfButtons = len(buttonTitlesTuple)
     if(numberOfButtons < 1 or numberOfButtons > 4):
         raise ValueError("Attempt to create radioButtonGrp with %d buttons (expected 1-4)." % numberOfButtons)
@@ -748,18 +1051,40 @@ def MakeRadioButtonGroup(label, buttonTitlesTuple, onChangeCommand, vertical,
 
 #####################
 def MakeSeparator():
+    """
+    Creates & returns a layout separator. 
+    """
     return pm.separator(style='in')
 
 #####################
 def GetUserConfirmation(title, message):
+    """
+    Displays an OK/Cancel box to user.
+    Returns True if OK pressed, False if Cancel.
+    
+    :param title: box Title.
+    :param message: box body text. 
+    """
     return pm.confirmBox(title, message, "OK", "Cancel")
 
 #####################
 def DisplayInfoBox(message, title=None):
+    """
+    Displays dismissable info box to user.
+    
+    :param message: box Title.
+    :param title: box body text. 
+    """
     pm.informBox(title, message)
 
 #####################    
 def MakeImage(imageFilePath, annotation=None):
+    """
+    Creates & returns a PyMel image UI component. 
+    
+    :param imageFilePath: full path to an image file.
+    :param annotation: toolTip annotation, or None. 
+    """
     if(annotation is None):
         return pm.image(image=imageFilePath)
     else:
@@ -767,6 +1092,16 @@ def MakeImage(imageFilePath, annotation=None):
 
 #####################
 def MakeNodeNameField(label, shapeNode, nameChangeCommand, leftColumnWidth=__LEFT_COLUMN_WIDTH__, annotation=None):
+    """
+    Creates & returns a field which displays the name of the given object from the Maya scene.
+    The name field will automatically update if the object is renamed.
+    
+    :param label: text label for the field.
+    :param shapeNode: PyMel PyNode for an in-scene Maya object, who's name will be displayed in the field.
+    :param nameChangeCommand: bound method to be called when object's name is changed. 
+    :param leftColumnWidth: float, width of label column. 
+    :param annotation: toolTip annotation, or None. 
+    """
     rowLayout = MakeRowLayout(2, leftColumnWidth=leftColumnWidth, makeAdjustable=False)
     
     MakeText(label, annotation)
@@ -782,6 +1117,16 @@ def MakeNodeNameField(label, shapeNode, nameChangeCommand, leftColumnWidth=__LEF
 #####################
 def MakeProgressBar(initialStatus, maxValue=100, leftColumnWidth=__LEFT_COLUMN_WIDTH__, 
                     middleColumnWidth=__MIDDLE_COLUMN_WIDTH__, rightColumnWidth=__RIGHT_COLUMN_WIDTH__, annotation=None):
+    """
+    Creates & returns an updatable progress bar with an associated 'status readout' text label to the right.
+    
+    :param initialStatus: initial text for the status label.
+    :param maxValue: float, max value for progress bar.
+    :param leftColumnWidth: float, width for title label to left of bar (text = "Status")
+    :param middleColumnWidth: float, width of progress bar.
+    :param rightColumnWidth: float, width of status readout label.
+    :param annotation: toolTip annotation, or None. 
+    """
 
     rowLayout = MakeRowLayout(3, leftColumnWidth=leftColumnWidth, middleColumnWidth=middleColumnWidth, 
                               rightColumnWidth=rightColumnWidth, makeAdjustable=False)
@@ -801,6 +1146,13 @@ def MakeProgressBar(initialStatus, maxValue=100, leftColumnWidth=__LEFT_COLUMN_W
 
 #####################    
 def GetFilePathFromUser(isReadOnly, initialFolderPath=None, fileExtensionMask=None):
+    """
+    Queries user for a file path with a dialogue box and returns the result. 
+    
+    :param isReadOnly: True = we are opening a file, False = we want a location to save a file.  
+    :param initialFolderPath: full path for starting point, or None for default. 
+    :param fileExtensionMask: filter for file extension (e.g. ".zip"), or None for no filter. 
+    """
     kwargs = { "mode" :  0 if(isReadOnly) else 1 }
     
     if(initialFolderPath is not None):
@@ -815,6 +1167,11 @@ def GetFilePathFromUser(isReadOnly, initialFolderPath=None, fileExtensionMask=No
 
 #####################
 def DeleteComponent(uiComponent):
+    """
+    Trashes the given PyMel UI component. 
+    
+    :param uiComponent: handle for PyMel UI compoenent. 
+    """
     pm.deleteUI(uiComponent)
 
 
