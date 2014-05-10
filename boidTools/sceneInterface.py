@@ -14,8 +14,10 @@ import boidVectors.vector3 as bv3
 import boidTools.util as util
 
 import pymel.core as pm
-import pymel.core.nodetypes as pmn  # Eclipse doesn't like pm.nodetypes for some reason... (perhaps an issue with the Pymel predefinitions?)
-import pymel.core.language as la
+import pymel.core.nodetypes as pmn  # Eclipse doesn't like pm.nodetypes for some reason... 
+import pymel.core.language as la    # (perhaps an issue with the Pymel predefinitions?)
+import maya.cmds as cmds
+
 
 ######################################
 def PymelObjectFromObjectName(objectName, bypassTransformNodes=True, pymelType=None):
@@ -35,8 +37,16 @@ def PymelObjectFromObjectName(objectName, bypassTransformNodes=True, pymelType=N
                         (objectName, pymelType, type(objectName)))
     
 ######################################
-def GetSelectedParticleShapeNodes(particleShapeName=None):
-    selectionList = pm.ls(selection=True)
+def GetSelectedParticleShapeNodes(particleShapeName=None, logPymelBugWarning=True):
+    selectionList = []
+    try:
+        selectionList = pm.ls(selection=True)
+    except Exception:
+        if(logPymelBugWarning):
+            util.LogWarning("There's a bug in earlier versions of Maya's PyMel - it can break if you have individual "
+                            "particles selected (i.e. in component mode). Nothing I can do about that unfortunately. "
+                            "You may want to try again *without* individual particles selected.")
+        
     returnList = []
     for selectedObject in selectionList:
         result = _GetPymelObjectWithType(selectedObject, ParticlePymelType())
@@ -48,18 +58,21 @@ def GetSelectedParticleShapeNodes(particleShapeName=None):
 
 ######################################
 def GetSelectedParticles(particleShapeName):
-    if(GetSelectedParticleShapeNodes(particleShapeName)):
+    if(GetSelectedParticleShapeNodes(particleShapeName, logPymelBugWarning=False)):
         return ParticleIdsListForParticleShape(particleShapeName)
     else:
-        selectionList = pm.ls(selection=True)
+        # using cmds instead of PyMel as a workaround here - there's a bug in earlier versions
+        # of PyMel where the 'ls' command breaks if you have particle components selected (nice!)
+        selectionList = cmds.ls(selection=True)
         returnList = []
         for selectedObject in selectionList:
-            if(isinstance(selectedObject, pm.general.ParticleComponent)):
-                candidateName = selectedObject.name().split(".pt[")[0]
+            if(cmds.objectType(selectedObject, isType="nParticle")):
+                particleComponentStrings = selectedObject.split(".pt[")
+                candidateName = particleComponentStrings[0]
                 if(candidateName == particleShapeName):
-                    for index in selectedObject.indicesIter():
-                        returnList.append(index)
-        
+                    index = int( particleComponentStrings[1].strip(']') )
+                    returnList.append(index)
+                    
         return returnList
     
 ######################################
@@ -87,9 +100,14 @@ def SelectParticlesInList(particleIds, particleShapeName):
 
 ######################################
 def GetSelectedLocators():
-    selectionList = pm.ls(selection=True)
+    selectionList = []
+    try:
+        selectionList = pm.ls(selection=True)
+    except Exception:
+        util.LogWarning("There's a bug in earlier versions of Maya's PyMel - it can break if you have individual "
+                        "particles selected (i.e. in component mode). Nothing I can do about that unfortunately. "
+                        "You may want to try again *without* individual particles selected.")
     returnList = []
-    
     for selectedObject in selectionList:
         result = _GetPymelObjectWithType(selectedObject, LocatorPymelType())
         if(result is not None):
