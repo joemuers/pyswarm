@@ -61,7 +61,7 @@ class GoalDrivenDataBlob(abo._DataBlobBaseObject):
                 (self.incubationPeriod, self.goalChaseSpeed, self.pyramidJoinAtDistance, self.pyramidJumpOnDistance,
                  status, "Y" if self.didArriveAtBasePyramid else "N", self.goalChaseCountdown))
 
-# END OF CLASS - ClassicBoidDataBlob
+# END OF CLASS - GoalDrivenDataBlob
 ###########################################
 
 

@@ -85,7 +85,7 @@ class GoalDriven(BehaviourBaseObject):
     
     def __init__(self, goalDrivenAttributes, normalBehaviourInstance, delegate=None):
         """basePos, lipPos and finalPos must be Pymel Locator instances.
-        normalBehaviourInstance = BoidBehaviourClassicBoid instance.
+        normalBehaviourInstance = ClassicBoidBehaviour instance.
         """
         super(GoalDriven, self).__init__(goalDrivenAttributes, delegate)
         
@@ -134,7 +134,7 @@ class GoalDriven(BehaviourBaseObject):
                  pyramidString))#, ''.join(atLipStringsList), ''.join(overStringsList)))
         
 #######################        
-    def onFrameUpdated(self):  # overridden BoidBehaviourBaseObject method
+    def onFrameUpdated(self):  # overridden BehaviourBaseObject method
         """Lists of agents must be rebuild on every frame, this method clears the lists
         and sets up everything for a new frame."""
         
@@ -167,7 +167,7 @@ class GoalDriven(BehaviourBaseObject):
         agentStatus = self._effectiveGoalStatusForAgent(agent)
         
         if(abs(self._baseToFinalDirection.angleTo(baseToAgentVec)) < 90):
-            # boid agent has cleared the wall...
+            # agent has cleared the wall...
             if(self._baseToFinalDirection.magnitudeSquared(True) < baseToAgentVec.magnitudeSquared(True)):
                 # reached final goal
                 agentStatus = gdba.GoalDrivenDataBlob.reachedFinalGoal
@@ -212,7 +212,7 @@ class GoalDriven(BehaviourBaseObject):
         self._setDebugColourForAgent(agent)
 
 #######################
-    def getDesiredAccelerationForAgent(self, agent, nearbyAgentsList):  # overridden BoidBehaviourBaseObject method
+    def getDesiredAccelerationForAgent(self, agent, nearbyAgentsList):  # overridden BehaviourBaseObject method
         """Returns corresponding acceleration for the agent as determined by calculated behaviour.
         Client agents should call this method on each frame update and modify their own desiredAcceleration accordingly.
         """
@@ -432,19 +432,19 @@ class GoalDriven(BehaviourBaseObject):
 
 #########     
     def _basePyramidPushUpwardsMagnitudeHorizontal(self):
-        """Acceleration applied by each boid in the horizontal direction (towards 
+        """Acceleration applied by each agent in the horizontal direction (towards 
         the baseLocator) after having joined the basePyramid."""
         return self.attributes.basePyramidPushInwardsForce
 
 #########     
     def _basePyramidPushUpwardsMagnitudeVertical(self):
-        """Acceleration applied by each boid in the vertical direction (towards 
+        """Acceleration applied by each agent in the vertical direction (towards 
         the lipLocator) after having joined the basePyramid."""
         return self.attributes.basePyramidPushUpwardsForce
         
 #######################
     def _goalChaseAttractorPositionForAgent(self, agent):
-        """Returns position (Vector3) towards which the boidAgent should be made to move
+        """Returns position (Vector3) towards which the agent should be made to move
         towards (when following goalChase behaviour)."""
         
         returnValue = None
@@ -560,7 +560,7 @@ class GoalDriven(BehaviourBaseObject):
         self._performCollapse = performIt
         
         
-# END OF CLASS - BoidBehaviourGoalDriven
+# END OF CLASS - GoalDriven
 #######################
 
 

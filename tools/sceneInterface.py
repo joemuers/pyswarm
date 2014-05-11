@@ -229,7 +229,7 @@ def GetSingleParticleVelocity(particleShapeName, particleId):
 def SetSingleParticleVelocity(particleShapeName, particleId, velocityVector):
     """@param particleShapeName: particleShapeNode name.
     @param particleId: (self explanatory)
-    @param velocityVector: boidVector.Vector3 instance.
+    @param velocityVector: vectors.Vector3 instance.
     """
     #print("pid=%d, vel=%s" % (particleId, velocityVector))
     

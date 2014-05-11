@@ -23,7 +23,7 @@ import resources.colours as brc
 class Agent(PyswarmObject):
     """Represents single agent instance.   
     Logic concerning agent's behaviour is contained within this class. (Internally,
-    data concerning position, heading, neighbourhood & so on is in the boidAgentState 
+    data concerning position, heading, neighbourhood & so on is in the agentState 
     container).
     
     Behaviour: Dependent on situation, in normal circumstances, behaviour governed by relatively

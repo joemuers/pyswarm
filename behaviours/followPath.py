@@ -47,7 +47,7 @@ class FollowPath(BehaviourBaseObject):
     def __init__(self, followPathAttrbutes, normalBehaviorInstance, delegate):
         """Arguments as follows:
         @param curve pymel.core.nodetypes.NurbsCurve: the curve path
-        @param delegate BehaviourDelegate: *MUST* be BehaviourDelegate object (or None). Will be notified as boids
+        @param delegate BehaviourDelegate: *MUST* be BehaviourDelegate object (or None). Will be notified as agents
                                                 reach end of curve path.
         @param taperStartMult Float: multiplier determining curve width at start.
         @param taperEndMult Float: multiplier determining curve width at end (width along the curve is interpolated start->end)
@@ -94,7 +94,7 @@ class FollowPath(BehaviourBaseObject):
     currentFollowCount = property(_getCurrentFollowCount)
     
 ################################ 
-    def onFrameUpdated(self):  # overridden BoidBehaviourBaseObject method
+    def onFrameUpdated(self):  # overridden BehaviourBaseObject method
         """Re-checks curve points from Maya in case the curve has moved..."""
         if(self._pathCurve is not None):
             self._startVector = sceneInterface.Vector3FromPymelPoint(self._pathCurve.getPointAtParam(0.0, space='world'))
@@ -107,7 +107,7 @@ class FollowPath(BehaviourBaseObject):
         self._normalBehaviour.onAgentUpdated(agent)    
  
 ################################          
-    def getDesiredAccelerationForAgent(self, agent, nearbyAgents):  # overridden BoidBehaviourBaseObject method
+    def getDesiredAccelerationForAgent(self, agent, nearbyAgents):  # overridden BehaviourBaseObject method
         """Returns corresponding acceleration for the agent as determined by calculated behaviour.
         Client agents should call this method on each frame update and modify their own desiredAcceleration accordingly.
         """
@@ -116,11 +116,11 @@ class FollowPath(BehaviourBaseObject):
         if(self._pathCurve is not None and agent.isTouchingGround):  
             pymelLocationVector = sceneInterface.PymelPointFromVector3(agent.currentPosition)
             pymelClosestCurvePoint = self._pathCurve.closestPoint(pymelLocationVector, space='world')
-            boidCurveClosestPoint = sceneInterface.Vector3FromPymelPoint(pymelClosestCurvePoint)
+            pyswarmCurveClosestPoint = sceneInterface.Vector3FromPymelPoint(pymelClosestCurvePoint)
             behaviourAttributes = agent.state.behaviourAttributes
             movementAttributes = agent.state.movementAttributes
             
-            if(boidCurveClosestPoint.distanceSquaredFrom(self._endVector) < behaviourAttributes.goalDistanceThreshold **2):
+            if(pyswarmCurveClosestPoint.distanceSquaredFrom(self._endVector) < behaviourAttributes.goalDistanceThreshold **2):
                 self.endCurveBehaviourForAgent(agent)
             else:
                 self._currentlyFollowingSet.add(agent)
@@ -131,14 +131,14 @@ class FollowPath(BehaviourBaseObject):
                 fromEndWidth = lengthAlongCurve * behaviourAttributes.pathDevianceThreshold * self.attributes.taperEnd
                 finalWidth = fromStartWidth + fromEndWidth
                 
-                if(boidCurveClosestPoint.distanceSquaredFrom(agent.currentPosition) > finalWidth **2):
-                    desiredAcceleration += (boidCurveClosestPoint - agent.currentPosition)
+                if(pyswarmCurveClosestPoint.distanceSquaredFrom(agent.currentPosition) > finalWidth **2):
+                    desiredAcceleration += (pyswarmCurveClosestPoint - agent.currentPosition)
                     desiredAcceleration.normalise(movementAttributes.maxAcceleration)
                 else:
                     tangent = self._pathCurve.tangent(currentParamValue, space='world')
-                    boidTangentVector = sceneInterface.Vector3FromPymelVector(tangent)
+                    pyswarmTangentVector = sceneInterface.Vector3FromPymelVector(tangent)
                     
-                    desiredAcceleration += boidTangentVector
+                    desiredAcceleration += pyswarmTangentVector
                     desiredAcceleration.normalise(self.attributes.pathInfluenceMagnitude)
             
             if(self.attributes.pathInfluenceMagnitude < 1.0):

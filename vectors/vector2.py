@@ -10,7 +10,7 @@
 # ------------------------------------------------------------
 
 
-from boidBaseObject import PyswarmObject
+from pyswarmObject import PyswarmObject
 
 import random as rand
 import math as mth

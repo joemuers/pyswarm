@@ -26,7 +26,7 @@ def PackageInfo():
     
 #######################
 def PackageHomePage():
-    return "https://github.com/joemuers/boidsBugs"
+    return "https://github.com/joemuers/PySwarm"
 
 
 

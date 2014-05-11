@@ -31,7 +31,7 @@ class FollowPathDataBlob(abo._DataBlobBaseObject):
         return ("<FOLLOW-PATH BHVR: pathDev=%.2f, goalDist=%.2f>" % 
                 (self.pathDevianceThreshold, self.goalDistanceThreshold))
         
-# END OF CLASS - ClassicBoidDataBlob
+# END OF CLASS - FollowPathDataBlob
 ###########################################
 
 

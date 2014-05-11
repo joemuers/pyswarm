@@ -18,7 +18,7 @@ import types
 ##################################
 class PyswarmObject(object):
     """
-    Base class for all the other boid classes in this package.  Treated as an abstract class, I
+    Base class for all the other PySwarm classes in this package.  Treated as an abstract class, I
     suppose (although, technically, it isn't one).
     Raison d'etre just to kind of formalise the 'metaStr' implementation...
     

@@ -26,7 +26,7 @@ _CALCULATIONS_PER_UPDATE_REPORT_ = 20
 
 ##############################################
 class AgentsController(PyswarmObject):
-    """Main external interface to the boid system, basically the managing object for a group of agents.  
+    """Main external interface to the pyswarm system, basically the managing object for a group of agents.  
     Contains top-level logic (i.e. iterating over agents each frame & executing behaviour) and
     also manages interaction with the actual Pymel objects within Maya.
     """
@@ -103,7 +103,7 @@ class AgentsController(PyswarmObject):
         
 #############################
     def onFrameUpdated(self):       
-        """Performs one full iteration of updating all boidAgent behaviour.
+        """Performs one full iteration of updating all agent behaviour.
         Should be called from Maya once per frame update.
         """
         self._globalAttributes.setStatusReadoutWorking(2, "Startup")
@@ -164,15 +164,15 @@ class AgentsController(PyswarmObject):
                     else:
                         break
                     
-                self.onNewBoidsCreated(newAgentsList)
+                self.onNewAgentsCreated(newAgentsList)
                 
             elif(numParticles < len(self._idToAgentLookup)):
                 # remove recently deleted particles from the list of agents
                 self._particleIdsOrdering = scene.ParticleIdsListForParticleShape(self._particleShapeName)
                 particleSet = set(self._particleIdsOrdering)
-                boidAgentSet = set(self._idToAgentLookup.keys())
+                agentSet = set(self._idToAgentLookup.keys())
                 
-                for agentId in boidAgentSet.difference(particleSet):
+                for agentId in agentSet.difference(particleSet):
                     del self._idToAgentLookup[agentId]
             else:
                 util.LogWarning("Possible logic error - partial rebuild of %s but with no change in particle count." 
@@ -190,7 +190,7 @@ class AgentsController(PyswarmObject):
  
 #########
     def _getAllParticlesInfo(self, queryExtraInfo=False):
-        """Updates all boidAgent instances with position, velocity and derived
+        """Updates all agent instances with position, velocity and derived
         information from their corresponding Maya-side particle instances.
         """
         numParticles = self._particleCount
@@ -231,7 +231,7 @@ class AgentsController(PyswarmObject):
 
 #############################
     def _calculateAgentsBehaviour(self, progressCurrentValue, progressUpdateStepSize):     
-        """Iterates through all agents & calculates desired behaviour based on boids rules."""
+        """Iterates through all agents & calculates desired behaviour based on current PySwarm behaviour rules."""
 
         nextProgressUpdate = progressCurrentValue + progressUpdateStepSize
         for agent in self._idToAgentLookup.itervalues():
@@ -304,12 +304,12 @@ class AgentsController(PyswarmObject):
         self.makeAgentsFollowBehaviour(agentsList, self._behavioursController.defaultBehaviour)
 
 #############################       
-    def onNewBoidsCreated(self, newBoidsList):
+    def onNewAgentsCreated(self, newBoidsList):
         # TODO - use this? or delete??
 #         if(self._pathCurveBehaviour is not None):
 #             for newBoid in newBoidsList:
 #                 newBoid.makeFollowCurvePath(self._pathCurveBehaviour)
-        util.LogDebug("newBoids: %s" % newBoidsList, self._particleShapeName)
+        util.LogDebug("newAgents: %s" % newBoidsList, self._particleShapeName)
         return
 
 #############################  

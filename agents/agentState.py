@@ -19,7 +19,7 @@ import tools.util as util
 
 #############################################
 class AgentState(PyswarmObject):
-    """Internal to Agent, i.e. each Agent instance "has" a boidAgentState member.  
+    """Internal to Agent, i.e. each Agent instance "has" an agentState member.  
     Essentially just a data container with information on the corresponding agent, regarding:
         - current position
         - current heading/acceleration
@@ -44,7 +44,7 @@ class AgentState(PyswarmObject):
         
         self._nearbyList = []        # 
         self._crowdedList = []       #
-        self._collisionList = []     # lists of boidAgent instances
+        self._collisionList = []     # lists of agent instances
         self._avPosition = v3.Vector3()
         self._avVelocity = v3.Vector3()
         self._avCrowdedPos = v3.Vector3()
@@ -332,7 +332,7 @@ class AgentState(PyswarmObject):
                     angleToOtherAgent = abs(self._velocity.angleTo(directionToOtherAgent, True))
                     
                     if(angleToOtherAgent < visibleAreaAngle):
-                        # otherBoid is "nearby" if we're here
+                        # otherAgent is "nearby" if we're here
                         self.nearbyList.append(otherAgent)
                         weighting = self._calculateWeighting(directionToOtherAgent, neighbourhoodSize, 
                                                              angleToOtherAgent, forwardAreaAngle, visibleAreaAngle)
