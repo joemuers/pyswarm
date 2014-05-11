@@ -13,7 +13,7 @@
 from behaviourBaseObject import BehaviourBaseObject
 from boidResources import colours
 
-import boidAttributes.goalDrivenBehaviourAttributes as gdba
+import attributes.goalDrivenBehaviourAttributes as gdba
 import boidVectors.vector2 as bv2
 import boidVectors.vector3 as bv3
 

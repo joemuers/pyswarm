@@ -13,7 +13,7 @@
 from behaviourBaseObject import BehaviourBaseObject
 from boidResources import colours
 
-import boidAttributes.classicBoidBehaviourAttributes as cbba
+import attributes.classicBoidBehaviourAttributes as cbba
 import boidVectors.vector3 as bv3
 
 import random

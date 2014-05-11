@@ -21,7 +21,7 @@ The module is roughly split into sections:
  Windows, Menus, Layouts, Input Fields (biggest section by far), Miscellaneous Items.
 """
 
-import boidAttributes.attributeTypes as at
+import attributes.attributeTypes as at
 import boidTools.util as util
 import boidTools.sceneInterface as scene
 import boidResources.fileLocations as fl

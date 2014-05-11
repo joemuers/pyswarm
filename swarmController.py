@@ -12,7 +12,7 @@
 
 import boidBaseObject as bbo
 import agents.agentsController as agc
-import boidAttributes.attributesController as bat
+import attributes.attributesController as bat
 import boidBehaviours.behavioursController as bbc
 import uiController as uic
 import boidTools.util as util

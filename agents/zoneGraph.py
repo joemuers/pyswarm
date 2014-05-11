@@ -11,7 +11,7 @@
 
 
 from boidBaseObject import BoidBaseObject
-from boidAttributes.attributesBaseObject import AttributesListener
+from attributes.attributesBaseObject import AttributesListener
 import boidVectors.vector3 as bv3
 import boidTools.util as util
 
