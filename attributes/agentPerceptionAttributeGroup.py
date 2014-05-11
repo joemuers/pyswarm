@@ -11,7 +11,7 @@
 
 
 import attributeGroupObject as ago
-import utils.uiBuilder as uib
+import ui.uiBuilder as uib
 import attributeTypes as at
 
 

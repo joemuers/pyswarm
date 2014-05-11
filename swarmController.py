@@ -14,9 +14,9 @@ import pyswarmObject as pso
 import agents.agentsController as agc
 import attributes.attributeGroupsController as ac
 import behaviours.behavioursController as bc
-import uiController as uic
+import ui.uiController as uic
+import ui.agentSelectionWindow as asw
 import utils.general as util
-import utils.agentSelectionWindow as asw
 import utils.sceneInterface as scene
 import utils.fileLocations as fl
 import utils.packageInfo as pi

@@ -12,10 +12,10 @@
 
 import attributes.attributeGroupObject as ago
 import attributes.attributeTypes as at
-import utils.uiBuilder as uib
+import ui.uiBuilder as uib
+import ui.agentSelectionWindow as asw
 import utils.general as util
 import vectors.vector3 as v3
-import utils.agentSelectionWindow as asw
 
 import random as rand
 

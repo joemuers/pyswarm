@@ -13,7 +13,7 @@
 import attributes.attributeGroupObject as ago
 import attributes.attributeTypes as at
 import utils.sceneInterface as scene
-import utils.uiBuilder as uib
+import ui.uiBuilder as uib
 
 
 

@@ -12,7 +12,7 @@
 
 import attributeGroupObject as ago
 import attributeTypes as at
-import utils.uiBuilder as uib
+import ui.uiBuilder as uib
 import vectors.vector3 as v3
 import utils.general as util
 import utils.sceneInterface as scene

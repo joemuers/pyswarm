@@ -13,7 +13,7 @@
 from pyswarmObject import PyswarmObject
 import attributeTypes as at
 import utils.general as util
-import utils.uiBuilder as uib
+import ui.uiBuilder as uib
 
 from abc import ABCMeta, abstractmethod
 import weakref
