@@ -359,7 +359,7 @@ class UiController(PyswarmObject):
             self.hideUI()
         
         if(not self.uiVisible):
-            particleName = self._attributeGroupsController.globalAttributes.particleShapeNode.name()
+            particleName = self._attributeGroupsController.globalAttributeGroup.particleShapeNode.name()
             self._uiWindow = uib.MakeWindow(("%s - %s" % (pi.PackageName(), particleName)))
             
             self._buildUiMenuBar()
@@ -515,9 +515,9 @@ class UiController(PyswarmObject):
         
         rowLayout = uib.MakeTopLevelRowLayout(_TOP_PANEL_COMPONENTS_WIDTH_)
         generalColumnLayout = uib.MakeColumnLayout()
-        globalAttributes = self._attributeGroupsController.globalAttributes
-        globalAttributes.populateUiLayout()
-        globalAttributes.nameChangeCallback = (lambda name: self._uiWindow.setTitle(("%s - %s" % 
+        globalAttributeGroup = self._attributeGroupsController.globalAttributeGroup
+        globalAttributeGroup.populateUiLayout()
+        globalAttributeGroup.nameChangeCallback = (lambda name: self._uiWindow.setTitle(("%s - %s" % 
                                                                                      (pi.PackageName(), name))))
         uib.SetAsChildLayout(generalColumnLayout)
         

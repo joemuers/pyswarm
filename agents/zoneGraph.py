@@ -92,10 +92,10 @@ class ZoneGraph(PyswarmObject, AttributesListener):
     def __init__(self, attributeGroupsController):
         self._currentFrameIteration = 0
         
-        self._globalAttributes = attributeGroupsController.globalAttributes
-        self._lowerBoundsVector = v3.Vector3(self._globalAttributes.lowerBounds)
-        self._upperBoundsVector = v3.Vector3(self._globalAttributes.upperBounds)
-        self._globalAttributes.addListener(self)
+        self._globalAttributeGroup = attributeGroupsController.globalAttributeGroup
+        self._lowerBoundsVector = v3.Vector3(self._globalAttributeGroup.lowerBounds)
+        self._upperBoundsVector = v3.Vector3(self._globalAttributeGroup.upperBounds)
+        self._globalAttributeGroup.addListener(self)
         
         self._perceptionAttributes = attributeGroupsController.agentPerceptionAttributeGroup
         self._zoneSize = self._perceptionAttributes.maxNeighbourhoodSize
@@ -217,12 +217,12 @@ class ZoneGraph(PyswarmObject, AttributesListener):
 
 ########################################        
     def onAttributeChanged(self, sectionObject, attributeName):
-        if(sectionObject == self._globalAttributes):
-            if(self._lowerBoundsVector != self._globalAttributes.lowerBounds or
-               self._upperBoundsVector != self._globalAttributes.upperBounds):
+        if(sectionObject == self._globalAttributeGroup):
+            if(self._lowerBoundsVector != self._globalAttributeGroup.lowerBounds or
+               self._upperBoundsVector != self._globalAttributeGroup.upperBounds):
                 
-                self._lowerBoundsVector = v3.Vector3(self._globalAttributes.lowerBounds)
-                self._upperBoundsVector = v3.Vector3(self._globalAttributes.upperBounds)
+                self._lowerBoundsVector = v3.Vector3(self._globalAttributeGroup.lowerBounds)
+                self._upperBoundsVector = v3.Vector3(self._globalAttributeGroup.upperBounds)
                 self._needsRebuild = True
         elif(sectionObject == self._perceptionAttributes):
             if(self._zoneSize != self._perceptionAttributes.maxNeighbourhoodSize):

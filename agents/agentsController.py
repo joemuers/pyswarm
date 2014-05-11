@@ -32,7 +32,7 @@ class AgentsController(PyswarmObject):
     """
     
     def __init__(self, attributeGroupsController, behavioursController):
-        self._globalAttributes = attributeGroupsController.globalAttributes
+        self._globalAttributeGroup = attributeGroupsController.globalAttributeGroup
         self._particleIdsOrdering = []
         self._idToAgentLookup = {}
         self._attributeGroupsController = attributeGroupsController
@@ -77,12 +77,12 @@ class AgentsController(PyswarmObject):
     
 ############################# 
     def _getParticleShapeName(self):
-        return self._globalAttributes.particleShapeNode.name()
+        return self._globalAttributeGroup.particleShapeNode.name()
     _particleShapeName = property(_getParticleShapeName)
 
 ########
     def _getParticleCount(self):
-        return self._globalAttributes.particleShapeNode.getCount()
+        return self._globalAttributeGroup.particleShapeNode.getCount()
     _particleCount = property(_getParticleCount)
     
 #############################
@@ -106,11 +106,11 @@ class AgentsController(PyswarmObject):
         """Performs one full iteration of updating all agent behaviour.
         Should be called from Maya once per frame update.
         """
-        self._globalAttributes.setStatusReadoutWorking(2, "Startup")
+        self._globalAttributeGroup.setStatusReadoutWorking(2, "Startup")
         self._zoneGraph.rebuildMapIfNecessary()
 
         self._getAllParticlesInfo()
-        self._globalAttributes.setStatusReadoutWorking(5)
+        self._globalAttributeGroup.setStatusReadoutWorking(5)
         
         numberOfAgents = len(self._idToAgentLookup)
         numberOfProgressUpdates = ((numberOfAgents / _CALCULATIONS_PER_UPDATE_REPORT_) 
@@ -118,10 +118,10 @@ class AgentsController(PyswarmObject):
         progressUpdateStepSize = 90 / numberOfProgressUpdates
         self._calculateAgentsBehaviour(5, progressUpdateStepSize)
         
-        self._globalAttributes.setStatusReadoutWorking(95, "Updating...")
+        self._globalAttributeGroup.setStatusReadoutWorking(95, "Updating...")
         self._updateAllParticles()
         
-        self._globalAttributes.setStatusReadoutWorking(100, "Done!")
+        self._globalAttributeGroup.setStatusReadoutWorking(100, "Done!")
         
 ########
     def onCalculationsCompleted(self):
@@ -240,7 +240,7 @@ class AgentsController(PyswarmObject):
             
             progressCurrentValue += 1
             if(progressCurrentValue == nextProgressUpdate):
-                self._globalAttributes.setStatusReadoutWorking(progressCurrentValue)
+                self._globalAttributeGroup.setStatusReadoutWorking(progressCurrentValue)
                 nextProgressUpdate += progressUpdateStepSize
                 
 #############################
@@ -266,7 +266,7 @@ class AgentsController(PyswarmObject):
   
 ########          
     def setDebugColour(self, agent):
-        if(self._globalAttributes.useDebugColours):
+        if(self._globalAttributeGroup.useDebugColours):
             scene.SetParticleColour(self._particleShapeName, agent.agentId, agent.debugColour)     
         
 #############################         

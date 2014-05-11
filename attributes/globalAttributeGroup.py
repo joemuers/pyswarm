@@ -233,7 +233,7 @@ class _PreferencesWindow(object):
 
 
 #######################################
-class GlobalAttributes(ago.AttributeGroupObject):
+class GlobalAttributeGroup(ago.AttributeGroupObject):
 
     @classmethod
     def BehaviourTypeName(cls):
@@ -241,7 +241,7 @@ class GlobalAttributes(ago.AttributeGroupObject):
     
 #####################    
     def __init__(self, particleShapeNode, sceneSaveMethod, boundingLocators=None):
-        super(GlobalAttributes, self).__init__(GlobalAttributes.BehaviourTypeName())
+        super(GlobalAttributeGroup, self).__init__(GlobalAttributeGroup.BehaviourTypeName())
         
         self._particleShapeNode = scene.PymelObjectFromObjectName(particleShapeNode)
         self.nameChangeCallback = None
@@ -293,7 +293,7 @@ class GlobalAttributes(ago.AttributeGroupObject):
         
 #####################
     def __getstate__(self):
-        state = super(GlobalAttributes, self).__getstate__()
+        state = super(GlobalAttributeGroup, self).__getstate__()
         state["nameChangeCallback"] = None
         state["_statusLabel"] = None
         state["_progressBar"] = None
@@ -305,7 +305,7 @@ class GlobalAttributes(ago.AttributeGroupObject):
  
 ########   
     def __setstate__(self, state):
-        super(GlobalAttributes, self).__setstate__(state)
+        super(GlobalAttributeGroup, self).__setstate__(state)
         
         sceneSaveMethod = state["saveMethod"]
         self._preferencesWindow = _PreferencesWindow(self._accelerationDueToGravity, self._listRebuildFrequency, 
@@ -515,7 +515,7 @@ class GlobalAttributes(ago.AttributeGroupObject):
     
 #####################
     def onValueChanged(self, changedAttribute):
-        super(GlobalAttributes, self).onValueChanged(changedAttribute)
+        super(GlobalAttributeGroup, self).onValueChanged(changedAttribute)
         
         if(changedAttribute is self._sceneBounds1 or changedAttribute is self._sceneBounds2):
             self._updateBoundsVectors()

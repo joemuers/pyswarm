@@ -39,7 +39,7 @@ class ClassicBoid(BehaviourBaseObject):
         super(ClassicBoid, self).__init__(classicBoidAttributes)
         
         self._movementAttributes = attributeGroupsController.agentMovementAttributeGroup
-        self._globalAttributes = attributeGroupsController.globalAttributes
+        self._globalAttributeGroup = attributeGroupsController.globalAttributeGroup
         
         self._doNotClampMovement = False
         
@@ -116,8 +116,8 @@ class ClassicBoid(BehaviourBaseObject):
     def _avoidMapEdgeBehaviour(self, agent, desiredAcceleration):
         madeChanges = False
         
-        lowerGridBounds = self._globalAttributes.lowerBounds
-        upperGridBounds = self._globalAttributes.upperBounds
+        lowerGridBounds = self._globalAttributeGroup.lowerBounds
+        upperGridBounds = self._globalAttributeGroup.upperBounds
         movementAttributes = agent.state.movementAttributes
         
         if(agent.currentPosition.x < lowerGridBounds.u and agent.currentVelocity.x < movementAttributes.maxVelocity):

@@ -49,8 +49,8 @@ class AgentSelectionWindow(PyswarmObject):
     
     
 #####################    
-    def __init__(self, globalAttributes):
-        self._globalAttributes = globalAttributes
+    def __init__(self, globalAttributeGroup):
+        self._globalAttributeGroup = globalAttributeGroup
         self._currentlySelectedAgentsList = []
         self._originallySelectedAgentsSet = set()
         self._fullAgentsList = []
@@ -83,7 +83,7 @@ class AgentSelectionWindow(PyswarmObject):
 
 #####################
     def _getParticleShapeName(self):
-        return self._globalAttributes.particleShapeNode.name()
+        return self._globalAttributeGroup.particleShapeNode.name()
     _particleShapeName = property(_getParticleShapeName)
 
 #####################  

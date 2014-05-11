@@ -51,7 +51,7 @@ class ClassicBoidBehaviourAttributes(ago.AttributeGroupObject):
         return "Classic Boid Behaviour"
     
 #####################    
-    def __init__(self, behaviourId, globalAttributes):
+    def __init__(self, behaviourId, globalAttributeGroup):
         super(ClassicBoidBehaviourAttributes, self).__init__(behaviourId)
         
         self._kickstartEnabled = at.BoolAttribute("Kickstart Enabled", False, self)
@@ -61,7 +61,7 @@ class ClassicBoidBehaviourAttributes(ago.AttributeGroupObject):
         self._kickstartAgents = set()
         self._kickstartMinValue = at.Vector3Attribute("Minimum", v3.Vector3())
         self._kickstartMaxValue = at.Vector3Attribute("Maximum", v3.Vector3())
-        self._kickstartAgentSelectionWindow = asw.AgentSelectionWindow(globalAttributes)
+        self._kickstartAgentSelectionWindow = asw.AgentSelectionWindow(globalAttributeGroup)
         self._kickstartNowButton = None
         self.kickOnNextFrame = False
         
@@ -88,18 +88,18 @@ class ClassicBoidBehaviourAttributes(ago.AttributeGroupObject):
         
         state["_kickstartAgentSelectionWindow"] = None
         state["_kickstartNowButton"] = None
-        state["globalAttributes"] = self._kickstartAgentSelectionWindow._globalAttributes
+        state["globalAttributeGroup"] = self._kickstartAgentSelectionWindow._globalAttributeGroup
         
         return state
     
 ########
     def __setstate__(self, state):
-        globalAttributes = state["globalAttributes"]
-        del state["globalAttributes"]
+        globalAttributeGroup = state["globalAttributeGroup"]
+        del state["globalAttributeGroup"]
         
         super(ClassicBoidBehaviourAttributes, self).__setstate__(state)
         
-        self._kickstartAgentSelectionWindow = asw.AgentSelectionWindow(globalAttributes)
+        self._kickstartAgentSelectionWindow = asw.AgentSelectionWindow(globalAttributeGroup)
         
 #####################
     def _getKickOnNextFrame(self):

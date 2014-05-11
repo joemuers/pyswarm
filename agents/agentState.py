@@ -62,7 +62,7 @@ class AgentState(PyswarmObject):
         self._perceptionAttributes = attributeGroupsController.agentPerceptionAttributeGroup.getDataBlobForAgent(self)
         self._perceptionAttributeSet = attributeGroupsController.agentPerceptionAttributeGroup
         self.behaviourAttributes = None  # data 'blob' for client behaviours to store instance-level data - not used internally
-        self._globalAttributes = attributeGroupsController.globalAttributes
+        self._globalAttributeGroup = attributeGroupsController.globalAttributeGroup
         
 ###################        
     def __str__(self):
@@ -164,7 +164,7 @@ class AgentState(PyswarmObject):
         self._acceleration = velocity - self._velocity
         self._velocity.resetToVector(velocity)
         
-        if(self._acceleration.y < self._globalAttributes.accelerationDueToGravity):
+        if(self._acceleration.y < self._globalAttributeGroup.accelerationDueToGravity):
             self._isTouchingGround = False
         else:
             self._isTouchingGround = True
@@ -298,7 +298,7 @@ class AgentState(PyswarmObject):
             self._needsFullListsRebuild = False
             self._needsAveragesRecalc = False
             
-            self._framesUntilNextRebuild = self._globalAttributes.listRebuildFrequency if not self.isCrowded else 0
+            self._framesUntilNextRebuild = self._globalAttributeGroup.listRebuildFrequency if not self.isCrowded else 0
             
         elif(self._needsAveragesRecalc):
             self._recalculateAverages()

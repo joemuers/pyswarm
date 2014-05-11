@@ -74,10 +74,10 @@ class GoalDrivenBehaviourAttributes(ago.AttributeGroupObject, ago._FollowOnBehav
         return "Goal-Driven Behaviour"
     
 #####################    
-    def __init__(self, behaviourId, globalAttributes, wallLipGoal=None, basePyramidGoalHeight=None, finalGoal=None):
+    def __init__(self, behaviourId, globalAttributeGroup, wallLipGoal=None, basePyramidGoalHeight=None, finalGoal=None):
         super(GoalDrivenBehaviourAttributes, self).__init__(behaviourId)
         
-        self._globalAttributes = globalAttributes
+        self._globalAttributeGroup = globalAttributeGroup
         
         if(basePyramidGoalHeight is not None and type(basePyramidGoalHeight) != float):
             pyramidBaseVector = scene.Vector3FromLocator(basePyramidGoalHeight)
@@ -97,7 +97,7 @@ class GoalDrivenBehaviourAttributes(ago.AttributeGroupObject, ago._FollowOnBehav
         self._leadersText = at.StringAttribute("Leader Agents", "")
         self._leadersText.excludeFromDefaults = True
         self._selectCurrentLeadersButtonEnable = None                            # should *not* be
-        self._leaderSelectionWindow = asw.AgentSelectionWindow(globalAttributes) # included in Pickle save
+        self._leaderSelectionWindow = asw.AgentSelectionWindow(globalAttributeGroup) # included in Pickle save
         self._leaderAgentIds = set()
         
         self._incubationPeriod = at.IntAttribute("Incubation Period", 10, self)
@@ -128,7 +128,7 @@ class GoalDrivenBehaviourAttributes(ago.AttributeGroupObject, ago._FollowOnBehav
     def __setstate__(self, state):
         super(GoalDrivenBehaviourAttributes, self).__setstate__(state)
         
-        self._leaderSelectionWindow = asw.AgentSelectionWindow(self._globalAttributes)
+        self._leaderSelectionWindow = asw.AgentSelectionWindow(self._globalAttributeGroup)
         self._selectCurrentLeadersButtonEnable = None
         
 ####################
@@ -254,7 +254,7 @@ class GoalDrivenBehaviourAttributes(ago.AttributeGroupObject, ago._FollowOnBehav
 
 ########        
     def _didPressSelectLeadersInScene(self, *args):
-        scene.SelectParticlesInList(self._leaderAgentIds, self._globalAttributes.particleShapeNode.name())
+        scene.SelectParticlesInList(self._leaderAgentIds, self._globalAttributeGroup.particleShapeNode.name())
     
 #####################
     def _updateDataBlobWithAttribute(self, dataBlob, attribute):

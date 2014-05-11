@@ -12,7 +12,7 @@
 
 from pyswarmObject import PyswarmObject
 
-import globalAttributes as ga
+import globalAttributeGroup as ga
 import agentPerceptionAttributeGroup as apa
 import agentMovementAttributeGroup as ama
 import classicBoidBehaviourAttributes as cbba
@@ -30,14 +30,14 @@ class AttributesController(PyswarmObject):
     
     def __init__(self, particleShapeNode, saveSceneMethod, boundingLocators=None):
         
-        self._globalAttributes = ga.GlobalAttributes(particleShapeNode, saveSceneMethod, boundingLocators)
+        self._globalAttributeGroup = ga.GlobalAttributeGroup(particleShapeNode, saveSceneMethod, boundingLocators)
         self._agentMovementAttributeGroup = ama.AgentMovementAttributeGroup()
         self._agentPerceptionAttributeGroup = apa.AgentPerceptionAttributeGroup()
         
         defaultBehaviourId = cbba.ClassicBoidBehaviourAttributes.BehaviourTypeName()
-        defaultBehaviourAttributes = cbba.ClassicBoidBehaviourAttributes(defaultBehaviourId, self._globalAttributes)
+        defaultBehaviourAttributes = cbba.ClassicBoidBehaviourAttributes(defaultBehaviourId, self._globalAttributeGroup)
         self._behaviourAttributesList = [defaultBehaviourAttributes]        
-        self._globalAttributes.setDefaultBehaviourAttributes(defaultBehaviourAttributes)
+        self._globalAttributeGroup.setDefaultBehaviourAttributes(defaultBehaviourAttributes)
         
         self.restoreDefaultAttributeValuesFromFile()
         self._notifyOnBehavioursListChanged()
@@ -58,13 +58,13 @@ class AttributesController(PyswarmObject):
         return ''.join(stringsList)
  
 #####################   
-    def _getGlobalAttributes(self):
-        return self._globalAttributes
-    globalAttributes = property(_getGlobalAttributes)
+    def _getGlobalAttributeGroup(self):
+        return self._globalAttributeGroup
+    globalAttributeGroup = property(_getGlobalAttributeGroup)
 
 #####################    
     def _getDefaultBehaviourId(self):
-        return self._globalAttributes.defaultBehaviourId
+        return self._globalAttributeGroup.defaultBehaviourId
     defaultBehaviourId = property(_getDefaultBehaviourId)
     
 ########
@@ -87,7 +87,7 @@ class AttributesController(PyswarmObject):
 
 #####################
     def _allSections(self):
-        sectionsList = [self.globalAttributes, self.agentMovementAttributeGroup, self.agentPerceptionAttributeGroup] 
+        sectionsList = [self.globalAttributeGroup, self.agentMovementAttributeGroup, self.agentPerceptionAttributeGroup] 
         sectionsList.extend(self._behaviourAttributesList)
         
         return sectionsList
@@ -108,7 +108,7 @@ class AttributesController(PyswarmObject):
 
 #####################            
     def showPreferencesWindow(self):
-        self.globalAttributes.showGlobalPreferencesWindow()
+        self.globalAttributeGroup.showGlobalPreferencesWindow()
             
 #####################
     def _getNewBehaviourIdForAttibutesClass(self, attributesClass):
@@ -164,7 +164,7 @@ class AttributesController(PyswarmObject):
 ########       
     def addClassicBoidAttributes(self):
         behaviourId = self._getNewBehaviourIdForAttibutesClass(cbba.ClassicBoidBehaviourAttributes)
-        newBehaviourAttributes = cbba.ClassicBoidBehaviourAttributes(behaviourId, self._globalAttributes)
+        newBehaviourAttributes = cbba.ClassicBoidBehaviourAttributes(behaviourId, self._globalAttributeGroup)
         self._addNewBehaviourAttributes(newBehaviourAttributes)
         
         return newBehaviourAttributes
@@ -172,7 +172,7 @@ class AttributesController(PyswarmObject):
 ########   
     def addGoalDrivenAttributes(self, wallLipGoal=None, basePyramidGoalHeight=None, finalGoal=None):
         behaviourId = self._getNewBehaviourIdForAttibutesClass(gdba.GoalDrivenBehaviourAttributes)
-        newBehaviourAttributes = gdba.GoalDrivenBehaviourAttributes(behaviourId, self._globalAttributes,
+        newBehaviourAttributes = gdba.GoalDrivenBehaviourAttributes(behaviourId, self._globalAttributeGroup,
                                                                     wallLipGoal, basePyramidGoalHeight, finalGoal)
         self._addNewBehaviourAttributes(newBehaviourAttributes)
         
@@ -206,7 +206,7 @@ class AttributesController(PyswarmObject):
             return False
         else:
             newDefaultBehaviourAttributes = self.getBehaviourAttributesWithId(newDefaultBehaviourId)
-            self._globalAttributes.setDefaultBehaviourAttributes(newDefaultBehaviourAttributes)
+            self._globalAttributeGroup.setDefaultBehaviourAttributes(newDefaultBehaviourAttributes)
             self._notifyOnBehavioursListChanged()
             
             return True

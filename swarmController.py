@@ -351,7 +351,7 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
         self._behavioursController = bc.BehavioursController(self._attributeGroupsController)
         self._agentsController = agc.AgentsController(self._attributeGroupsController, self._behavioursController)
         self._uiController = uic.UiController(self._attributeGroupsController, self)
-        self._behaviourAssignmentSelectionWindow = asw.AgentSelectionWindow(self._attributeGroupsController.globalAttributes)
+        self._behaviourAssignmentSelectionWindow = asw.AgentSelectionWindow(self._attributeGroupsController.globalAttributeGroup)
         
         self._agentsController._buildParticleList()
 
@@ -373,18 +373,18 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
 ########        
     def __setstate__(self, state):
         super(SwarmController, self).__setstate__(state)
-        self._behaviourAssignmentSelectionWindow = asw.AgentSelectionWindow(self._globalAttributes)
+        self._behaviourAssignmentSelectionWindow = asw.AgentSelectionWindow(self._globalAttributeGroup)
                                                                             
         self.showUI()
 
 #############################
-    def _getGlobalAttributes(self):
-        return self._attributeGroupsController.globalAttributes
-    _globalAttributes = property(_getGlobalAttributes)
+    def _getGlobalAttributeGroup(self):
+        return self._attributeGroupsController.globalAttributeGroup
+    _globalAttributeGroup = property(_getGlobalAttributeGroup)
     
 #############################    
     def _getParticleShapeName(self):
-        return self._globalAttributes.particleShapeNode.name()
+        return self._globalAttributeGroup.particleShapeNode.name()
     particleShapeName = property(_getParticleShapeName)
 
 #############################    
@@ -401,22 +401,22 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
         instance within the scene with the results. 
         """
         try:
-            self._globalAttributes.setStatusReadoutWorking(1, "Reading...")
+            self._globalAttributeGroup.setStatusReadoutWorking(1, "Reading...")
             
             self._attributeGroupsController.onFrameUpdated()
             
-            if(self._globalAttributes.enabled):
+            if(self._globalAttributeGroup.enabled):
                 self._behavioursController.onFrameUpdated()
                 self._agentsController.onFrameUpdated()
             
-            self._globalAttributes.setStatusReadoutIdle()
+            self._globalAttributeGroup.setStatusReadoutIdle()
             
             self._attributeGroupsController.onCalculationsCompleted()
             self._behavioursController.onCalculationsCompleted()
             self._agentsController.onCalculationsCompleted()
             
         except Exception as e:
-            self._globalAttributes.setStatusReadoutError()
+            self._globalAttributeGroup.setStatusReadoutError()
             util.StopPlayback()
             util.LogException(e)
 
@@ -426,8 +426,8 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
         Re-enables if previously disabled (when disabled, will *not* process or update when the 
         Maya scene frame number changes). 
         """
-        if(not self._globalAttributes.enabled):
-            self._globalAttributes.enabled = True
+        if(not self._globalAttributeGroup.enabled):
+            self._globalAttributeGroup.enabled = True
             util.LogInfo("updates are now ACTIVE.", self.particleShapeName)
         else:
             util.LogWarning("updates already enabled.", self.particleShapeName)
@@ -438,7 +438,7 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
         If disabled, will *not* process or update when the Maya scene frame number changes.
         Can be re-enabled with the 'enable' method.
         """
-        self._globalAttributes.enabled = False
+        self._globalAttributeGroup.enabled = False
         util.LogInfo("updates DISABLED.", self.particleShapeName)
         
 ########
@@ -561,9 +561,9 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
         
         :param behaviourId: Behaviour ID of behaviour instance to be the default. 
         """
-        oldDefaultBehaviourId = self._globalAttributes.defaultBehaviourId
+        oldDefaultBehaviourId = self._globalAttributeGroup.defaultBehaviourId
         if(self._attributeGroupsController.changeDefaultBehaviour(behaviourId)):
-            self._uiController.updateDefaultBehaviourInUI(oldDefaultBehaviourId, self._globalAttributes.defaultBehaviourId)
+            self._uiController.updateDefaultBehaviourInUI(oldDefaultBehaviourId, self._globalAttributeGroup.defaultBehaviourId)
         
 ########       
     def addNewBehaviour(self, behaviourTypeName):
@@ -637,10 +637,10 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
         setup up & running with the current Maya scene (these settings can be changed in the preferences).  
         """
         scene.QuickSceneSetup(self.particleShapeName, 
-                              self._globalAttributes.quickSetupEnableSelfCollide, self._globalAttributes.quickSetupDisableFriction,
-                              self._globalAttributes.quickSetupDisableIgnoreGravity, self._globalAttributes.quickSetupChangeRenderType,
-                              self._globalAttributes.quickSetupEnableGroundPlane, self._globalAttributes.quickSetupChangeSpaceScale,
-                              self._globalAttributes.quickSetupTranslateAbovePlane)
+                              self._globalAttributeGroup.quickSetupEnableSelfCollide, self._globalAttributeGroup.quickSetupDisableFriction,
+                              self._globalAttributeGroup.quickSetupDisableIgnoreGravity, self._globalAttributeGroup.quickSetupChangeRenderType,
+                              self._globalAttributeGroup.quickSetupEnableGroundPlane, self._globalAttributeGroup.quickSetupChangeSpaceScale,
+                              self._globalAttributeGroup.quickSetupTranslateAbovePlane)
 
 ########
     def assignAgentsToBehaviour(self, agentIdsList, behaviourId):
@@ -740,7 +740,7 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
 
         if(selectionWindow is self._behaviourAssignmentSelectionWindow):
             behaviourId = selectionWindow.dataBlob
-            defaultBehaviourId = self._globalAttributes.defaultBehaviourId
+            defaultBehaviourId = self._globalAttributeGroup.defaultBehaviourId
             
             toUnassign = selectionWindow.originalSelection.difference(selectedAgentsList)
             if(toUnassign):
