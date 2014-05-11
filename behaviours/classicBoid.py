@@ -13,7 +13,7 @@
 from behaviourBaseObject import BehaviourBaseObject
 from resources import colours
 
-import attributes.classicBoidBehaviourAttributes as cbba
+import attributes.classicBoidAttributeGroup as cbba
 import vectors.vector3 as v3
 
 import random
@@ -26,7 +26,7 @@ def AgentBehaviourIsClassicBoid(agent):
 
 ######################
 def AttributesAreClassicBoid(attributes):
-    return isinstance(attributes, cbba.ClassicBoidBehaviourAttributes)
+    return isinstance(attributes, cbba.ClassicBoidAttributeGroup)
     
 ######################
 

@@ -44,7 +44,7 @@ class ClassicBoidDataBlob(ago._DataBlobBaseObject):
 
 
 ###########################################
-class ClassicBoidBehaviourAttributes(ago.AttributeGroupObject):
+class ClassicBoidAttributeGroup(ago.AttributeGroupObject):
     
     @classmethod
     def BehaviourTypeName(cls):
@@ -52,7 +52,7 @@ class ClassicBoidBehaviourAttributes(ago.AttributeGroupObject):
     
 #####################    
     def __init__(self, behaviourId, globalAttributeGroup):
-        super(ClassicBoidBehaviourAttributes, self).__init__(behaviourId)
+        super(ClassicBoidAttributeGroup, self).__init__(behaviourId)
         
         self._kickstartEnabled = at.BoolAttribute("Kickstart Enabled", False, self)
         self._kickstartFrameNumber = at.IntAttribute("Frame Number", 0, minimumValue=0)
@@ -84,7 +84,7 @@ class ClassicBoidBehaviourAttributes(ago.AttributeGroupObject):
         
 #######################
     def __getstate__(self):
-        state = super(ClassicBoidBehaviourAttributes, self).__getstate__()
+        state = super(ClassicBoidAttributeGroup, self).__getstate__()
         
         state["_kickstartAgentSelectionWindow"] = None
         state["_kickstartNowButton"] = None
@@ -97,7 +97,7 @@ class ClassicBoidBehaviourAttributes(ago.AttributeGroupObject):
         globalAttributeGroup = state["globalAttributeGroup"]
         del state["globalAttributeGroup"]
         
-        super(ClassicBoidBehaviourAttributes, self).__setstate__(state)
+        super(ClassicBoidAttributeGroup, self).__setstate__(state)
         
         self._kickstartAgentSelectionWindow = asw.AgentSelectionWindow(globalAttributeGroup)
         
@@ -193,7 +193,7 @@ class ClassicBoidBehaviourAttributes(ago.AttributeGroupObject):
 
 #####################
     def onValueChanged(self, changedAttribute):
-        super(ClassicBoidBehaviourAttributes, self).onValueChanged(changedAttribute)
+        super(ClassicBoidAttributeGroup, self).onValueChanged(changedAttribute)
         
         if(changedAttribute is self._mutuallyExclusive):
             separationWeightingEnabled = not self._mutuallyExclusive.value

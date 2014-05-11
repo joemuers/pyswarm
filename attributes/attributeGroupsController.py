@@ -15,7 +15,7 @@ from pyswarmObject import PyswarmObject
 import globalAttributeGroup as ga
 import agentPerceptionAttributeGroup as apa
 import agentMovementAttributeGroup as ama
-import classicBoidBehaviourAttributes as cbba
+import classicBoidAttributeGroup as cbba
 import goalDrivenBehaviourAttributes as gdba
 import followPathBehaviourAttributes as fpba
 import tools.util as util
@@ -34,8 +34,8 @@ class AttributesController(PyswarmObject):
         self._agentMovementAttributeGroup = ama.AgentMovementAttributeGroup()
         self._agentPerceptionAttributeGroup = apa.AgentPerceptionAttributeGroup()
         
-        defaultBehaviourId = cbba.ClassicBoidBehaviourAttributes.BehaviourTypeName()
-        defaultBehaviourAttributes = cbba.ClassicBoidBehaviourAttributes(defaultBehaviourId, self._globalAttributeGroup)
+        defaultBehaviourId = cbba.ClassicBoidAttributeGroup.BehaviourTypeName()
+        defaultBehaviourAttributes = cbba.ClassicBoidAttributeGroup(defaultBehaviourId, self._globalAttributeGroup)
         self._behaviourAttributesList = [defaultBehaviourAttributes]        
         self._globalAttributeGroup.setDefaultBehaviourAttributes(defaultBehaviourAttributes)
         
@@ -146,7 +146,7 @@ class AttributesController(PyswarmObject):
 #####################      
     def _getBehaviourTypeNameToConstructorLookup(self):
         """IMPORTANT - All defined behaviours *must* be included in this method!"""
-        lookup = { cbba.ClassicBoidBehaviourAttributes.BehaviourTypeName() : self.addClassicBoidAttributes,
+        lookup = { cbba.ClassicBoidAttributeGroup.BehaviourTypeName() : self.addClassicBoidAttributes,
                    gdba.GoalDrivenBehaviourAttributes.BehaviourTypeName() : self.addGoalDrivenAttributes,
                    fpba.FollowPathBehaviourAttributes.BehaviourTypeName() : self.addFollowPathAttributes }
         
@@ -163,8 +163,8 @@ class AttributesController(PyswarmObject):
  
 ########       
     def addClassicBoidAttributes(self):
-        behaviourId = self._getNewBehaviourIdForAttibutesClass(cbba.ClassicBoidBehaviourAttributes)
-        newBehaviourAttributes = cbba.ClassicBoidBehaviourAttributes(behaviourId, self._globalAttributeGroup)
+        behaviourId = self._getNewBehaviourIdForAttibutesClass(cbba.ClassicBoidAttributeGroup)
+        newBehaviourAttributes = cbba.ClassicBoidAttributeGroup(behaviourId, self._globalAttributeGroup)
         self._addNewBehaviourAttributes(newBehaviourAttributes)
         
         return newBehaviourAttributes
