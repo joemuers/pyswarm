@@ -10,7 +10,7 @@
 # ------------------------------------------------------------
 
 
-import attributesBaseObject as abo
+import attributeGroupObject as ago
 import attributeTypes as at
 import tools.uiBuilder as uib
 import vectors.vector3 as v3
@@ -233,7 +233,7 @@ class _PreferencesWindow(object):
 
 
 #######################################
-class GlobalAttributes(abo.AttributesBaseObject):
+class GlobalAttributes(ago.AttributesBaseObject):
 
     @classmethod
     def BehaviourTypeName(cls):

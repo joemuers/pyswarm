@@ -10,14 +10,14 @@
 # ------------------------------------------------------------
 
 
-import attributesBaseObject as abo
+import attributeGroupObject as ago
 import attributeTypes as at
 import tools.uiBuilder as uib
 
 
 
 ##########################################
-class MovementAttributesDataBlob(abo._DataBlobBaseObject):
+class MovementAttributesDataBlob(ago._DataBlobBaseObject):
     
     def __init__(self, agent):
         super(MovementAttributesDataBlob, self).__init__(agent)
@@ -41,7 +41,7 @@ class MovementAttributesDataBlob(abo._DataBlobBaseObject):
 
         
 ##########################################
-class AgentMovementAttributes(abo.AttributesBaseObject):
+class AgentMovementAttributes(ago.AttributesBaseObject):
     
     @classmethod
     def BehaviourTypeName(cls):

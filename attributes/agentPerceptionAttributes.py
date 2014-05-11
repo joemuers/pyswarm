@@ -10,14 +10,14 @@
 # ------------------------------------------------------------
 
 
-import attributesBaseObject as abo
+import attributeGroupObject as ago
 import tools.uiBuilder as uib
 import attributeTypes as at
 
 
 
 ##########################################
-class PerceptionAttributesDataBlob(abo._DataBlobBaseObject):
+class PerceptionAttributesDataBlob(ago._DataBlobBaseObject):
     
     def __init__(self, agent):
         super(PerceptionAttributesDataBlob, self).__init__(agent)
@@ -41,7 +41,7 @@ class PerceptionAttributesDataBlob(abo._DataBlobBaseObject):
 
 
 ##########################################
-class AgentPerceptionAttributes(abo.AttributesBaseObject):
+class AgentPerceptionAttributes(ago.AttributesBaseObject):
     
     _WeightingNone_, _WeightingLinear_, _WeightingInverseSquare_ = range(3)
     _WeightingStrings_ = ["None", "Linear", "Inverse Square"]

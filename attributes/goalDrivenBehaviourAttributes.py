@@ -10,7 +10,7 @@
 # ------------------------------------------------------------
 
 
-import attributesBaseObject as abo
+import attributeGroupObject as ago
 import attributeTypes as at
 import tools.util as util
 import tools.uiBuilder as uib
@@ -20,7 +20,7 @@ import tools.agentSelectionWindow as asw
 
 
 ###########################################
-class GoalDrivenDataBlob(abo._DataBlobBaseObject):
+class GoalDrivenDataBlob(ago._DataBlobBaseObject):
     
     _uninitialised, normal, pending, goalChase, inBasePyramid, atWallLip, overWallLip, reachedFinalGoal = range(8)
     
@@ -67,7 +67,7 @@ class GoalDrivenDataBlob(abo._DataBlobBaseObject):
 
 
 ###########################################
-class GoalDrivenBehaviourAttributes(abo.AttributesBaseObject, abo._FollowOnBehaviourAttributeInterface):
+class GoalDrivenBehaviourAttributes(ago.AttributesBaseObject, ago._FollowOnBehaviourAttributeInterface):
 
     @classmethod
     def BehaviourTypeName(cls):

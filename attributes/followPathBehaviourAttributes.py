@@ -10,7 +10,7 @@
 # ------------------------------------------------------------
 
 
-import attributesBaseObject as abo
+import attributeGroupObject as ago
 import attributeTypes as at
 import tools.sceneInterface as scene
 import tools.uiBuilder as uib
@@ -18,7 +18,7 @@ import tools.uiBuilder as uib
 
 
 ###########################################
-class FollowPathDataBlob(abo._DataBlobBaseObject):
+class FollowPathDataBlob(ago._DataBlobBaseObject):
     
     def __init__(self, agent):
         super(FollowPathDataBlob, self).__init__(agent)
@@ -37,7 +37,7 @@ class FollowPathDataBlob(abo._DataBlobBaseObject):
 
 
 ###########################################
-class FollowPathBehaviourAttributes(abo.AttributesBaseObject, abo._FollowOnBehaviourAttributeInterface):
+class FollowPathBehaviourAttributes(ago.AttributesBaseObject, ago._FollowOnBehaviourAttributeInterface):
 
     @classmethod
     def BehaviourTypeName(cls):

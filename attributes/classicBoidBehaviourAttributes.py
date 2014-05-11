@@ -10,7 +10,7 @@
 # ------------------------------------------------------------
 
 
-import attributesBaseObject as abo
+import attributeGroupObject as ago
 import attributeTypes as at
 import tools.uiBuilder as uib
 import tools.util as util
@@ -22,7 +22,7 @@ import random as rand
 
 
 ###########################################
-class ClassicBoidDataBlob(abo._DataBlobBaseObject):
+class ClassicBoidDataBlob(ago._DataBlobBaseObject):
     
     def __init__(self, agent):
         super(ClassicBoidDataBlob, self).__init__(agent)
@@ -44,7 +44,7 @@ class ClassicBoidDataBlob(abo._DataBlobBaseObject):
 
 
 ###########################################
-class ClassicBoidBehaviourAttributes(abo.AttributesBaseObject):
+class ClassicBoidBehaviourAttributes(ago.AttributesBaseObject):
     
     @classmethod
     def BehaviourTypeName(cls):
