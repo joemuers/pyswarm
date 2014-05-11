@@ -10,10 +10,10 @@
 # ------------------------------------------------------------
 
 
-import pyswarmObject as bbo
+import pyswarmObject as pso
 import agents.agentsController as agc
-import attributes.attributesController as bat
-import behaviours.behavioursController as bbc
+import attributes.attributesController as ac
+import behaviours.behavioursController as bc
 import uiController as uic
 import tools.util as util
 import tools.agentSelectionWindow as asw
@@ -324,7 +324,7 @@ def _SceneTeardown():
 
 
 #========================================================
-class SwarmController(bbo.PyswarmObject, uic.UiControllerDelegate):
+class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
     """
     Essentially the entry point for PySwarm, each SwarmController instance corresponds to an nParticle node 
     within the Maya scene, and presents a public API for controlling more or less everything that PySwarm 
@@ -347,8 +347,8 @@ class SwarmController(bbo.PyswarmObject, uic.UiControllerDelegate):
         """
         super(SwarmController, self).__init__()
         
-        self._attributesController = bat.AttributesController(particleShapeNode, SaveSceneToFile, boundingLocators)
-        self._behavioursController = bbc.BehavioursController(self._attributesController)
+        self._attributesController = ac.AttributesController(particleShapeNode, SaveSceneToFile, boundingLocators)
+        self._behavioursController = bc.BehavioursController(self._attributesController)
         self._agentsController = agc.AgentsController(self._attributesController, self._behavioursController)
         self._uiController = uic.UiController(self._attributesController, self)
         self._behaviourAssignmentSelectionWindow = asw.AgentSelectionWindow(self._attributesController.globalAttributes)
