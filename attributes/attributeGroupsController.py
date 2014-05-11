@@ -16,7 +16,7 @@ import globalAttributeGroup as ga
 import agentPerceptionAttributeGroup as apa
 import agentMovementAttributeGroup as ama
 import classicBoidAttributeGroup as cbba
-import goalDrivenBehaviourAttributes as gdba
+import worldWarZAttributeGroup as gdba
 import followPathAttributeGroup as fpba
 import tools.util as util
 import resources.fileLocations as fl
@@ -147,7 +147,7 @@ class AttributesController(PyswarmObject):
     def _getBehaviourTypeNameToConstructorLookup(self):
         """IMPORTANT - All defined behaviours *must* be included in this method!"""
         lookup = { cbba.ClassicBoidAttributeGroup.BehaviourTypeName() : self.addClassicBoidAttributes,
-                   gdba.GoalDrivenBehaviourAttributes.BehaviourTypeName() : self.addGoalDrivenAttributes,
+                   gdba.WorldWarZAttributeGroup.BehaviourTypeName() : self.addGoalDrivenAttributes,
                    fpba.FollowPathAttributeGroup.BehaviourTypeName() : self.addFollowPathAttributes }
         
         return lookup
@@ -171,8 +171,8 @@ class AttributesController(PyswarmObject):
  
 ########   
     def addGoalDrivenAttributes(self, wallLipGoal=None, basePyramidGoalHeight=None, finalGoal=None):
-        behaviourId = self._getNewBehaviourIdForAttibutesClass(gdba.GoalDrivenBehaviourAttributes)
-        newBehaviourAttributes = gdba.GoalDrivenBehaviourAttributes(behaviourId, self._globalAttributeGroup,
+        behaviourId = self._getNewBehaviourIdForAttibutesClass(gdba.WorldWarZAttributeGroup)
+        newBehaviourAttributes = gdba.WorldWarZAttributeGroup(behaviourId, self._globalAttributeGroup,
                                                                     wallLipGoal, basePyramidGoalHeight, finalGoal)
         self._addNewBehaviourAttributes(newBehaviourAttributes)
         

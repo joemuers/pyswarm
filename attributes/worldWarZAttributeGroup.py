@@ -57,7 +57,7 @@ class GoalDrivenDataBlob(ago._DataBlobBaseObject):
         elif(self.currentStatus == GoalDrivenDataBlob.reachedFinalGoal):
             status = "AT_GOAL"
         
-        return ("<GOAL-DRIVEN BHVR: incubtn=%d, goalChs=%.2f, pyrmdJoin=%.2f, pyrmdJmp=%.2f, status=%s, arvd=%s, cntdwn=%d>" %
+        return ("<WORLD-WAR-Z BHVR: incubtn=%d, goalChs=%.2f, pyrmdJoin=%.2f, pyrmdJmp=%.2f, status=%s, arvd=%s, cntdwn=%d>" %
                 (self.incubationPeriod, self.goalChaseSpeed, self.pyramidJoinAtDistance, self.pyramidJumpOnDistance,
                  status, "Y" if self.didArriveAtBasePyramid else "N", self.goalChaseCountdown))
 
@@ -67,15 +67,15 @@ class GoalDrivenDataBlob(ago._DataBlobBaseObject):
 
 
 ###########################################
-class GoalDrivenBehaviourAttributes(ago.AttributeGroupObject, ago._FollowOnBehaviourAttributeInterface):
+class WorldWarZAttributeGroup(ago.AttributeGroupObject, ago._FollowOnBehaviourAttributeInterface):
 
     @classmethod
     def BehaviourTypeName(cls):
-        return "Goal-Driven Behaviour"
+        return "World-War-Z Behaviour"
     
 #####################    
     def __init__(self, behaviourId, globalAttributeGroup, wallLipGoal=None, basePyramidGoalHeight=None, finalGoal=None):
-        super(GoalDrivenBehaviourAttributes, self).__init__(behaviourId)
+        super(WorldWarZAttributeGroup, self).__init__(behaviourId)
         
         self._globalAttributeGroup = globalAttributeGroup
         
@@ -117,7 +117,7 @@ class GoalDrivenBehaviourAttributes(ago.AttributeGroupObject, ago._FollowOnBehav
  
 #####################       
     def __getstate__(self):
-        state = super(GoalDrivenBehaviourAttributes, self).__getstate__()
+        state = super(WorldWarZAttributeGroup, self).__getstate__()
         
         state["_selectCurrentLeadersButtonEnable"] = None
         state["_leaderSelectionWindow"] = None
@@ -126,7 +126,7 @@ class GoalDrivenBehaviourAttributes(ago.AttributeGroupObject, ago._FollowOnBehav
 
 ########
     def __setstate__(self, state):
-        super(GoalDrivenBehaviourAttributes, self).__setstate__(state)
+        super(WorldWarZAttributeGroup, self).__setstate__(state)
         
         self._leaderSelectionWindow = asw.AgentSelectionWindow(self._globalAttributeGroup)
         self._selectCurrentLeadersButtonEnable = None
@@ -228,7 +228,7 @@ class GoalDrivenBehaviourAttributes(ago.AttributeGroupObject, ago._FollowOnBehav
 
 #####################        
     def onValueChanged(self, changedAttribute):
-        super(GoalDrivenBehaviourAttributes, self).onValueChanged(changedAttribute)
+        super(WorldWarZAttributeGroup, self).onValueChanged(changedAttribute)
         
         if(changedAttribute is self._wallLipGoal):
             self._basePyramidGoal.x = self._wallLipGoal.x

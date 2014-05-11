@@ -673,15 +673,15 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
         self._onNewBehaviourAttributesAdded(newBehaviour)
         
 ########
-    def addGoalDrivenBehaviour(self, wallLipGoal=None, basePyramidGoalHeight=None, finalGoal=None):
+    def addWorldWarZBehaviour(self, wallLipGoal=None, basePyramidGoalHeight=None, finalGoal=None):
         """
-        Creates a behaviour instance of type GoalDriven.
+        Creates a behaviour instance of type WorldWarZ.
         
         :param wallLipGoal: Locator (Maya path, or PyMel Locator) giving location of intermediate 'wall-lip' goal.
         :param basePyramidGoalHeight: Height, in Maya scene units, from ground-level base of wall to wall-lip goal.
         :param finalGoal: Locator giving location of final beyond-the-wall goal.
         """
-        newBehaviour = self._attributeGroupsController.addGoalDrivenAttributes(wallLipGoal, basePyramidGoalHeight, finalGoal)
+        newBehaviour = self._attributeGroupsController.addWorldWarZAttributes(wallLipGoal, basePyramidGoalHeight, finalGoal)
         self._onNewBehaviourAttributesAdded(newBehaviour)
         
 ########        

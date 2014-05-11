@@ -28,7 +28,7 @@ class Agent(PyswarmObject):
     
     Behaviour: Dependent on situation, in normal circumstances, behaviour governed by relatively
     straightforward implementation of Reynold's boids rules.  If currently goal-driven, behaviour
-    is determined mainly by the corresponding behaviours.goalDriven instance.
+    is determined mainly by the corresponding behaviours.worldWarZ instance.
     Behaviour will also be affected if currently following a curve path, or at the scene's mapEdge border.
     
     Operation: Agent keeps an internal representation of the corresponding Maya nParticle's position, velocity etc, which

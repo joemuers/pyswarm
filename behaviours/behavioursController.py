@@ -14,7 +14,7 @@ from pyswarmObject import PyswarmObject
 from behaviourBaseObject import BehaviourDelegate
 
 import classicBoid as cb
-import goalDriven as gd
+import worldWarZ as gd
 import followPath as fp
 
 
@@ -51,8 +51,8 @@ class BehavioursController(PyswarmObject, BehaviourDelegate):
     def createBehaviourForNewAttributes(self, newAttributes):
         if(cb.AttributesAreClassicBoid(newAttributes)):
             newBehaviour = cb.ClassicBoid(newAttributes, self._attributeGroupsController)
-        elif(gd.AttributesAreGoalDriven(newAttributes)):
-            newBehaviour = gd.GoalDriven(newAttributes, self.defaultBehaviour, self)
+        elif(gd.AttributesAreWorldWarZ(newAttributes)):
+            newBehaviour = gd.WorldWarZ(newAttributes, self.defaultBehaviour, self)
         elif(fp.AttributesAreFollowPath(newAttributes)):
             newBehaviour = fp.FollowPath(newAttributes, self.defaultBehaviour, self)
         else:

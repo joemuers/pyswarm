@@ -36,16 +36,16 @@ Normal_HasNeighbours = (0, 0.8, 0)
 Normal_NoNeighbours = (0, 0, 1)
 
 ##########################
-GoalDriven_IsLeader = (1, 1, 1)
+WorldWarZ_IsLeader = (1, 1, 1)
 
-GoalDriven_ChasingGoal = (1, 1, 0)
+WorldWarZ_ChasingGoal = (1, 1, 0)
 
-def GoalDriven_InBasePyramid(agent):
+def WorldWarZ_InBasePyramid(agent):
     return agent.stickinessScale / 2
 
-GoalDriven_OverTheWall = (0, 0.3, 0)
+WorldWarZ_OverTheWall = (0, 0.3, 0)
 
-GoalDriven_ReachedGoal = (0, 0.7, 0)
+WorldWarZ_ReachedGoal = (0, 0.7, 0)
 
 ###########################
 FollowPath_OnPath = (0.5, 0.5, 0)
