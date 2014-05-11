@@ -34,7 +34,7 @@ class AgentState(PyswarmObject):
         - "touchingGround" = True if agent is not jumping/falling, False otherwise.
     """
     
-    def __init__(self, particleId, attributesController):
+    def __init__(self, particleId, attributeGroupsController):
         self._agentId = int(particleId)
         self._position = v3.Vector3()
         self._velocity = v3.Vector3()
@@ -58,11 +58,11 @@ class AgentState(PyswarmObject):
         self._needsFullListsRebuild = True 
         self._needsAveragesRecalc = False
         
-        self._movementAttributes = attributesController.agentMovementAttributeGroup.getDataBlobForAgent(self)
-        self._perceptionAttributes = attributesController.agentPerceptionAttributeGroup.getDataBlobForAgent(self)
-        self._perceptionAttributeSet = attributesController.agentPerceptionAttributeGroup
+        self._movementAttributes = attributeGroupsController.agentMovementAttributeGroup.getDataBlobForAgent(self)
+        self._perceptionAttributes = attributeGroupsController.agentPerceptionAttributeGroup.getDataBlobForAgent(self)
+        self._perceptionAttributeSet = attributeGroupsController.agentPerceptionAttributeGroup
         self.behaviourAttributes = None  # data 'blob' for client behaviours to store instance-level data - not used internally
-        self._globalAttributes = attributesController.globalAttributes
+        self._globalAttributes = attributeGroupsController.globalAttributes
         
 ###################        
     def __str__(self):

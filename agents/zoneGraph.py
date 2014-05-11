@@ -89,15 +89,15 @@ class _ZoneRegionIteratable(object):
 #############################
 class ZoneGraph(PyswarmObject, AttributesListener):
     
-    def __init__(self, attributesController):
+    def __init__(self, attributeGroupsController):
         self._currentFrameIteration = 0
         
-        self._globalAttributes = attributesController.globalAttributes
+        self._globalAttributes = attributeGroupsController.globalAttributes
         self._lowerBoundsVector = v3.Vector3(self._globalAttributes.lowerBounds)
         self._upperBoundsVector = v3.Vector3(self._globalAttributes.upperBounds)
         self._globalAttributes.addListener(self)
         
-        self._perceptionAttributes = attributesController.agentPerceptionAttributeGroup
+        self._perceptionAttributes = attributeGroupsController.agentPerceptionAttributeGroup
         self._zoneSize = self._perceptionAttributes.maxNeighbourhoodSize
         self._perceptionAttributes.addListener(self)
         

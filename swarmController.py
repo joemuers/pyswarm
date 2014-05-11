@@ -12,7 +12,7 @@
 
 import pyswarmObject as pso
 import agents.agentsController as agc
-import attributes.attributesController as ac
+import attributes.attributeGroupsController as ac
 import behaviours.behavioursController as bc
 import uiController as uic
 import tools.util as util
@@ -347,11 +347,11 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
         """
         super(SwarmController, self).__init__()
         
-        self._attributesController = ac.AttributesController(particleShapeNode, SaveSceneToFile, boundingLocators)
-        self._behavioursController = bc.BehavioursController(self._attributesController)
-        self._agentsController = agc.AgentsController(self._attributesController, self._behavioursController)
-        self._uiController = uic.UiController(self._attributesController, self)
-        self._behaviourAssignmentSelectionWindow = asw.AgentSelectionWindow(self._attributesController.globalAttributes)
+        self._attributeGroupsController = ac.AttributesController(particleShapeNode, SaveSceneToFile, boundingLocators)
+        self._behavioursController = bc.BehavioursController(self._attributeGroupsController)
+        self._agentsController = agc.AgentsController(self._attributeGroupsController, self._behavioursController)
+        self._uiController = uic.UiController(self._attributeGroupsController, self)
+        self._behaviourAssignmentSelectionWindow = asw.AgentSelectionWindow(self._attributeGroupsController.globalAttributes)
         
         self._agentsController._buildParticleList()
 
@@ -379,7 +379,7 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
 
 #############################
     def _getGlobalAttributes(self):
-        return self._attributesController.globalAttributes
+        return self._attributeGroupsController.globalAttributes
     _globalAttributes = property(_getGlobalAttributes)
     
 #############################    
@@ -389,8 +389,8 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
 
 #############################    
     def _getAttributesController(self):
-        return self._attributesController
-    attributesController = property(_getAttributesController)
+        return self._attributeGroupsController
+    attributeGroupsController = property(_getAttributesController)
     
 #############################        
     def _onFrameUpdated(self):
@@ -403,7 +403,7 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
         try:
             self._globalAttributes.setStatusReadoutWorking(1, "Reading...")
             
-            self._attributesController.onFrameUpdated()
+            self._attributeGroupsController.onFrameUpdated()
             
             if(self._globalAttributes.enabled):
                 self._behavioursController.onFrameUpdated()
@@ -411,7 +411,7 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
             
             self._globalAttributes.setStatusReadoutIdle()
             
-            self._attributesController.onCalculationsCompleted()
+            self._attributeGroupsController.onCalculationsCompleted()
             self._behavioursController.onCalculationsCompleted()
             self._agentsController.onCalculationsCompleted()
             
@@ -446,7 +446,7 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
         """
         Kind of a destructor, cleans up internal resources used by this SwarmController instance.
         """
-        self._attributesController = None
+        self._attributeGroupsController = None
         self._behavioursController = None
         self._agentsController = None
         self._uiController = None
@@ -505,7 +505,7 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
         """
         Shows the user preferences UI window.
         """
-        self._attributesController.showPreferencesWindow()
+        self._attributeGroupsController.showPreferencesWindow()
  
 ########
     def quitSwarmInstance(self):
@@ -520,11 +520,11 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
         """
         Re-reads information from the Maya scene and updates the internal state. 
         """
-        self._attributesController.onFrameUpdated()
+        self._attributeGroupsController.onFrameUpdated()
         self._behavioursController.onFrameUpdated()
         self._agentsController.refreshInternals()
         
-        self._attributesController.purgeRepositories()
+        self._attributeGroupsController.purgeRepositories()
         
         util.LogInfo("Refreshed internal state...")
 
@@ -536,7 +536,7 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
         :param behaviourId: Specific behaviour ID to only reset attributes for that behaviour, or 
                             None to reset all behaviours. 
         """
-        self._attributesController.restoreDefaultAttributeValuesFromFile(behaviourId)
+        self._attributeGroupsController.restoreDefaultAttributeValuesFromFile(behaviourId)
         
 ########
     def makeValuesDefault(self, behaviourId=None):
@@ -552,7 +552,7 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
                             instantiated will not be affected). 
         """
         util.LogDebug("Re-setting default attribute values with current values...")
-        self._attributesController.makeCurrentAttributeValuesDefault(behaviourId)
+        self._attributeGroupsController.makeCurrentAttributeValuesDefault(behaviourId)
         
 ########
     def changeDefaultBehaviour(self, behaviourId):
@@ -562,7 +562,7 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
         :param behaviourId: Behaviour ID of behaviour instance to be the default. 
         """
         oldDefaultBehaviourId = self._globalAttributes.defaultBehaviourId
-        if(self._attributesController.changeDefaultBehaviour(behaviourId)):
+        if(self._attributeGroupsController.changeDefaultBehaviour(behaviourId)):
             self._uiController.updateDefaultBehaviourInUI(oldDefaultBehaviourId, self._globalAttributes.defaultBehaviourId)
         
 ########       
@@ -572,7 +572,7 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
         
         :param behaviourTypeName: Behaviour type, e.g. "ClassicBoid", "FollowPath".
         """
-        newBehaviour = self._attributesController.addBehaviourForTypeName(behaviourTypeName)
+        newBehaviour = self._attributeGroupsController.addBehaviourForTypeName(behaviourTypeName)
         if(newBehaviour is not None):
             self._onNewBehaviourAttributesAdded(newBehaviour)
             
@@ -584,7 +584,7 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
         
         :param behaviourId: Behaviour ID of behaviour instance to be deleted. 
         """
-        deletedAttributes = self._attributesController.removeBehaviour(behaviourId)
+        deletedAttributes = self._attributeGroupsController.removeBehaviour(behaviourId)
         if(deletedAttributes is not None):
             self._onBehaviourAttributesDeleted(deletedAttributes)
         else:
@@ -595,7 +595,7 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
         """
         Removes all current behaviour instances except for the default. 
         """
-        for behaviourId in self._attributesController.behaviourTypeNamesList():
+        for behaviourId in self._attributeGroupsController.behaviourTypeNamesList():
             self.removeBehaviour(behaviourId)
 
 ########          
@@ -669,7 +669,7 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
         """
         Creates a behaviour instance of type ClassicBoid. 
         """
-        newBehaviour = self._attributesController.addClassicBoidAttributes()
+        newBehaviour = self._attributeGroupsController.addClassicBoidAttributes()
         self._onNewBehaviourAttributesAdded(newBehaviour)
         
 ########
@@ -681,7 +681,7 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
         :param basePyramidGoalHeight: Height, in Maya scene units, from ground-level base of wall to wall-lip goal.
         :param finalGoal: Locator giving location of final beyond-the-wall goal.
         """
-        newBehaviour = self._attributesController.addGoalDrivenAttributes(wallLipGoal, basePyramidGoalHeight, finalGoal)
+        newBehaviour = self._attributeGroupsController.addGoalDrivenAttributes(wallLipGoal, basePyramidGoalHeight, finalGoal)
         self._onNewBehaviourAttributesAdded(newBehaviour)
         
 ########        
@@ -691,7 +691,7 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
         
         :param pathCurve: Nurbs curve (Maya path, or PyMel PyNode instance) giving the path to follow; or None to select it later.
         """
-        newBehaviour = self._attributesController.addFollowPathAttributes(pathCurve)
+        newBehaviour = self._attributeGroupsController.addFollowPathAttributes(pathCurve)
         self._onNewBehaviourAttributesAdded(newBehaviour)
 
 #############################      

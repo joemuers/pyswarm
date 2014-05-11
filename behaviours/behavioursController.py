@@ -22,15 +22,15 @@ import followPath as fp
 #######################################
 class BehavioursController(PyswarmObject, BehaviourDelegate):
     
-    def __init__(self, attributesController):
-        self._attributesController = attributesController
+    def __init__(self, attributeGroupsController):
+        self._attributeGroupsController = attributeGroupsController
         self._behavioursLookup = {}
-        defaultAttributes = attributesController.getBehaviourAttributesWithId(attributesController.defaultBehaviourId)
+        defaultAttributes = attributeGroupsController.getBehaviourAttributesWithId(attributeGroupsController.defaultBehaviourId)
         self.createBehaviourForNewAttributes(defaultAttributes)
         
 #############################
     def _getDefaultBehaviour(self):
-        return self.behaviourWithId(self._attributesController.defaultBehaviourId)
+        return self.behaviourWithId(self._attributeGroupsController.defaultBehaviourId)
     defaultBehaviour = property(_getDefaultBehaviour)
          
 #############################    
@@ -50,7 +50,7 @@ class BehavioursController(PyswarmObject, BehaviourDelegate):
 ########
     def createBehaviourForNewAttributes(self, newAttributes):
         if(cb.AttributesAreClassicBoid(newAttributes)):
-            newBehaviour = cb.ClassicBoid(newAttributes, self._attributesController)
+            newBehaviour = cb.ClassicBoid(newAttributes, self._attributeGroupsController)
         elif(gd.AttributesAreGoalDriven(newAttributes)):
             newBehaviour = gd.GoalDriven(newAttributes, self.defaultBehaviour, self)
         elif(fp.AttributesAreFollowPath(newAttributes)):

@@ -57,8 +57,8 @@ class Agent(PyswarmObject):
         
     """
 
-    def __init__(self, particleId, attributesController, startingBehaviour):
-        self.state = agt.AgentState(particleId, attributesController)
+    def __init__(self, particleId, attributeGroupsController, startingBehaviour):
+        self.state = agt.AgentState(particleId, attributeGroupsController)
         
         self.currentBehaviour = None
         

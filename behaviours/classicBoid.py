@@ -35,11 +35,11 @@ def AttributesAreClassicBoid(attributes):
 #######################################
 class ClassicBoid(BehaviourBaseObject):
     
-    def __init__(self, classicBoidAttributes, attributesController):
+    def __init__(self, classicBoidAttributes, attributeGroupsController):
         super(ClassicBoid, self).__init__(classicBoidAttributes)
         
-        self._movementAttributes = attributesController.agentMovementAttributeGroup
-        self._globalAttributes = attributesController.globalAttributes
+        self._movementAttributes = attributeGroupsController.agentMovementAttributeGroup
+        self._globalAttributes = attributeGroupsController.globalAttributes
         
         self._doNotClampMovement = False
         

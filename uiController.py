@@ -199,16 +199,16 @@ class UiController(PyswarmObject):
     deleted etc. and updates the attriubtes controller when the user makes a value change. 
     """
     
-    def __init__(self, attributesController, delegate):
+    def __init__(self, attributeGroupsController, delegate):
         """
-        :param attributesController: an instantiated AttributesController instance
+        :param attributeGroupsController: an instantiated AttributesController instance
         :param delegate: an instantiated UiControllerDelegate instance, will be held as a weak reference.
         """
         if(not isinstance(delegate, UiControllerDelegate)):
             raise TypeError("Expected subclass of %s, got %s" (UiControllerDelegate, type(delegate)))
         else:
             self._delegate = weakref.ref(delegate)
-            self._attributesController = attributesController
+            self._attributeGroupsController = attributeGroupsController
             
             self._recreateUiComponents()
             self._needsUiRebuild = False
@@ -233,7 +233,7 @@ class UiController(PyswarmObject):
 
 ######################
     def __getstate__(self):
-        state = (self.delegate, self._attributesController)
+        state = (self.delegate, self._attributeGroupsController)
         return state
 
 ########    
@@ -242,7 +242,7 @@ class UiController(PyswarmObject):
             self._delegate = weakref.ref(state[0])
         else:
             self._delegate = None
-        self._attributesController = state[1]
+        self._attributeGroupsController = state[1]
         
         self._recreateUiComponents()
         self._needsUiRebuild = True
@@ -252,7 +252,7 @@ class UiController(PyswarmObject):
         """
         Returns behaviour ID string of the current 'default' behaviour.
         """
-        return self._attributesController.defaultBehaviourId
+        return self._attributeGroupsController.defaultBehaviourId
     _defaultBehaviourId = property(_getDefaultBehaviourId)
     
 ######################        
@@ -359,7 +359,7 @@ class UiController(PyswarmObject):
             self.hideUI()
         
         if(not self.uiVisible):
-            particleName = self._attributesController.globalAttributes.particleShapeNode.name()
+            particleName = self._attributeGroupsController.globalAttributes.particleShapeNode.name()
             self._uiWindow = uib.MakeWindow(("%s - %s" % (pi.PackageName(), particleName)))
             
             self._buildUiMenuBar()
@@ -395,7 +395,7 @@ class UiController(PyswarmObject):
         uib.MakeMenuItem("Make Values Default", lambda *args: self._didSelectMakeValuesDefault(None))
         
         uib.MakeMenu("Behaviours")
-        behaviourAttributesList = self._attributesController._behaviourAttributesList
+        behaviourAttributesList = self._attributeGroupsController._behaviourAttributesList
         
         self._changeDefaultBehaviourMenu = uib.MakeMenuItemWithSubMenu("Change Default")
         for behaviourAttributes in behaviourAttributesList:
@@ -404,7 +404,7 @@ class UiController(PyswarmObject):
 
         uib.MakeMenuSeparator()
         createBehaviourMenu = uib.MakeMenuItemWithSubMenu("Create New Behaviour")
-        for behaviourName in self._attributesController.behaviourTypeNamesList():
+        for behaviourName in self._attributeGroupsController.behaviourTypeNamesList():
             self._makeCreateBehaviourMenuItem(behaviourName)
         uib.SetAsChildMenuLayout(createBehaviourMenu)
         
@@ -515,7 +515,7 @@ class UiController(PyswarmObject):
         
         rowLayout = uib.MakeTopLevelRowLayout(_TOP_PANEL_COMPONENTS_WIDTH_)
         generalColumnLayout = uib.MakeColumnLayout()
-        globalAttributes = self._attributesController.globalAttributes
+        globalAttributes = self._attributeGroupsController.globalAttributes
         globalAttributes.populateUiLayout()
         globalAttributes.nameChangeCallback = (lambda name: self._uiWindow.setTitle(("%s - %s" % 
                                                                                      (pi.PackageName(), name))))
@@ -526,10 +526,10 @@ class UiController(PyswarmObject):
         
         self._tabLayout = uib.MakeTabLayout()
         
-        self._makeAgentAttributesTab(self._attributesController.agentMovementAttributeGroup,
-                                     self._attributesController.agentPerceptionAttributeGroup)
+        self._makeAgentAttributesTab(self._attributeGroupsController.agentMovementAttributeGroup,
+                                     self._attributeGroupsController.agentPerceptionAttributeGroup)
         
-        for behaviourAttributes in self._attributesController._behaviourAttributesList:
+        for behaviourAttributes in self._attributeGroupsController._behaviourAttributesList:
             self._makeBehaviourTab(behaviourAttributes, (behaviourAttributes.behaviourId == self._defaultBehaviourId))
             
         uib.SetAsChildLayout(self._tabLayout)

@@ -31,13 +31,13 @@ class AgentsController(PyswarmObject):
     also manages interaction with the actual Pymel objects within Maya.
     """
     
-    def __init__(self, attributesController, behavioursController):
-        self._globalAttributes = attributesController.globalAttributes
+    def __init__(self, attributeGroupsController, behavioursController):
+        self._globalAttributes = attributeGroupsController.globalAttributes
         self._particleIdsOrdering = []
         self._idToAgentLookup = {}
-        self._attributesController = attributesController
+        self._attributeGroupsController = attributeGroupsController
         self._behavioursController = behavioursController
-        self._zoneGraph = zg.ZoneGraph(self._attributesController)     
+        self._zoneGraph = zg.ZoneGraph(self._attributeGroupsController)     
         
         scene.AddStickinessPerParticleAttributeIfNecessary(self._particleShapeName)
 
@@ -141,7 +141,7 @@ class AgentsController(PyswarmObject):
                 startingBehaviour = self._behavioursController.defaultBehaviour
                 if(self._particleIdsOrdering is not None):
                     for particleId in self._particleIdsOrdering:
-                        newAgent = ag.Agent(particleId, self._attributesController, startingBehaviour)
+                        newAgent = ag.Agent(particleId, self._attributeGroupsController, startingBehaviour)
                         self._idToAgentLookup[newAgent.agentId] = newAgent
         else:
             numParticles = self._particleCount
@@ -158,7 +158,7 @@ class AgentsController(PyswarmObject):
                 
                 for ptclId in reversed(sortedIdsList):
                     if(ptclId > lastKey):
-                        newAgent = ag.Agent(int(ptclId), self._attributesController, startingBehaviour)
+                        newAgent = ag.Agent(int(ptclId), self._attributeGroupsController, startingBehaviour)
                         self._idToAgentLookup[newAgent.agentId] = newAgent   
                         newAgentsList.append(newAgent)
                     else:
