@@ -97,9 +97,9 @@ class ZoneGraph(PyswarmObject, AttributesListener):
         self._upperBoundsVector = v3.Vector3(self._globalAttributeGroup.upperBounds)
         self._globalAttributeGroup.addListener(self)
         
-        self._perceptionAttributes = attributeGroupsController.agentPerceptionAttributeGroup
-        self._zoneSize = self._perceptionAttributes.maxNeighbourhoodSize
-        self._perceptionAttributes.addListener(self)
+        self._perceptionAttributesGroup = attributeGroupsController.agentPerceptionAttributeGroup
+        self._zoneSize = self._perceptionAttributesGroup.maxNeighbourhoodSize
+        self._perceptionAttributesGroup.addListener(self)
         
         self._needsRebuild = True
         
@@ -224,9 +224,9 @@ class ZoneGraph(PyswarmObject, AttributesListener):
                 self._lowerBoundsVector = v3.Vector3(self._globalAttributeGroup.lowerBounds)
                 self._upperBoundsVector = v3.Vector3(self._globalAttributeGroup.upperBounds)
                 self._needsRebuild = True
-        elif(sectionObject == self._perceptionAttributes):
-            if(self._zoneSize != self._perceptionAttributes.maxNeighbourhoodSize):
-                self._zoneSize = self._perceptionAttributes.maxNeighbourhoodSize
+        elif(sectionObject == self._perceptionAttributesGroup):
+            if(self._zoneSize != self._perceptionAttributesGroup.maxNeighbourhoodSize):
+                self._zoneSize = self._perceptionAttributesGroup.maxNeighbourhoodSize
                 self._needsRebuild = True
 
 ########################################       

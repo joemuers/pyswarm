@@ -347,7 +347,7 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
         """
         super(SwarmController, self).__init__()
         
-        self._attributeGroupsController = ac.AttributesController(particleShapeNode, SaveSceneToFile, boundingLocators)
+        self._attributeGroupsController = ac.AttributeGroupsController(particleShapeNode, SaveSceneToFile, boundingLocators)
         self._behavioursController = bc.BehavioursController(self._attributeGroupsController)
         self._agentsController = agc.AgentsController(self._attributeGroupsController, self._behavioursController)
         self._uiController = uic.UiController(self._attributeGroupsController, self)
@@ -388,9 +388,9 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
     particleShapeName = property(_getParticleShapeName)
 
 #############################    
-    def _getAttributesController(self):
+    def _getAttributeGroupsController(self):
         return self._attributeGroupsController
-    attributeGroupsController = property(_getAttributesController)
+    attributeGroupsController = property(_getAttributeGroupsController)
     
 #############################        
     def _onFrameUpdated(self):

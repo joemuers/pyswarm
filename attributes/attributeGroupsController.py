@@ -26,7 +26,7 @@ import ConfigParser
 
 
 ##########################################
-class AttributesController(PyswarmObject):
+class AttributeGroupsController(PyswarmObject):
     
     def __init__(self, particleShapeNode, saveSceneMethod, boundingLocators=None):
         

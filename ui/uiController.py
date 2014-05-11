@@ -201,7 +201,7 @@ class UiController(PyswarmObject):
     
     def __init__(self, attributeGroupsController, delegate):
         """
-        :param attributeGroupsController: an instantiated AttributesController instance
+        :param attributeGroupsController: an instantiated AttributeGroupsController instance
         :param delegate: an instantiated UiControllerDelegate instance, will be held as a weak reference.
         """
         if(not isinstance(delegate, UiControllerDelegate)):

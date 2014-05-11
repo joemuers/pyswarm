@@ -60,7 +60,7 @@ class AgentState(PyswarmObject):
         
         self._movementAttributes = attributeGroupsController.agentMovementAttributeGroup.getDataBlobForAgent(self)
         self._perceptionAttributes = attributeGroupsController.agentPerceptionAttributeGroup.getDataBlobForAgent(self)
-        self._perceptionAttributeSet = attributeGroupsController.agentPerceptionAttributeGroup
+        self._perceptionAttributeGroup = attributeGroupsController.agentPerceptionAttributeGroup
         self.behaviourAttributes = None  # data 'blob' for client behaviours to store instance-level data - not used internally
         self._globalAttributeGroup = attributeGroupsController.globalAttributeGroup
         
@@ -251,12 +251,12 @@ class AgentState(PyswarmObject):
     
 ########
     def _calculateWeighting(self, distanceVector, regionSize, angle, forwardAngle, blindAngle):
-        percetionAttributeSet = self._perceptionAttributeSet
-        if(percetionAttributeSet.useInverseSquareWeighting):
+        percetionAttributeGroup = self._perceptionAttributeGroup
+        if(percetionAttributeGroup.useInverseSquareWeighting):
             proximityWeighting = AgentState._getWeightingInverseSquareDistance(distanceVector)
-        elif(percetionAttributeSet.useLinearWeighting):
+        elif(percetionAttributeGroup.useLinearWeighting):
             proximityWeighting = AgentState._getWeightingLinearDistance(distanceVector, regionSize)
-        elif(percetionAttributeSet.useNoWeighting):
+        elif(percetionAttributeGroup.useNoWeighting):
             proximityWeighting = 0
         else:
             raise RuntimeError("Unrecognised proximity weighting option.")

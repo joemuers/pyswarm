@@ -162,7 +162,7 @@ class AttributeGroupObject(PyswarmObject, at.SingleAttributeDelegate):
         attributesString = ', '.join([("%s=%s" % (attribute.attributeLabel, attribute.value)) 
                                       for attribute in self._allAttributes()])
            
-        return ("<Following: %s\n\tAttributes: %s>" % agentsString, attributesString)
+        return ("<Assigned agents: %s\n\tAttributes: %s>" % agentsString, attributesString)
    
 #####################   
     def __getstate__(self):
