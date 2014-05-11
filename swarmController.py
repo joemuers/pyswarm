@@ -15,9 +15,9 @@ import agents.agentsController as agc
 import attributes.attributeGroupsController as ac
 import behaviours.behavioursController as bc
 import uiController as uic
-import tools.util as util
-import tools.agentSelectionWindow as asw
-import tools.sceneInterface as scene
+import utils.general as util
+import utils.agentSelectionWindow as asw
+import utils.sceneInterface as scene
 import resources.fileLocations as fl
 import resources.packageInfo as pi
 

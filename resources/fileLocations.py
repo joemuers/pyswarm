@@ -10,7 +10,7 @@
 # ------------------------------------------------------------
 
 
-import tools.util as util
+import utils.general as util
 import resources
 import packageInfo as pi
 

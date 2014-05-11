@@ -12,10 +12,10 @@
 
 import attributes.attributeGroupObject as ago
 import attributes.attributeTypes as at
-import tools.util as util
-import tools.uiBuilder as uib
-import tools.sceneInterface as scene
-import tools.agentSelectionWindow as asw
+import utils.general as util
+import utils.uiBuilder as uib
+import utils.sceneInterface as scene
+import utils.agentSelectionWindow as asw
 
 
 

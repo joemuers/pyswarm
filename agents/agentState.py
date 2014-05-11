@@ -13,7 +13,7 @@
 from pyswarmObject import PyswarmObject
 
 import vectors.vector3 as v3
-import tools.util as util
+import utils.general as util
 
 
 

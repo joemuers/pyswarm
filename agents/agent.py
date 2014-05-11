@@ -11,7 +11,7 @@
 
 
 from pyswarmObject import PyswarmObject
-from tools import sceneInterface
+from utils import sceneInterface
 
 import vectors.vector3 as v3
 import agentState as agt

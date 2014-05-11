@@ -11,8 +11,8 @@
 
 
 from pyswarmObject import PyswarmObject
-import tools.uiBuilder as uib
-import tools.util as util
+import utils.uiBuilder as uib
+import utils.general as util
 import resources.fileLocations as fl
 import resources.packageInfo as pi
 

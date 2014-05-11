@@ -10,9 +10,9 @@
 # ------------------------------------------------------------
 
 """
-util module - A collection of general purpose functions. 
+general module - A collection of general purpose functions. 
 
-The util module is a loose bag of 'tool' functions for performing things like
+The general module is a loose bag of 'tool' functions for performing things like
 logging, string checking, and so on.
 
 It also contains all methods for interacting with Maya that are *not* directly

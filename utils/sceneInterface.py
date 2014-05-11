@@ -11,7 +11,7 @@
 
 
 import vectors.vector3 as v3
-import tools.util as util
+import utils.general as util
 
 import pymel.core as pm
 import pymel.core.nodetypes as pmn  # Eclipse doesn't like pm.nodetypes for some reason... 

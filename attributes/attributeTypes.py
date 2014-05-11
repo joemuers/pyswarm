@@ -13,8 +13,8 @@
 from pyswarmObject import PyswarmObject
 
 import vectors.vector3 as v3
-import tools.util as util
-import tools.sceneInterface as scene
+import utils.general as util
+import utils.sceneInterface as scene
 
 from abc import ABCMeta, abstractmethod
 import random

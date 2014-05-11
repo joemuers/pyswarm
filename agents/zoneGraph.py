@@ -13,7 +13,7 @@
 from pyswarmObject import PyswarmObject
 from attributes.attributeGroupObject import AttributesListener
 import vectors.vector3 as v3
-import tools.util as util
+import utils.general as util
 
 import itertools
 

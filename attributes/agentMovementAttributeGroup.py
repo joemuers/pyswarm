@@ -12,7 +12,7 @@
 
 import attributeGroupObject as ago
 import attributeTypes as at
-import tools.uiBuilder as uib
+import utils.uiBuilder as uib
 
 
 

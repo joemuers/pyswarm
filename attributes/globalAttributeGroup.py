@@ -12,10 +12,10 @@
 
 import attributeGroupObject as ago
 import attributeTypes as at
-import tools.uiBuilder as uib
+import utils.uiBuilder as uib
 import vectors.vector3 as v3
-import tools.util as util
-import tools.sceneInterface as scene
+import utils.general as util
+import utils.sceneInterface as scene
 import resources.fileLocations as fl
 import resources.colours as colour
 

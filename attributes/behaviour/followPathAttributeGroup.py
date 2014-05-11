@@ -12,8 +12,8 @@
 
 import attributes.attributeGroupObject as ago
 import attributes.attributeTypes as at
-import tools.sceneInterface as scene
-import tools.uiBuilder as uib
+import utils.sceneInterface as scene
+import utils.uiBuilder as uib
 
 
 

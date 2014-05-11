@@ -18,7 +18,7 @@ import agentMovementAttributeGroup as ama
 import behaviour.classicBoidAttributeGroup as cbba
 import behaviour.worldWarZAttributeGroup as gdba
 import behaviour.followPathAttributeGroup as fpba
-import tools.util as util
+import utils.general as util
 import resources.fileLocations as fl
 
 import ConfigParser
