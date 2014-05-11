@@ -10,7 +10,7 @@
 # ------------------------------------------------------------
 
 
-from boidBaseObject import BoidBaseObject
+from pyswarmObject import PyswarmObject
 import tools.uiBuilder as uib
 import tools.util as util
 import resources.fileLocations as fl
@@ -185,7 +185,7 @@ class UiControllerDelegate(object):
 
 
 ########################################
-class UiController(BoidBaseObject):
+class UiController(PyswarmObject):
     """
     Unsurprisingly, UiController is the class responsible for handling all the UI elements of PySwarm.
     It builds the UI elements on request, handles memory, callbacks and so on, and cleans up the UI 

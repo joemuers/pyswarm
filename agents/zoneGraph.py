@@ -10,7 +10,7 @@
 # ------------------------------------------------------------
 
 
-from boidBaseObject import BoidBaseObject
+from pyswarmObject import PyswarmObject
 from attributes.attributesBaseObject import AttributesListener
 import vectors.vector3 as v3
 import tools.util as util
@@ -18,7 +18,7 @@ import tools.util as util
 import itertools
 
 #############################
-class _Zone(BoidBaseObject):
+class _Zone(PyswarmObject):
     
     def __init__(self, xMin, xMax, zMin, zMax):
         self.regionalSetsList = [set()]
@@ -87,7 +87,7 @@ class _ZoneRegionIteratable(object):
     
     
 #############################
-class ZoneGraph(BoidBaseObject, AttributesListener):
+class ZoneGraph(PyswarmObject, AttributesListener):
     
     def __init__(self, attributesController):
         self._currentFrameIteration = 0

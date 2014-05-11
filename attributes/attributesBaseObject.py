@@ -10,7 +10,7 @@
 # ------------------------------------------------------------
 
 
-from boidBaseObject import BoidBaseObject
+from pyswarmObject import PyswarmObject
 import attributeTypes as at
 import tools.util as util
 import tools.uiBuilder as uib
@@ -132,7 +132,7 @@ class _FollowOnBehaviourAttributeInterface(object):
  
  
 ########################################
-class AttributesBaseObject(BoidBaseObject, at.SingleAttributeDelegate):
+class AttributesBaseObject(PyswarmObject, at.SingleAttributeDelegate):
      
     __metaclass__ = ABCMeta
      

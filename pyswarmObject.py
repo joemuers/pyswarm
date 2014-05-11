@@ -16,7 +16,7 @@ import types
 
 
 ##################################
-class BoidBaseObject(object):
+class PyswarmObject(object):
     """
     Base class for all the other boid classes in this package.  Treated as an abstract class, I
     suppose (although, technically, it isn't one).
@@ -66,7 +66,7 @@ class BoidBaseObject(object):
         """
         self.__dict__.update(state)
     
-# END OF CLASS - BoidBaseObject
+# END OF CLASS - PyswarmObject
 ####################################
 
 

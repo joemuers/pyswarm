@@ -10,7 +10,7 @@
 # ------------------------------------------------------------
 
 
-from boidBaseObject import BoidBaseObject
+from pyswarmObject import PyswarmObject
 
 import vectors.vector3 as v3
 
@@ -36,7 +36,7 @@ class BehaviourDelegate(object):
 
 
 ####################################
-class BehaviourBaseObject(BoidBaseObject):
+class BehaviourBaseObject(PyswarmObject):
     
     __metaclass__ = ABCMeta
     

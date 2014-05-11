@@ -10,7 +10,7 @@
 # ------------------------------------------------------------
 
 
-from boidBaseObject import BoidBaseObject
+from pyswarmObject import PyswarmObject
 from behaviourBaseObject import BehaviourDelegate
 
 import classicBoid as cb
@@ -20,7 +20,7 @@ import followPath as fp
 
 
 #######################################
-class BehavioursController(BoidBaseObject, BehaviourDelegate):
+class BehavioursController(PyswarmObject, BehaviourDelegate):
     
     def __init__(self, attributesController):
         self._attributesController = attributesController

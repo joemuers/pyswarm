@@ -10,7 +10,7 @@
 # ------------------------------------------------------------
 
 
-import boidBaseObject as bbo
+import pyswarmObject as bbo
 import agents.agentsController as agc
 import attributes.attributesController as bat
 import behaviours.behavioursController as bbc
@@ -324,7 +324,7 @@ def _SceneTeardown():
 
 
 #========================================================
-class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
+class SwarmController(bbo.PyswarmObject, uic.UiControllerDelegate):
     """
     Essentially the entry point for PySwarm, each SwarmController instance corresponds to an nParticle node 
     within the Maya scene, and presents a public API for controlling more or less everything that PySwarm 

@@ -10,7 +10,7 @@
 # ------------------------------------------------------------
 
 
-from boidBaseObject import BoidBaseObject
+from pyswarmObject import PyswarmObject
 from tools import sceneInterface
 
 import vectors.vector3 as v3
@@ -20,7 +20,7 @@ import resources.colours as brc
 
 
 #####################################
-class Agent(BoidBaseObject):
+class Agent(PyswarmObject):
     """Represents single agent instance.   
     Logic concerning agent's behaviour is contained within this class. (Internally,
     data concerning position, heading, neighbourhood & so on is in the boidAgentState 

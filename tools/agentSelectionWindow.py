@@ -10,7 +10,7 @@
 # ------------------------------------------------------------
 
 
-from boidBaseObject import BoidBaseObject
+from pyswarmObject import PyswarmObject
 
 import uiBuilder as uib
 import tools.util as util
@@ -39,7 +39,7 @@ _LeftColumnWidth_ = 100
 
 
 #########################################
-class AgentSelectionWindow(BoidBaseObject):
+class AgentSelectionWindow(PyswarmObject):
     
     __invalid__, __textInputSelection__, __sceneSelection__, __selectAll__, __selectNone__ = range(5)
     __SelectionOptionStrings__ = ["<N/A>", "Listed IDs", "In-Scene", "All", "None"]

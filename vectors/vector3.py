@@ -10,7 +10,7 @@
 # ------------------------------------------------------------
 
 
-from boidBaseObject import BoidBaseObject
+from boidBaseObject import PyswarmObject
 
 import math as mth
 import random as rand
@@ -27,7 +27,7 @@ def IsVector3(otherVector):
 
 __MAGNITUDE_UNDEFINED__ = -1.0
 
-class Vector3(BoidBaseObject):
+class Vector3(PyswarmObject):
     """
     3D vector with various trig functions.  
     

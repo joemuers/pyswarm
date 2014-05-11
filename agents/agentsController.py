@@ -10,7 +10,7 @@
 # ------------------------------------------------------------
 
 
-from boidBaseObject import BoidBaseObject
+from pyswarmObject import PyswarmObject
 import tools.util as util
 import tools.sceneInterface as scene
 
@@ -25,7 +25,7 @@ _CALCULATIONS_PER_UPDATE_REPORT_ = 20
 
 
 ##############################################
-class AgentsController(BoidBaseObject):
+class AgentsController(PyswarmObject):
     """Main external interface to the boid system, basically the managing object for a group of agents.  
     Contains top-level logic (i.e. iterating over agents each frame & executing behaviour) and
     also manages interaction with the actual Pymel objects within Maya.

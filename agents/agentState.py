@@ -10,7 +10,7 @@
 # ------------------------------------------------------------
 
 
-from boidBaseObject import BoidBaseObject
+from pyswarmObject import PyswarmObject
 
 import vectors.vector3 as v3
 import tools.util as util
@@ -18,7 +18,7 @@ import tools.util as util
 
 
 #############################################
-class AgentState(BoidBaseObject):
+class AgentState(PyswarmObject):
     """Internal to Agent, i.e. each Agent instance "has" a boidAgentState member.  
     Essentially just a data container with information on the corresponding agent, regarding:
         - current position

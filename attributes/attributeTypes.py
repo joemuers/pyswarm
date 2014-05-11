@@ -10,7 +10,7 @@
 # ------------------------------------------------------------
 
 
-from boidBaseObject import BoidBaseObject
+from pyswarmObject import PyswarmObject
 
 import vectors.vector3 as v3
 import tools.util as util
@@ -36,7 +36,7 @@ class SingleAttributeDelegate(object):
 
 
 ##################################################### 
-class _SingleAttributeBaseObject(BoidBaseObject):
+class _SingleAttributeBaseObject(PyswarmObject):
     """Base class for attribute types."""
     
     __metaclass__ = ABCMeta

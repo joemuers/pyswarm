@@ -10,7 +10,7 @@
 # ------------------------------------------------------------
 
 
-from boidBaseObject import BoidBaseObject
+from pyswarmObject import PyswarmObject
 
 import globalAttributes as ga
 import agentPerceptionAttributes as apa
@@ -26,7 +26,7 @@ import ConfigParser
 
 
 ##########################################
-class AttributesController(BoidBaseObject):
+class AttributesController(PyswarmObject):
     
     def __init__(self, particleShapeNode, saveSceneMethod, boundingLocators=None):
         
