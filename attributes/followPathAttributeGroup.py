@@ -37,7 +37,7 @@ class FollowPathDataBlob(ago._DataBlobBaseObject):
 
 
 ###########################################
-class FollowPathBehaviourAttributes(ago.AttributeGroupObject, ago._FollowOnBehaviourAttributeInterface):
+class FollowPathAttributeGroup(ago.AttributeGroupObject, ago._FollowOnBehaviourAttributeInterface):
 
     @classmethod
     def BehaviourTypeName(cls):
@@ -45,7 +45,7 @@ class FollowPathBehaviourAttributes(ago.AttributeGroupObject, ago._FollowOnBehav
 
 #####################    
     def __init__(self, behaviourId, pathCurve=None):
-        super(FollowPathBehaviourAttributes, self).__init__(behaviourId)
+        super(FollowPathAttributeGroup, self).__init__(behaviourId)
         
         self._pathCurve = at.MayaObjectAttribute("Path Curve", pathCurve)
         if(pathCurve is None):

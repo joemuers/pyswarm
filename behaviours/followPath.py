@@ -13,7 +13,7 @@
 from behaviourBaseObject import BehaviourBaseObject
 from tools import sceneInterface
 
-import attributes.followPathBehaviourAttributes as fpba
+import attributes.followPathAttributeGroup as fpba
 import vectors.vector3 as v3
 
 
@@ -24,7 +24,7 @@ def AgentBehaviourIsFollowPath(agent):
 
 #######################
 def AttributesAreFollowPath(attributes):
-    return (isinstance(attributes, fpba.FollowPathBehaviourAttributes))
+    return (isinstance(attributes, fpba.FollowPathAttributeGroup))
 
 #######################
 
@@ -86,7 +86,7 @@ class FollowPath(BehaviourBaseObject):
     
 ######################
     def _createBehaviourAttributes(self):
-        return fpba.FollowPathBehaviourAttributes()
+        return fpba.FollowPathAttributeGroup()
 
 ################################      
     def _getCurrentFollowCount(self):

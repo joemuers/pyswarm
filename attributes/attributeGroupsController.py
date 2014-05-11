@@ -17,7 +17,7 @@ import agentPerceptionAttributeGroup as apa
 import agentMovementAttributeGroup as ama
 import classicBoidAttributeGroup as cbba
 import goalDrivenBehaviourAttributes as gdba
-import followPathBehaviourAttributes as fpba
+import followPathAttributeGroup as fpba
 import tools.util as util
 import resources.fileLocations as fl
 
@@ -148,7 +148,7 @@ class AttributesController(PyswarmObject):
         """IMPORTANT - All defined behaviours *must* be included in this method!"""
         lookup = { cbba.ClassicBoidAttributeGroup.BehaviourTypeName() : self.addClassicBoidAttributes,
                    gdba.GoalDrivenBehaviourAttributes.BehaviourTypeName() : self.addGoalDrivenAttributes,
-                   fpba.FollowPathBehaviourAttributes.BehaviourTypeName() : self.addFollowPathAttributes }
+                   fpba.FollowPathAttributeGroup.BehaviourTypeName() : self.addFollowPathAttributes }
         
         return lookup
 
@@ -180,8 +180,8 @@ class AttributesController(PyswarmObject):
 
 ########    
     def addFollowPathAttributes(self, pathCurve=None):
-        behaviourId = self._getNewBehaviourIdForAttibutesClass(fpba.FollowPathBehaviourAttributes)
-        newBehaviourAttributes = fpba.FollowPathBehaviourAttributes(behaviourId, pathCurve)
+        behaviourId = self._getNewBehaviourIdForAttibutesClass(fpba.FollowPathAttributeGroup)
+        newBehaviourAttributes = fpba.FollowPathAttributeGroup(behaviourId, pathCurve)
         self._addNewBehaviourAttributes(newBehaviourAttributes)
         
         return newBehaviourAttributes
