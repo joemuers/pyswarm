@@ -527,7 +527,7 @@ class UiController(PyswarmObject):
         self._tabLayout = uib.MakeTabLayout()
         
         self._makeAgentAttributesTab(self._attributesController.agentMovementAttributeGroup,
-                                     self._attributesController.agentPerceptionAttributes)
+                                     self._attributesController.agentPerceptionAttributeGroup)
         
         for behaviourAttributes in self._attributesController._behaviourAttributesList:
             self._makeBehaviourTab(behaviourAttributes, (behaviourAttributes.behaviourId == self._defaultBehaviourId))
@@ -541,7 +541,7 @@ class UiController(PyswarmObject):
         sets and hooking up the UI components to update the sets when changed by the user.
         
         :param movementAttributes: AgentMovementAttributeGroup instance.
-        :param perceptionAttributes: AgentPerceptionAttributes instance.
+        :param perceptionAttributes: AgentPerceptionAttributeGroup instance.
         """
         formLayout = uib.MakeFormLayout("Agent Attributes")
         scrollLayout = uib.MakeScrollLayout()
@@ -664,7 +664,7 @@ class UiController(PyswarmObject):
         Queries user for confirmation, and passes call to delegate if required. 
         
         :param movementId: attribute ID of the AgentMovementAttributeGroup instance.
-        :param perceptionId: attribute ID of the AgentPerceptionAttributes instance.
+        :param perceptionId: attribute ID of the AgentPerceptionAttributeGroup instance.
         """
         if(uib.GetUserConfirmation("Load Defaults", "Restore default values to agent attributes?")):
             self.delegate.restoreDefaultValues(movementId)

@@ -97,7 +97,7 @@ class ZoneGraph(PyswarmObject, AttributesListener):
         self._upperBoundsVector = v3.Vector3(self._globalAttributes.upperBounds)
         self._globalAttributes.addListener(self)
         
-        self._perceptionAttributes = attributesController.agentPerceptionAttributes
+        self._perceptionAttributes = attributesController.agentPerceptionAttributeGroup
         self._zoneSize = self._perceptionAttributes.maxNeighbourhoodSize
         self._perceptionAttributes.addListener(self)
         

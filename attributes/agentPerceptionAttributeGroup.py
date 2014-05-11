@@ -41,7 +41,7 @@ class PerceptionAttributesDataBlob(ago._DataBlobBaseObject):
 
 
 ##########################################
-class AgentPerceptionAttributes(ago.AttributeGroupObject):
+class AgentPerceptionAttributeGroup(ago.AttributeGroupObject):
     
     _WeightingNone_, _WeightingLinear_, _WeightingInverseSquare_ = range(3)
     _WeightingStrings_ = ["None", "Linear", "Inverse Square"]
@@ -53,11 +53,11 @@ class AgentPerceptionAttributes(ago.AttributeGroupObject):
  
 #####################   
     def __init__(self):
-        super(AgentPerceptionAttributes, self).__init__(AgentPerceptionAttributes.BehaviourTypeName())
+        super(AgentPerceptionAttributeGroup, self).__init__(AgentPerceptionAttributeGroup.BehaviourTypeName())
         
-        self._proximityWeightingOption = AgentPerceptionAttributes._WeightingInverseSquare_
+        self._proximityWeightingOption = AgentPerceptionAttributeGroup._WeightingInverseSquare_
         self._proximityWeightingString = at.StringAttribute("Proximity Weighting", 
-                                                      AgentPerceptionAttributes._WeightingStrings_[self._proximityWeightingOption],
+                                                      AgentPerceptionAttributeGroup._WeightingStrings_[self._proximityWeightingOption],
                                                       self)
         self._neighbourhoodSize = at.FloatAttribute("Neighbourhood Size", 4.0, self)
         self._neighbourhoodSize_Random = at.RandomizeController(self._neighbourhoodSize)
@@ -78,7 +78,7 @@ class AgentPerceptionAttributes(ago.AttributeGroupObject):
         regionSizeFrame = uib.MakeFrameLayout("Region Size")
         columnLayout = uib.MakeColumnLayout()
         
-        uib.MakeStringOptionsField(self._proximityWeightingString, AgentPerceptionAttributes._WeightingStrings_)
+        uib.MakeStringOptionsField(self._proximityWeightingString, AgentPerceptionAttributeGroup._WeightingStrings_)
         uib.MakeSeparator()
         uib.MakeSliderGroup(self._neighbourhoodSize)
         uib.MakeRandomizerFields(self._neighbourhoodSize_Random)
@@ -118,14 +118,14 @@ class AgentPerceptionAttributes(ago.AttributeGroupObject):
 
 #####################            
     def onValueChanged(self, changedAttribute):
-        super(AgentPerceptionAttributes, self).onValueChanged(changedAttribute)
+        super(AgentPerceptionAttributeGroup, self).onValueChanged(changedAttribute)
         
         if(changedAttribute is self._neighbourhoodSize):
             self._nearRegionSize.maximumValue = self._neighbourhoodSize.value
         elif(changedAttribute is self._nearRegionSize):
             self._collisionRegionSize.maximumValue = self._nearRegionSize.value
         elif(changedAttribute is self._proximityWeightingString):
-            self._proximityWeightingOption = AgentPerceptionAttributes._WeightingStrings_.index(changedAttribute.value)
+            self._proximityWeightingOption = AgentPerceptionAttributeGroup._WeightingStrings_.index(changedAttribute.value)
 
 #####################         
     def _getMaxNeighbourhoodSize(self):
@@ -135,17 +135,17 @@ class AgentPerceptionAttributes(ago.AttributeGroupObject):
 
 #####################
     def _getUseNoWeighting(self):
-        return self._proximityWeightingOption == AgentPerceptionAttributes._WeightingNone_
+        return self._proximityWeightingOption == AgentPerceptionAttributeGroup._WeightingNone_
     useNoWeighting = property(_getUseNoWeighting)
 
 ########    
     def _getUseLinearWeighting(self):
-        return self._proximityWeightingOption == AgentPerceptionAttributes._WeightingLinear_
+        return self._proximityWeightingOption == AgentPerceptionAttributeGroup._WeightingLinear_
     useLinearWeighting = property(_getUseLinearWeighting)
 
 ########    
     def _getUseInverseSquareWeighting(self):
-        return self._proximityWeightingOption == AgentPerceptionAttributes._WeightingInverseSquare_
+        return self._proximityWeightingOption == AgentPerceptionAttributeGroup._WeightingInverseSquare_
     useInverseSquareWeighting = property(_getUseInverseSquareWeighting)
     
 ########
