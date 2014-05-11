@@ -11,7 +11,7 @@
 
 
 import boidVectors.vector3 as bv3
-import boidTools.util as util
+import tools.util as util
 
 import pymel.core as pm
 import pymel.core.nodetypes as pmn  # Eclipse doesn't like pm.nodetypes for some reason... 

@@ -11,7 +11,7 @@
 
 
 from behaviourBaseObject import BehaviourBaseObject
-from boidTools import sceneInterface
+from tools import sceneInterface
 
 import attributes.followPathBehaviourAttributes as fpba
 import boidVectors.vector3 as bv3

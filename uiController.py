@@ -11,8 +11,8 @@
 
 
 from boidBaseObject import BoidBaseObject
-import boidTools.uiBuilder as uib
-import boidTools.util as util
+import tools.uiBuilder as uib
+import tools.util as util
 import resources.fileLocations as fl
 import resources.packageInfo as pi
 

@@ -13,8 +13,8 @@
 from boidBaseObject import BoidBaseObject
 
 import boidVectors.vector3 as bv3
-import boidTools.util as util
-import boidTools.sceneInterface as scene
+import tools.util as util
+import tools.sceneInterface as scene
 
 from abc import ABCMeta, abstractmethod
 import random

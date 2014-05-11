@@ -11,7 +11,7 @@
 
 
 import attributesBaseObject as abo
-import boidTools.uiBuilder as uib
+import tools.uiBuilder as uib
 import attributeTypes as at
 
 

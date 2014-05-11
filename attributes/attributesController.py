@@ -18,7 +18,7 @@ import agentMovementAttributes as ama
 import classicBoidBehaviourAttributes as cbba
 import goalDrivenBehaviourAttributes as gdba
 import followPathBehaviourAttributes as fpba
-import boidTools.util as util
+import tools.util as util
 import resources.fileLocations as fl
 
 import ConfigParser

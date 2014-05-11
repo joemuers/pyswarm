@@ -22,8 +22,8 @@ The module is roughly split into sections:
 """
 
 import attributes.attributeTypes as at
-import boidTools.util as util
-import boidTools.sceneInterface as scene
+import tools.util as util
+import tools.sceneInterface as scene
 import resources.fileLocations as fl
 
 import pymel.core as pm

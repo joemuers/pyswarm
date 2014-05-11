@@ -11,7 +11,7 @@
 
 
 from boidBaseObject import BoidBaseObject
-from boidTools import sceneInterface
+from tools import sceneInterface
 
 import boidVectors.vector3 as bv3
 import agentState as agt

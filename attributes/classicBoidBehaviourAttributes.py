@@ -12,10 +12,10 @@
 
 import attributesBaseObject as abo
 import attributeTypes as at
-import boidTools.uiBuilder as uib
-import boidTools.util as util
+import tools.uiBuilder as uib
+import tools.util as util
 import boidVectors.vector3 as bv3
-import boidTools.agentSelectionWindow as asw
+import tools.agentSelectionWindow as asw
 
 import random as rand
 

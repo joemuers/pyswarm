@@ -10,7 +10,7 @@
 # ------------------------------------------------------------
 
 
-import boidTools.util as util
+import tools.util as util
 import resources
 import packageInfo as pi
 

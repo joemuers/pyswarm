@@ -12,10 +12,10 @@
 
 import attributesBaseObject as abo
 import attributeTypes as at
-import boidTools.util as util
-import boidTools.uiBuilder as uib
-import boidTools.sceneInterface as scene
-import boidTools.agentSelectionWindow as asw
+import tools.util as util
+import tools.uiBuilder as uib
+import tools.sceneInterface as scene
+import tools.agentSelectionWindow as asw
 
 
 

@@ -12,8 +12,8 @@
 
 from boidBaseObject import BoidBaseObject
 import attributeTypes as at
-import boidTools.util as util
-import boidTools.uiBuilder as uib
+import tools.util as util
+import tools.uiBuilder as uib
 
 from abc import ABCMeta, abstractmethod
 import weakref

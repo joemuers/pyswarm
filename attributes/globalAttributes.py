@@ -12,10 +12,10 @@
 
 import attributesBaseObject as abo
 import attributeTypes as at
-import boidTools.uiBuilder as uib
+import tools.uiBuilder as uib
 import boidVectors.vector3 as bv3
-import boidTools.util as util
-import boidTools.sceneInterface as scene
+import tools.util as util
+import tools.sceneInterface as scene
 import resources.fileLocations as fl
 import resources.colours as colour
 

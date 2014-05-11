@@ -11,8 +11,8 @@
 
 
 from boidBaseObject import BoidBaseObject
-import boidTools.util as util
-import boidTools.sceneInterface as scene
+import tools.util as util
+import tools.sceneInterface as scene
 
 import boidVectors.vector3 as bv3
 import zoneGraph as zg

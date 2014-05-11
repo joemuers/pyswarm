@@ -13,7 +13,7 @@
 from boidBaseObject import BoidBaseObject
 from attributes.attributesBaseObject import AttributesListener
 import boidVectors.vector3 as bv3
-import boidTools.util as util
+import tools.util as util
 
 import itertools
 

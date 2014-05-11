@@ -12,8 +12,8 @@
 
 import attributesBaseObject as abo
 import attributeTypes as at
-import boidTools.sceneInterface as scene
-import boidTools.uiBuilder as uib
+import tools.sceneInterface as scene
+import tools.uiBuilder as uib
 
 
 

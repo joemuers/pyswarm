@@ -12,7 +12,7 @@
 
 import attributesBaseObject as abo
 import attributeTypes as at
-import boidTools.uiBuilder as uib
+import tools.uiBuilder as uib
 
 
 
