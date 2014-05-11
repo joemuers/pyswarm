@@ -13,7 +13,7 @@
 from boidBaseObject import BoidBaseObject
 from tools import sceneInterface
 
-import boidVectors.vector3 as bv3
+import vectors.vector3 as v3
 import agentState as agt
 import resources.colours as brc
 
@@ -62,7 +62,7 @@ class Agent(BoidBaseObject):
         
         self.currentBehaviour = None
         
-        self._desiredAcceleration = bv3.Vector3()
+        self._desiredAcceleration = v3.Vector3()
         self._needsBehaviourCalculation = False # True if position/heading/circumstance has 
         #                                       # changed since last calculation, False otherwise.
         self._needsBehaviourCommit = False  # True if behaviour has been updated since last commit, False otherwise.
@@ -182,7 +182,7 @@ class Agent(BoidBaseObject):
     def commitNewBehaviour(self, particleShapeName):      
         """Updates agent's corresponding Maya nParticle with current internal state."""
         if(self._needsBehaviourCommit):
-            desiredVelocity = bv3.Vector3(self.currentVelocity)
+            desiredVelocity = v3.Vector3(self.currentVelocity)
             desiredVelocity.add(self._desiredAcceleration)
             
             sceneInterface.SetSingleParticleVelocity(particleShapeName, self.agentId, desiredVelocity)

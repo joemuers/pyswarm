@@ -12,7 +12,7 @@
 
 from boidBaseObject import BoidBaseObject
 
-import boidVectors.vector3 as bv3
+import vectors.vector3 as v3
 import tools.util as util
 
 
@@ -36,19 +36,19 @@ class AgentState(BoidBaseObject):
     
     def __init__(self, particleId, attributesController):
         self._agentId = int(particleId)
-        self._position = bv3.Vector3()
-        self._velocity = bv3.Vector3()
-        self._acceleration = bv3.Vector3()
+        self._position = v3.Vector3()
+        self._velocity = v3.Vector3()
+        self._acceleration = v3.Vector3()
         
         self._isTouchingGround = False
         
         self._nearbyList = []        # 
         self._crowdedList = []       #
         self._collisionList = []     # lists of boidAgent instances
-        self._avPosition = bv3.Vector3()
-        self._avVelocity = bv3.Vector3()
-        self._avCrowdedPos = bv3.Vector3()
-        self._avCollisionDirection = bv3.Vector3()    
+        self._avPosition = v3.Vector3()
+        self._avVelocity = v3.Vector3()
+        self._avCrowdedPos = v3.Vector3()
+        self._avCollisionDirection = v3.Vector3()    
         self._reciprocalNearbyChecks = set() 
         self._nearbyWeightedTotal = 0.0
         self._crowdingWeightedTotal = 0.0

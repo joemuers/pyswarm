@@ -14,8 +14,8 @@ from behaviourBaseObject import BehaviourBaseObject
 from resources import colours
 
 import attributes.goalDrivenBehaviourAttributes as gdba
-import boidVectors.vector2 as bv2
-import boidVectors.vector3 as bv3
+import vectors.vector2 as v2
+import vectors.vector3 as v3
 
 import random
 
@@ -89,7 +89,7 @@ class GoalDriven(BehaviourBaseObject):
         """
         super(GoalDriven, self).__init__(goalDrivenAttributes, delegate)
         
-        self._baseToFinalDirection = bv3.Vector3() # direction vector from baseLocator to finalLocator
+        self._baseToFinalDirection = v3.Vector3() # direction vector from baseLocator to finalLocator
         
         self._leaderPositions = []
         self._basePyramidDistanceLookup = {}
@@ -98,15 +98,15 @@ class GoalDriven(BehaviourBaseObject):
         
         # variables in the following block relate to agent's distance
         # from the baseLocator when in the basePyramid
-        self._agentDistance_runningTotal = bv2.Vector2()
-        self._agentDistance_average = bv2.Vector2()
+        self._agentDistance_runningTotal = v2.Vector2()
+        self._agentDistance_average = v2.Vector2()
         self._needsAverageDistanceCalc = False
-        self._maxAgentDistance = bv2.Vector2()
+        self._maxAgentDistance = v2.Vector2()
         
         # variables here relate to average position taken from within
         # the basePyramid.
-        self._agentPosition_runningTotal = bv3.Vector3()
-        self._agentPosition_average = bv3.Vector3()
+        self._agentPosition_runningTotal = v3.Vector3()
+        self._agentPosition_average = v3.Vector3()
         self._needsAveragePositionCalc = False
         
         self._infectionSpreadMode = False
@@ -216,7 +216,7 @@ class GoalDriven(BehaviourBaseObject):
         """Returns corresponding acceleration for the agent as determined by calculated behaviour.
         Client agents should call this method on each frame update and modify their own desiredAcceleration accordingly.
         """
-        desiredAcceleration = bv3.Vector3()
+        desiredAcceleration = v3.Vector3()
         agent.stickinessScale = 0 # reset on each frame, as may have been set on previous iteration
         
         if(agent.isTouchingGround):
@@ -244,7 +244,7 @@ class GoalDriven(BehaviourBaseObject):
         if(self._goalStatusForAgent(agent) == gdba.GoalDrivenDataBlob.overWallLip or 
            self._goalStatusForAgent(agent) == gdba.GoalDrivenDataBlob.reachedFinalGoal):
             
-            targetVelocity = bv3.Vector3(self._baseToFinalDirection.x, 0, self._baseToFinalDirection.z)
+            targetVelocity = v3.Vector3(self._baseToFinalDirection.x, 0, self._baseToFinalDirection.z)
             targetVelocity.normalise(agent.state.behaviourAttributes.goalChaseSpeed)
             desiredAcceleration.resetToVector(targetVelocity - agent.currentVelocity)
             if(desiredAcceleration.magnitude() > agent.state.movementAttributes.maxAcceleration):

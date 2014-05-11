@@ -12,7 +12,7 @@
 
 from boidBaseObject import BoidBaseObject
 
-import boidVectors.vector3 as bv3
+import vectors.vector3 as v3
 
 from abc import ABCMeta, abstractmethod
 import weakref
@@ -261,7 +261,7 @@ class BehaviourBaseObject(BoidBaseObject):
             madeChanges = True
         
         # restrict velocity to <= max value
-        desiredVelocity = bv3.Vector3(agent.currentVelocity)
+        desiredVelocity = v3.Vector3(agent.currentVelocity)
         desiredVelocity.add(desiredAcceleration)
         velocityMagnitude = desiredVelocity.magnitude()
         

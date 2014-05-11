@@ -12,7 +12,7 @@
 
 from boidBaseObject import BoidBaseObject
 from attributes.attributesBaseObject import AttributesListener
-import boidVectors.vector3 as bv3
+import vectors.vector3 as v3
 import tools.util as util
 
 import itertools
@@ -93,8 +93,8 @@ class ZoneGraph(BoidBaseObject, AttributesListener):
         self._currentFrameIteration = 0
         
         self._globalAttributes = attributesController.globalAttributes
-        self._lowerBoundsVector = bv3.Vector3(self._globalAttributes.lowerBounds)
-        self._upperBoundsVector = bv3.Vector3(self._globalAttributes.upperBounds)
+        self._lowerBoundsVector = v3.Vector3(self._globalAttributes.lowerBounds)
+        self._upperBoundsVector = v3.Vector3(self._globalAttributes.upperBounds)
         self._globalAttributes.addListener(self)
         
         self._perceptionAttributes = attributesController.agentPerceptionAttributes
@@ -186,9 +186,9 @@ class ZoneGraph(BoidBaseObject, AttributesListener):
                 
                 self._needsRebuild = False
 #         margin = 0
-#         import boidVectors.vector3 as bv3
-#         vecA = bv3.Vector3(zoneA._xMin + margin, 0, zoneA._zMin + margin)
-#         vecB = bv3.Vector3(zoneB._xMin + margin, 0, zoneB._zMin + margin)
+#         import vectors.vector3 as v3
+#         vecA = v3.Vector3(zoneA._xMin + margin, 0, zoneA._zMin + margin)
+#         vecB = v3.Vector3(zoneB._xMin + margin, 0, zoneB._zMin + margin)
 #         
 #         print("zone%s:%s NOW NEIGHBOURS zone%s:%s" % 
 #               (self._spatialKeyFromVector(vecA), zoneA, self._spatialKeyFromVector(vecB), zoneB))
@@ -221,8 +221,8 @@ class ZoneGraph(BoidBaseObject, AttributesListener):
             if(self._lowerBoundsVector != self._globalAttributes.lowerBounds or
                self._upperBoundsVector != self._globalAttributes.upperBounds):
                 
-                self._lowerBoundsVector = bv3.Vector3(self._globalAttributes.lowerBounds)
-                self._upperBoundsVector = bv3.Vector3(self._globalAttributes.upperBounds)
+                self._lowerBoundsVector = v3.Vector3(self._globalAttributes.lowerBounds)
+                self._upperBoundsVector = v3.Vector3(self._globalAttributes.upperBounds)
                 self._needsRebuild = True
         elif(sectionObject == self._perceptionAttributes):
             if(self._zoneSize != self._perceptionAttributes.maxNeighbourhoodSize):

@@ -14,7 +14,7 @@ from behaviourBaseObject import BehaviourBaseObject
 from resources import colours
 
 import attributes.classicBoidBehaviourAttributes as cbba
-import boidVectors.vector3 as bv3
+import vectors.vector3 as v3
 
 import random
 
@@ -48,7 +48,7 @@ class ClassicBoid(BehaviourBaseObject):
         if(self.attributes.shouldKickstartAgent(agent.agentId)):
             return self.attributes.getKickstartVector()
         else:
-            desiredAcceleration = bv3.Vector3()
+            desiredAcceleration = v3.Vector3()
             self._doNotClampMovement = False
             
             if(agent.isTouchingGround):
@@ -75,7 +75,7 @@ class ClassicBoid(BehaviourBaseObject):
                                                    movementAttributes.preferredTurnVelocity)
                 else:
                     behaviourAttributes = agent.state.behaviourAttributes
-                    tempVector = bv3.Vector3()
+                    tempVector = v3.Vector3()
                     if(desiredAcceleration):
                         weightingTotal = behaviourAttributes.separationWeighting
                     else:
@@ -145,10 +145,10 @@ class ClassicBoid(BehaviourBaseObject):
 
         if(agent.isCollided and weighting > 0):  # Problem here - we're driving the velocity directly... should be done by Maya really
             ######### might not really need this if particle self-collisions are working properly... ??
-            stopVector = bv3.Vector3(agent.currentVelocity)
+            stopVector = v3.Vector3(agent.currentVelocity)
             stopVector.invert()
             
-            avoidVector = bv3.Vector3(agent.state.avCollisionDirection)
+            avoidVector = v3.Vector3(agent.state.avCollisionDirection)
             avoidVector.resetToVector(agent.state.avCollisionDirection)
             avoidVector.invert()
             avoidVector.normalise(agent.state.movementAttributes.maxAcceleration)
@@ -180,7 +180,7 @@ class ClassicBoid(BehaviourBaseObject):
             desiredAngleMagnitude = abs(desiredRotationAngle)
             
             if(desiredAngleMagnitude > agent.behaviourAttributes.alignmentDirectionThreshold):
-                desiredVelocity = bv3.Vector3(agent.currentVelocity)
+                desiredVelocity = v3.Vector3(agent.currentVelocity)
                 desiredVelocity.rotateInHorizontal(desiredRotationAngle)
                 result = desiredVelocity - agent.currentVelocity
 
@@ -220,7 +220,7 @@ class ClassicBoid(BehaviourBaseObject):
                 desiredAcceleration.rotateInHorizontal(rotation)
             else:
                 desiredRotationAngle = random.uniform(-movementAttributes.maxTurnRate, movementAttributes.maxTurnRate)
-                desiredDirection = bv3.Vector3(agent.currentVelocity)
+                desiredDirection = v3.Vector3(agent.currentVelocity)
                 desiredDirection.rotateInHorizontal(desiredRotationAngle)
                 desiredAcceleration.resetToVector(agent.currentVelocity - desiredDirection)         
             

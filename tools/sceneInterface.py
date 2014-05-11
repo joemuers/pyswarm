@@ -10,7 +10,7 @@
 # ------------------------------------------------------------
 
 
-import boidVectors.vector3 as bv3
+import vectors.vector3 as v3
 import tools.util as util
 
 import pymel.core as pm
@@ -160,7 +160,7 @@ def Vector3FromLocator(locator):
     if(isinstance(locator, pmn.Locator)):
         coOrdsString = locator.getPosition()
         coOrds = coOrdsString.split()
-        return bv3.Vector3(float(coOrds[0]), float(coOrds[1]), float(coOrds[2]))     
+        return v3.Vector3(float(coOrds[0]), float(coOrds[1]), float(coOrds[2]))     
     elif(isinstance(locator, basestring)):
         return Vector3FromLocator(PymelObjectFromObjectName(locator))
     else:
@@ -186,11 +186,11 @@ def PymelPointFromVector3(vector3):
 
 #####
 def Vector3FromPymelPoint(point):
-    return bv3.Vector3(point.x, point.y, point.z)
+    return v3.Vector3(point.x, point.y, point.z)
 
 ######################################
 def Vector3FromPymelVector(pymelVector):
-    return bv3.Vector3(pymelVector.x, pymelVector.y, pymelVector.z)
+    return v3.Vector3(pymelVector.x, pymelVector.y, pymelVector.z)
 
 #####
 def PymelVectorFromVector3(vector3):

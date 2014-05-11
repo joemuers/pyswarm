@@ -12,7 +12,7 @@
 
 from boidBaseObject import BoidBaseObject
 
-import boidVectors.vector3 as bv3
+import vectors.vector3 as v3
 import tools.util as util
 import tools.sceneInterface as scene
 
@@ -582,10 +582,10 @@ class LocationAttribute(MayaObjectAttribute):
                     self._updateInputUiComponents() # do this here as it will be skipped by the normal mechanism
             else:
                 self._boundLocator = None
-                if(isinstance(inputValue, bv3.Vector3)):
+                if(isinstance(inputValue, v3.Vector3)):
                     result = inputValue
                 elif(isinstance(inputValue, list) or isinstance(inputValue, tuple)):
-                    result = bv3.Vector3(inputValue[0], inputValue[1], inputValue[2])
+                    result = v3.Vector3(inputValue[0], inputValue[1], inputValue[2])
                 else:
                     raise TypeError("Location input value received value %s, of type: %s" % (inputValue, type(inputValue)))
         return result
@@ -621,18 +621,18 @@ class Vector3Attribute(_SingleAttributeBaseObject):
 #####################
     def _getValueFromInput(self, inputValue):
         
-        if(isinstance(inputValue, bv3.Vector3)):
+        if(isinstance(inputValue, v3.Vector3)):
             return inputValue
         elif(isinstance(inputValue, basestring)):
-            result = bv3.Vector3()
+            result = v3.Vector3()
             result.setValueFromString(inputValue)
             return result
         elif(isinstance(inputValue, list) or isinstance(inputValue, tuple)):
-            result = bv3.Vector3()
+            result = v3.Vector3()
             result.valueAsTuple = inputValue
             return result
         else:
-            raise TypeError("Got %s, expected %s or %s" % (type(inputValue), bv3.Vector3, basestring))
+            raise TypeError("Got %s, expected %s or %s" % (type(inputValue), v3.Vector3, basestring))
             
 # END OF CLASS - Vector3Attribute
 ######################################           

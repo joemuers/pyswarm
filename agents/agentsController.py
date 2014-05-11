@@ -14,7 +14,7 @@ from boidBaseObject import BoidBaseObject
 import tools.util as util
 import tools.sceneInterface as scene
 
-import boidVectors.vector3 as bv3
+import vectors.vector3 as v3
 import zoneGraph as zg
 import agent as ag
 
@@ -184,8 +184,8 @@ class AgentsController(BoidBaseObject):
         velocity = scene.GetSingleParticleVelocity(self._particleShapeName, particleId) 
         agent = self._idToAgentLookup[particleId]
         
-        agent.updateCurrentVectors(bv3.Vector3(position[0], position[1], position[2]),
-                                   bv3.Vector3(velocity[0], velocity[1], velocity[2]))
+        agent.updateCurrentVectors(v3.Vector3(position[0], position[1], position[2]),
+                                   v3.Vector3(velocity[0], velocity[1], velocity[2]))
         self._zoneGraph.updateAgentPosition(agent)
  
 #########
@@ -215,8 +215,8 @@ class AgentsController(BoidBaseObject):
                 particleId = self._particleIdsOrdering[i]
                 agent = self._idToAgentLookup[particleId]
                 
-                agent.updateCurrentVectors(bv3.Vector3(positions[j], positions[j + 1], positions[j + 2]),
-                                           bv3.Vector3(velocities[j], velocities[j + 1], velocities[j + 2]))
+                agent.updateCurrentVectors(v3.Vector3(positions[j], positions[j + 1], positions[j + 2]),
+                                           v3.Vector3(velocities[j], velocities[j + 1], velocities[j + 2]))
                 self._zoneGraph.updateAgentPosition(agent)
                 
             if(queryExtraInfo):
@@ -324,7 +324,7 @@ class AgentsController(BoidBaseObject):
 #############################        
     def closestAgentToPoint(self, x, y, z, ignoreVertical=False):
         """Helper method intended for use in Maya's Script Editor."""
-        target = bv3.Vector3(x, y, z)
+        target = v3.Vector3(x, y, z)
         closestAgent = None
         closestDistance = None
         

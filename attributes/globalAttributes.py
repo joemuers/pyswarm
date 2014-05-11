@@ -13,7 +13,7 @@
 import attributesBaseObject as abo
 import attributeTypes as at
 import tools.uiBuilder as uib
-import boidVectors.vector3 as bv3
+import vectors.vector3 as v3
 import tools.util as util
 import tools.sceneInterface as scene
 import resources.fileLocations as fl
@@ -252,8 +252,8 @@ class GlobalAttributes(abo.AttributesBaseObject):
         self._sceneBounds2 = at.LocationAttribute("Scene Bounds 2", util.InitVal(boundsLocator2, (20, 20, 20)), self)
         self._sceneBounds1.excludeFromDefaults = True
         self._sceneBounds2.excludeFromDefaults = True
-        self._lowerBounds = bv3.Vector3()
-        self._upperBounds = bv3.Vector3()
+        self._lowerBounds = v3.Vector3()
+        self._upperBounds = v3.Vector3()
         
         self._defaultBehaviourId = at.StringAttribute("Default Behaviour Id", "<None>")
         self._defaultBehaviourId.excludeFromDefaults = True

@@ -14,7 +14,7 @@ import attributesBaseObject as abo
 import attributeTypes as at
 import tools.uiBuilder as uib
 import tools.util as util
-import boidVectors.vector3 as bv3
+import vectors.vector3 as v3
 import tools.agentSelectionWindow as asw
 
 import random as rand
@@ -59,8 +59,8 @@ class ClassicBoidBehaviourAttributes(abo.AttributesBaseObject):
         self._kickstartAgentsText = at.StringAttribute("Agents", "")
         self._kickstartAgentsText.excludeFromDefaults = True
         self._kickstartAgents = set()
-        self._kickstartMinValue = at.Vector3Attribute("Minimum", bv3.Vector3())
-        self._kickstartMaxValue = at.Vector3Attribute("Maximum", bv3.Vector3())
+        self._kickstartMinValue = at.Vector3Attribute("Minimum", v3.Vector3())
+        self._kickstartMaxValue = at.Vector3Attribute("Maximum", v3.Vector3())
         self._kickstartAgentSelectionWindow = asw.AgentSelectionWindow(globalAttributes)
         self._kickstartNowButton = None
         self.kickOnNextFrame = False
@@ -220,7 +220,7 @@ class ClassicBoidBehaviourAttributes(abo.AttributesBaseObject):
         y = rand.uniform(self._kickstartMinValue.y, self._kickstartMaxValue.y)
         z = rand.uniform(self._kickstartMinValue.z, self._kickstartMaxValue.z)
         
-        return bv3.Vector3(x, y, z)
+        return v3.Vector3(x, y, z)
 
 #####################         
     def _getSeparationIsMutuallyExclusive(self):

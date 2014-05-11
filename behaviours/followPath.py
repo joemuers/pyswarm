@@ -14,7 +14,7 @@ from behaviourBaseObject import BehaviourBaseObject
 from tools import sceneInterface
 
 import attributes.followPathBehaviourAttributes as fpba
-import boidVectors.vector3 as bv3
+import vectors.vector3 as v3
 
 
 
@@ -54,9 +54,9 @@ class FollowPath(BehaviourBaseObject):
         """
         super(FollowPath, self).__init__(followPathAttrbutes, delegate)
         
-        self._startVector = bv3.Vector3()
+        self._startVector = v3.Vector3()
         self._endParam = 0
-        self._endVector = bv3.Vector3()
+        self._endVector = v3.Vector3()
         
         self._currentlyFollowingSet = set()
         
@@ -111,7 +111,7 @@ class FollowPath(BehaviourBaseObject):
         """Returns corresponding acceleration for the agent as determined by calculated behaviour.
         Client agents should call this method on each frame update and modify their own desiredAcceleration accordingly.
         """
-        desiredAcceleration = bv3.Vector3()
+        desiredAcceleration = v3.Vector3()
         
         if(self._pathCurve is not None and agent.isTouchingGround):  
             pymelLocationVector = sceneInterface.PymelPointFromVector3(agent.currentPosition)
