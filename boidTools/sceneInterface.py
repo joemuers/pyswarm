@@ -37,12 +37,12 @@ def PymelObjectFromObjectName(objectName, bypassTransformNodes=True, pymelType=N
                         (objectName, pymelType, type(objectName)))
     
 ######################################
-def GetSelectedParticleShapeNodes(particleShapeName=None, logPymelBugWarning=True):
+def GetSelectedParticleShapeNodes(particleShapeName=None, suppressPymelBugWarning=False):
     selectionList = []
     try:
         selectionList = pm.ls(selection=True)
     except Exception:
-        if(logPymelBugWarning):
+        if(not suppressPymelBugWarning):
             util.LogWarning("There's a bug in earlier versions of Maya's PyMel - it can break if you have individual "
                             "particles selected (i.e. in component mode). Nothing I can do about that unfortunately. "
                             "You may want to try again *without* individual particles selected.")
@@ -58,7 +58,7 @@ def GetSelectedParticleShapeNodes(particleShapeName=None, logPymelBugWarning=Tru
 
 ######################################
 def GetSelectedParticles(particleShapeName):
-    if(GetSelectedParticleShapeNodes(particleShapeName, logPymelBugWarning=False)):
+    if(GetSelectedParticleShapeNodes(particleShapeName, suppressPymelBugWarning=True)):
         return ParticleIdsListForParticleShape(particleShapeName)
     else:
         # using cmds instead of PyMel as a workaround here - there's a bug in earlier versions
