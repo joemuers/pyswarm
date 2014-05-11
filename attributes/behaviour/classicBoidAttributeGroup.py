@@ -10,8 +10,8 @@
 # ------------------------------------------------------------
 
 
-import attributeGroupObject as ago
-import attributeTypes as at
+import attributes.attributeGroupObject as ago
+import attributes.attributeTypes as at
 import tools.uiBuilder as uib
 import tools.util as util
 import vectors.vector3 as v3

@@ -15,9 +15,9 @@ from pyswarmObject import PyswarmObject
 import globalAttributeGroup as ga
 import agentPerceptionAttributeGroup as apa
 import agentMovementAttributeGroup as ama
-import classicBoidAttributeGroup as cbba
-import worldWarZAttributeGroup as gdba
-import followPathAttributeGroup as fpba
+import behaviour.classicBoidAttributeGroup as cbba
+import behaviour.worldWarZAttributeGroup as gdba
+import behaviour.followPathAttributeGroup as fpba
 import tools.util as util
 import resources.fileLocations as fl
 
