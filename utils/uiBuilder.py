@@ -24,7 +24,7 @@ The module is roughly split into sections:
 import attributes.attributeTypes as at
 import utils.general as util
 import utils.sceneInterface as scene
-import resources.fileLocations as fl
+import utils.fileLocations as fl
 
 import pymel.core as pm
 import sys

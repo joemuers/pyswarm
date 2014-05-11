@@ -13,8 +13,8 @@
 from pyswarmObject import PyswarmObject
 import utils.uiBuilder as uib
 import utils.general as util
-import resources.fileLocations as fl
-import resources.packageInfo as pi
+import utils.fileLocations as fl
+import utils.packageInfo as pi
 
 from abc import ABCMeta, abstractmethod
 import weakref

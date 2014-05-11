@@ -18,8 +18,8 @@ import uiController as uic
 import utils.general as util
 import utils.agentSelectionWindow as asw
 import utils.sceneInterface as scene
-import resources.fileLocations as fl
-import resources.packageInfo as pi
+import utils.fileLocations as fl
+import utils.packageInfo as pi
 
 import os
 import sys

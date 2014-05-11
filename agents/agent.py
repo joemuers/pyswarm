@@ -15,7 +15,7 @@ from utils import sceneInterface
 
 import vectors.vector3 as v3
 import agentState as agt
-import resources.colours as brc
+import utils.colours as brc
 
 
 

@@ -13,7 +13,7 @@
 from behaviourBaseObject import BehaviourBaseObject
 from utils import sceneInterface
 
-import attributes.followPathAttributeGroup as fpba
+import attributes.behaviour.followPathAttributeGroup as fpba
 import vectors.vector3 as v3
 
 

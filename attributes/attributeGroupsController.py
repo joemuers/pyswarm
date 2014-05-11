@@ -19,7 +19,7 @@ import behaviour.classicBoidAttributeGroup as cbba
 import behaviour.worldWarZAttributeGroup as gdba
 import behaviour.followPathAttributeGroup as fpba
 import utils.general as util
-import resources.fileLocations as fl
+import utils.fileLocations as fl
 
 import ConfigParser
 

@@ -16,8 +16,8 @@ import utils.uiBuilder as uib
 import vectors.vector3 as v3
 import utils.general as util
 import utils.sceneInterface as scene
-import resources.fileLocations as fl
-import resources.colours as colour
+import utils.fileLocations as fl
+import utils.colours as colour
 
 
 

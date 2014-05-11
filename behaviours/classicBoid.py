@@ -11,9 +11,9 @@
 
 
 from behaviourBaseObject import BehaviourBaseObject
-from resources import colours
+from utils import colours
 
-import attributes.classicBoidAttributeGroup as cbba
+import attributes.behaviour.classicBoidAttributeGroup as cbba
 import vectors.vector3 as v3
 
 import random

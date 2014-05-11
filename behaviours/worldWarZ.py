@@ -11,9 +11,9 @@
 
 
 from behaviourBaseObject import BehaviourBaseObject
-from resources import colours
+from utils import colours
 
-import attributes.worldWarZAttributeGroup as gdba
+import attributes.behaviour.worldWarZAttributeGroup as gdba
 import vectors.vector2 as v2
 import vectors.vector3 as v3
 
