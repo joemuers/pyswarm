@@ -38,7 +38,7 @@ class ClassicBoid(BehaviourBaseObject):
     def __init__(self, classicBoidAttributes, attributesController):
         super(ClassicBoid, self).__init__(classicBoidAttributes)
         
-        self._movementAttributes = attributesController.agentMovementAttributes
+        self._movementAttributes = attributesController.agentMovementAttributeGroup
         self._globalAttributes = attributesController.globalAttributes
         
         self._doNotClampMovement = False

@@ -44,7 +44,7 @@ class ClassicBoidDataBlob(ago._DataBlobBaseObject):
 
 
 ###########################################
-class ClassicBoidBehaviourAttributes(ago.AttributesBaseObject):
+class ClassicBoidBehaviourAttributes(ago.AttributeGroupObject):
     
     @classmethod
     def BehaviourTypeName(cls):

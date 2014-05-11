@@ -58,7 +58,7 @@ class AgentState(PyswarmObject):
         self._needsFullListsRebuild = True 
         self._needsAveragesRecalc = False
         
-        self._movementAttributes = attributesController.agentMovementAttributes.getDataBlobForAgent(self)
+        self._movementAttributes = attributesController.agentMovementAttributeGroup.getDataBlobForAgent(self)
         self._perceptionAttributes = attributesController.agentPerceptionAttributes.getDataBlobForAgent(self)
         self._perceptionAttributeSet = attributesController.agentPerceptionAttributes
         self.behaviourAttributes = None  # data 'blob' for client behaviours to store instance-level data - not used internally

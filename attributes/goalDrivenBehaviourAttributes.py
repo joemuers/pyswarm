@@ -67,7 +67,7 @@ class GoalDrivenDataBlob(ago._DataBlobBaseObject):
 
 
 ###########################################
-class GoalDrivenBehaviourAttributes(ago.AttributesBaseObject, ago._FollowOnBehaviourAttributeInterface):
+class GoalDrivenBehaviourAttributes(ago.AttributeGroupObject, ago._FollowOnBehaviourAttributeInterface):
 
     @classmethod
     def BehaviourTypeName(cls):

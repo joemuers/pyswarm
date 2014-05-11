@@ -41,7 +41,7 @@ class MovementAttributesDataBlob(ago._DataBlobBaseObject):
 
         
 ##########################################
-class AgentMovementAttributes(ago.AttributesBaseObject):
+class AgentMovementAttributeGroup(ago.AttributeGroupObject):
     
     @classmethod
     def BehaviourTypeName(cls):
@@ -49,7 +49,7 @@ class AgentMovementAttributes(ago.AttributesBaseObject):
     
 ######################
     def __init__(self):
-        super(AgentMovementAttributes, self).__init__(AgentMovementAttributes.BehaviourTypeName())
+        super(AgentMovementAttributeGroup, self).__init__(AgentMovementAttributeGroup.BehaviourTypeName())
         
         self._maxVelocity = at.FloatAttribute("Max Velocity", 5.0, self)
         self._maxVelocity_Random = at.RandomizeController(self._maxVelocity)

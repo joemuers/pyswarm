@@ -233,7 +233,7 @@ class _PreferencesWindow(object):
 
 
 #######################################
-class GlobalAttributes(ago.AttributesBaseObject):
+class GlobalAttributes(ago.AttributeGroupObject):
 
     @classmethod
     def BehaviourTypeName(cls):

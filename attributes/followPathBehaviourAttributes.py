@@ -37,7 +37,7 @@ class FollowPathDataBlob(ago._DataBlobBaseObject):
 
 
 ###########################################
-class FollowPathBehaviourAttributes(ago.AttributesBaseObject, ago._FollowOnBehaviourAttributeInterface):
+class FollowPathBehaviourAttributes(ago.AttributeGroupObject, ago._FollowOnBehaviourAttributeInterface):
 
     @classmethod
     def BehaviourTypeName(cls):

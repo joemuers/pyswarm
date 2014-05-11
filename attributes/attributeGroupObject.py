@@ -132,7 +132,7 @@ class _FollowOnBehaviourAttributeInterface(object):
  
  
 ########################################
-class AttributesBaseObject(PyswarmObject, at.SingleAttributeDelegate):
+class AttributeGroupObject(PyswarmObject, at.SingleAttributeDelegate):
      
     __metaclass__ = ABCMeta
      
@@ -144,7 +144,7 @@ class AttributesBaseObject(PyswarmObject, at.SingleAttributeDelegate):
  
 #####################    
     def __init__(self, behaviourId):
-        super(AttributesBaseObject, self).__init__()
+        super(AttributeGroupObject, self).__init__()
          
         self._behaviourId = behaviourId
         self._dataBlobs = {}
@@ -166,7 +166,7 @@ class AttributesBaseObject(PyswarmObject, at.SingleAttributeDelegate):
    
 #####################   
     def __getstate__(self):
-        state = super(AttributesBaseObject, self).__getstate__()
+        state = super(AttributeGroupObject, self).__getstate__()
         
         strongListenerRefs = [ref() for ref in self._listeners]
         state["_listeners"] = strongListenerRefs
@@ -175,7 +175,7 @@ class AttributesBaseObject(PyswarmObject, at.SingleAttributeDelegate):
        
 ########
     def __setstate__(self, state):
-        super(AttributesBaseObject, self).__setstate__(state)
+        super(AttributeGroupObject, self).__setstate__(state)
         
         self._listeners = set([weakref.ref(listener, self._removeDeadListenerReference) 
                                for listener in self._listeners])
@@ -206,7 +206,7 @@ class AttributesBaseObject(PyswarmObject, at.SingleAttributeDelegate):
     def _allAttributes(self):
         attributesList = []
         for attributeName in filter(lambda atNm: 
-                                    atNm not in AttributesBaseObject._ALLATTRIBUTES_RECURSIVE_CHECK_, 
+                                    atNm not in AttributeGroupObject._ALLATTRIBUTES_RECURSIVE_CHECK_, 
                                     dir(self)):
             try:
                    
@@ -215,8 +215,8 @@ class AttributesBaseObject(PyswarmObject, at.SingleAttributeDelegate):
                     attributesList.append(attribute)
                        
             except RuntimeError as e:
-                if(attributeName not in AttributesBaseObject._ALLATTRIBUTES_RECURSIVE_CHECK_):
-                    AttributesBaseObject._ALLATTRIBUTES_RECURSIVE_CHECK_.append(attributeName)
+                if(attributeName not in AttributeGroupObject._ALLATTRIBUTES_RECURSIVE_CHECK_):
+                    AttributeGroupObject._ALLATTRIBUTES_RECURSIVE_CHECK_.append(attributeName)
                        
                     errorString = ("Found possible recursive loop for class property \"%s\" - properties \
 which use the _allAttributes method should be added to the \"_ALLATTRIBUTES_RECURSIVE_CHECK_\" list.  \

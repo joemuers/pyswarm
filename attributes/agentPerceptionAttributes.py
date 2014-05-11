@@ -41,7 +41,7 @@ class PerceptionAttributesDataBlob(ago._DataBlobBaseObject):
 
 
 ##########################################
-class AgentPerceptionAttributes(ago.AttributesBaseObject):
+class AgentPerceptionAttributes(ago.AttributeGroupObject):
     
     _WeightingNone_, _WeightingLinear_, _WeightingInverseSquare_ = range(3)
     _WeightingStrings_ = ["None", "Linear", "Inverse Square"]

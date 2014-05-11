@@ -271,7 +271,7 @@ class UiController(PyswarmObject):
         Adds a new behaviour attributes set to the UI (i.e. a new behaviour tab).
         Builds all the necessary UI components and hooks them up to the relevant attributes.
         
-        :param newBehaviourAttributes: behaviour attributes (AttributesBaseObject subclass).
+        :param newBehaviourAttributes: behaviour attributes (AttributeGroupObject subclass).
         """
         self._makeDeleteBehaviourMenuItem(newBehaviourAttributes)
         self._makeSelectAgentsWithBehaviourMenuItem(newBehaviourAttributes, False)
@@ -287,7 +287,7 @@ class UiController(PyswarmObject):
         """
         Removes all UI components related to the given behaviour attributes set (i.e. deletes the behaviour tab).
         
-        :param behaviourAttributes: behaviour attributes (AttributesBaseObject subclass).
+        :param behaviourAttributes: behaviour attributes (AttributeGroupObject subclass).
         """
         behaviourId = behaviourAttributes.behaviourId
         
@@ -442,7 +442,7 @@ class UiController(PyswarmObject):
         """
         Adds an item to the "Change Default Behaviour" sub-menu, under "Behaviours" menu.
         
-        :param attributes: behaviour attributes set (AttributesBaseObject subclass).
+        :param attributes: behaviour attributes set (AttributeGroupObject subclass).
         """
         behaviourId = attributes.behaviourId
         uib.SetParentMenuLayout(self._changeDefaultBehaviourMenu)
@@ -467,7 +467,7 @@ class UiController(PyswarmObject):
         """
         Adds an item to the "Remove Behaviour" sub-menu, under "Behaviours" menu.
         
-        :param attributes: corresponding behaviour attributes set (AttributesBaseObject subclass).
+        :param attributes: corresponding behaviour attributes set (AttributeGroupObject subclass).
         """
         behaviourId = attributes.behaviourId
         uib.SetParentMenuLayout(self._removeBehaviourMenu)
@@ -484,7 +484,7 @@ class UiController(PyswarmObject):
         """
         Adds an item to either "Select Agents With" or "Select Agents Without" sub-menus, under "Agents" menu.
         
-        :param attributes: corresponding behaviour attributes set (AttributesBaseObject subclass).
+        :param attributes: corresponding behaviour attributes set (AttributeGroupObject subclass).
         :param inverted: True = "Select Agents Without", False = "Select Agents With" 
         """
         behaviourId = attributes.behaviourId
@@ -498,7 +498,7 @@ class UiController(PyswarmObject):
         """
         Adds an item to "Assign Agents To" sub-menu, under "Agents" menu.
         
-        :param attributes:  corresponding behaviour attributes set (AttributesBaseObject subclass).
+        :param attributes:  corresponding behaviour attributes set (AttributeGroupObject subclass).
         """
         behaviourId = attributes.behaviourId
         uib.SetParentMenuLayout(self._assignAgentsToMenu)
@@ -526,7 +526,7 @@ class UiController(PyswarmObject):
         
         self._tabLayout = uib.MakeTabLayout()
         
-        self._makeAgentAttributesTab(self._attributesController.agentMovementAttributes,
+        self._makeAgentAttributesTab(self._attributesController.agentMovementAttributeGroup,
                                      self._attributesController.agentPerceptionAttributes)
         
         for behaviourAttributes in self._attributesController._behaviourAttributesList:
@@ -540,7 +540,7 @@ class UiController(PyswarmObject):
         Builds the left-most tab "Agent Attributes", creating it with the current values from the given attribute
         sets and hooking up the UI components to update the sets when changed by the user.
         
-        :param movementAttributes: AgentMovementAttributes instance.
+        :param movementAttributes: AgentMovementAttributeGroup instance.
         :param perceptionAttributes: AgentPerceptionAttributes instance.
         """
         formLayout = uib.MakeFormLayout("Agent Attributes")
@@ -572,7 +572,7 @@ class UiController(PyswarmObject):
         Builds a new behaviour tab in the UI with the given behaviour attributes set, using the current values and
         hooking up the UI components to update the attributes as necessary.
         
-        :param behaviourAttributes: behaviour attributes set (AttributesBaseObject subclass).
+        :param behaviourAttributes: behaviour attributes set (AttributeGroupObject subclass).
         :param isDefaultBehaviour: True = corresponding behaviour to the attribute set is the default, False = not the default.
         """
         behaviourId = behaviourAttributes.behaviourId
@@ -663,7 +663,7 @@ class UiController(PyswarmObject):
         User pressed "Load Defaults" button on the "Agent Attributes" tab.
         Queries user for confirmation, and passes call to delegate if required. 
         
-        :param movementId: attribute ID of the AgentMovementAttributes instance.
+        :param movementId: attribute ID of the AgentMovementAttributeGroup instance.
         :param perceptionId: attribute ID of the AgentPerceptionAttributes instance.
         """
         if(uib.GetUserConfirmation("Load Defaults", "Restore default values to agent attributes?")):

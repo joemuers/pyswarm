@@ -14,7 +14,7 @@ from pyswarmObject import PyswarmObject
 
 import globalAttributes as ga
 import agentPerceptionAttributes as apa
-import agentMovementAttributes as ama
+import agentMovementAttributeGroup as ama
 import classicBoidBehaviourAttributes as cbba
 import goalDrivenBehaviourAttributes as gdba
 import followPathBehaviourAttributes as fpba
@@ -31,7 +31,7 @@ class AttributesController(PyswarmObject):
     def __init__(self, particleShapeNode, saveSceneMethod, boundingLocators=None):
         
         self._globalAttributes = ga.GlobalAttributes(particleShapeNode, saveSceneMethod, boundingLocators)
-        self._agentMovementAttributes = ama.AgentMovementAttributes()
+        self._agentMovementAttributeGroup = ama.AgentMovementAttributeGroup()
         self._agentPerceptionAttributes = apa.AgentPerceptionAttributes()
         
         defaultBehaviourId = cbba.ClassicBoidBehaviourAttributes.BehaviourTypeName()
@@ -68,9 +68,9 @@ class AttributesController(PyswarmObject):
     defaultBehaviourId = property(_getDefaultBehaviourId)
     
 ########
-    def _getAgentMovementAttributes(self):
-        return self._agentMovementAttributes
-    agentMovementAttributes = property(_getAgentMovementAttributes)
+    def _getAgentMovementAttributeGroup(self):
+        return self._agentMovementAttributeGroup
+    agentMovementAttributeGroup = property(_getAgentMovementAttributeGroup)
     
 ########
     def _getAgentPerceptionAttributes(self):
@@ -87,7 +87,7 @@ class AttributesController(PyswarmObject):
 
 #####################
     def _allSections(self):
-        sectionsList = [self.globalAttributes, self.agentMovementAttributes, self.agentPerceptionAttributes] 
+        sectionsList = [self.globalAttributes, self.agentMovementAttributeGroup, self.agentPerceptionAttributes] 
         sectionsList.extend(self._behaviourAttributesList)
         
         return sectionsList
