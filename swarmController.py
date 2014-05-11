@@ -11,7 +11,7 @@
 
 
 import boidBaseObject as bbo
-import boidAgents.agentsController as bac
+import agents.agentsController as agc
 import boidAttributes.attributesController as bat
 import boidBehaviours.behavioursController as bbc
 import uiController as uic
@@ -349,7 +349,7 @@ class SwarmController(bbo.BoidBaseObject, uic.UiControllerDelegate):
         
         self._attributesController = bat.AttributesController(particleShapeNode, SaveSceneToFile, boundingLocators)
         self._behavioursController = bbc.BehavioursController(self._attributesController)
-        self._agentsController = bac.AgentsController(self._attributesController, self._behavioursController)
+        self._agentsController = agc.AgentsController(self._attributesController, self._behavioursController)
         self._uiController = uic.UiController(self._attributesController, self)
         self._behaviourAssignmentSelectionWindow = asw.AgentSelectionWindow(self._attributesController.globalAttributes)
         

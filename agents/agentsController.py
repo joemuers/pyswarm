@@ -26,7 +26,7 @@ _CALCULATIONS_PER_UPDATE_REPORT_ = 20
 
 ##############################################
 class AgentsController(BoidBaseObject):
-    """Main external interface to the boid system, basically the managing object for a group of boidAgents.  
+    """Main external interface to the boid system, basically the managing object for a group of agents.  
     Contains top-level logic (i.e. iterating over agents each frame & executing behaviour) and
     also manages interaction with the actual Pymel objects within Maya.
     """
@@ -129,7 +129,7 @@ class AgentsController(BoidBaseObject):
 
 #############################
     def _buildParticleList(self, fullRebuild=True):
-        """Builds/rebuilds the list of boidAgents based on the current state
+        """Builds/rebuilds the list of agents based on the current state
         of the corresponding nParticle ShapeNode.
         """
         if(fullRebuild):
