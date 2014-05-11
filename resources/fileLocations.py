@@ -11,7 +11,7 @@
 
 
 import boidTools.util as util
-import boidResources
+import resources
 import packageInfo as pi
 
 import os.path as osp
@@ -87,7 +87,7 @@ def SaveFileExtension():
 
 ##########################################
 def DefaultAttributeValuesLocation():
-    filePath = osp.dirname(boidResources.__file__)
+    filePath = osp.dirname(resources.__file__)
     filePath = osp.normpath(osp.join(filePath, _DEFAULT_VALUES_FILENAME_))
     
     if(not osp.exists(filePath)):
@@ -97,7 +97,7 @@ def DefaultAttributeValuesLocation():
     
 ##########################################
 def LogoImageLocation():
-    filePath = osp.dirname(boidResources.__file__)
+    filePath = osp.dirname(resources.__file__)
     filePath = osp.normpath(osp.join(filePath, _BADGE_IMAGE_))
 
     if(not osp.exists(filePath)):

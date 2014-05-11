@@ -16,8 +16,8 @@ import boidTools.uiBuilder as uib
 import boidVectors.vector3 as bv3
 import boidTools.util as util
 import boidTools.sceneInterface as scene
-import boidResources.fileLocations as fl
-import boidResources.colours as colour
+import resources.fileLocations as fl
+import resources.colours as colour
 
 
 

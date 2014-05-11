@@ -24,7 +24,7 @@ The module is roughly split into sections:
 import attributes.attributeTypes as at
 import boidTools.util as util
 import boidTools.sceneInterface as scene
-import boidResources.fileLocations as fl
+import resources.fileLocations as fl
 
 import pymel.core as pm
 import sys

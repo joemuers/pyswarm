@@ -11,7 +11,7 @@
 
 
 from behaviourBaseObject import BehaviourBaseObject
-from boidResources import colours
+from resources import colours
 
 import attributes.goalDrivenBehaviourAttributes as gdba
 import boidVectors.vector2 as bv2

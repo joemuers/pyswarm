@@ -13,8 +13,8 @@
 from boidBaseObject import BoidBaseObject
 import boidTools.uiBuilder as uib
 import boidTools.util as util
-import boidResources.fileLocations as fl
-import boidResources.packageInfo as pi
+import resources.fileLocations as fl
+import resources.packageInfo as pi
 
 from abc import ABCMeta, abstractmethod
 import weakref

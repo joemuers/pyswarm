@@ -15,7 +15,7 @@ from boidTools import sceneInterface
 
 import boidVectors.vector3 as bv3
 import agentState as agt
-import boidResources.colours as brc
+import resources.colours as brc
 
 
 

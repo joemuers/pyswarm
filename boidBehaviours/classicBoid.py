@@ -11,7 +11,7 @@
 
 
 from behaviourBaseObject import BehaviourBaseObject
-from boidResources import colours
+from resources import colours
 
 import attributes.classicBoidBehaviourAttributes as cbba
 import boidVectors.vector3 as bv3

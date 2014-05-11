@@ -24,7 +24,7 @@ Logging, general Maya info (project file location, frame number etc), script job
 manipulation, and some general purpose Python methods.
 """
 
-import boidResources.packageInfo as pi
+import resources.packageInfo as pi
 
 import logging
 import os

@@ -19,7 +19,7 @@ import classicBoidBehaviourAttributes as cbba
 import goalDrivenBehaviourAttributes as gdba
 import followPathBehaviourAttributes as fpba
 import boidTools.util as util
-import boidResources.fileLocations as fl
+import resources.fileLocations as fl
 
 import ConfigParser
 
