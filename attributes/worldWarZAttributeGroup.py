@@ -20,13 +20,13 @@ import tools.agentSelectionWindow as asw
 
 
 ###########################################
-class GoalDrivenDataBlob(ago._DataBlobBaseObject):
+class WorldWarZDataBlob(ago._DataBlobBaseObject):
     
     _uninitialised, normal, pending, goalChase, inBasePyramid, atWallLip, overWallLip, reachedFinalGoal = range(8)
     
 #####################    
     def __init__(self, agent):
-        super(GoalDrivenDataBlob, self).__init__(agent)
+        super(WorldWarZDataBlob, self).__init__(agent)
         
         self.incubationPeriod = 0
         self.goalChaseSpeed = 0.0
@@ -34,7 +34,7 @@ class GoalDrivenDataBlob(ago._DataBlobBaseObject):
         self.pyramidJoinAtDistance = 0.0
         self.pyramidJumpOnDistance = 0.0
         
-        self.currentStatus = GoalDrivenDataBlob._uninitialised
+        self.currentStatus = WorldWarZDataBlob._uninitialised
         
         self.didArriveAtBasePyramid = False
         self.goalChaseCountdown = -1
@@ -42,26 +42,26 @@ class GoalDrivenDataBlob(ago._DataBlobBaseObject):
 #####################        
     def __str__(self):
         status = ("UNKNOWN (%d)" % self.currentStatus)
-        if(self.currentStatus == GoalDrivenDataBlob.normal):
+        if(self.currentStatus == WorldWarZDataBlob.normal):
             status = "NORMAL"
-        elif(self.currentStatus == GoalDrivenDataBlob.pending):
+        elif(self.currentStatus == WorldWarZDataBlob.pending):
             status = "PENDING"
-        elif(self.currentStatus == GoalDrivenDataBlob.goalChase):
+        elif(self.currentStatus == WorldWarZDataBlob.goalChase):
             status = "GOAL_CHASE"
-        elif(self.currentStatus == GoalDrivenDataBlob.inBasePyramid):
+        elif(self.currentStatus == WorldWarZDataBlob.inBasePyramid):
             status = "BASE_PYRAMID"
-        elif(self.currentStatus == GoalDrivenDataBlob.atWallLip):
+        elif(self.currentStatus == WorldWarZDataBlob.atWallLip):
             status = "AT_LIP"
-        elif(self.currentStatus == GoalDrivenDataBlob.overWallLip):
+        elif(self.currentStatus == WorldWarZDataBlob.overWallLip):
             status = "OVER_LIP"
-        elif(self.currentStatus == GoalDrivenDataBlob.reachedFinalGoal):
+        elif(self.currentStatus == WorldWarZDataBlob.reachedFinalGoal):
             status = "AT_GOAL"
         
         return ("<WORLD-WAR-Z BHVR: incubtn=%d, goalChs=%.2f, pyrmdJoin=%.2f, pyrmdJmp=%.2f, status=%s, arvd=%s, cntdwn=%d>" %
                 (self.incubationPeriod, self.goalChaseSpeed, self.pyramidJoinAtDistance, self.pyramidJumpOnDistance,
                  status, "Y" if self.didArriveAtBasePyramid else "N", self.goalChaseCountdown))
 
-# END OF CLASS - GoalDrivenDataBlob
+# END OF CLASS - WorldWarZDataBlob
 ###########################################
 
 
@@ -214,7 +214,7 @@ class WorldWarZAttributeGroup(ago.AttributeGroupObject, ago._FollowOnBehaviourAt
         
 #####################
     def _createDataBlobForAgent(self, agent):
-        return GoalDrivenDataBlob(agent)
+        return WorldWarZDataBlob(agent)
     
 #####################   
     def onBehaviourListUpdated(self, behaviourIDsList, defaultBehaviourId):

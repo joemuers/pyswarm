@@ -147,7 +147,7 @@ class AttributesController(PyswarmObject):
     def _getBehaviourTypeNameToConstructorLookup(self):
         """IMPORTANT - All defined behaviours *must* be included in this method!"""
         lookup = { cbba.ClassicBoidAttributeGroup.BehaviourTypeName() : self.addClassicBoidAttributes,
-                   gdba.WorldWarZAttributeGroup.BehaviourTypeName() : self.addGoalDrivenAttributes,
+                   gdba.WorldWarZAttributeGroup.BehaviourTypeName() : self.addWorldWarZAttributes,
                    fpba.FollowPathAttributeGroup.BehaviourTypeName() : self.addFollowPathAttributes }
         
         return lookup
@@ -170,7 +170,7 @@ class AttributesController(PyswarmObject):
         return newBehaviourAttributes
  
 ########   
-    def addGoalDrivenAttributes(self, wallLipGoal=None, basePyramidGoalHeight=None, finalGoal=None):
+    def addWorldWarZAttributes(self, wallLipGoal=None, basePyramidGoalHeight=None, finalGoal=None):
         behaviourId = self._getNewBehaviourIdForAttibutesClass(gdba.WorldWarZAttributeGroup)
         newBehaviourAttributes = gdba.WorldWarZAttributeGroup(behaviourId, self._globalAttributeGroup,
                                                                     wallLipGoal, basePyramidGoalHeight, finalGoal)
