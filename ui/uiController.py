@@ -193,9 +193,9 @@ class UiController(PyswarmObject):
     Note that it is only the UI handling logic contained here, it is a "dumb" window into the workings of
     other classes.  Button presses, user actions and so on are registered but are *not* actioned in 
     this class. Instead, event occurances are passed on to a UiControllerDelegate instance through the 
-    corresponding callbacks, or are passed through to the attributes controller.  
+    corresponding callbacks, or are passed through to the attribute groups controller.  
     
-    Generally, tracks the attributes controller instance to keep a handle on when behaviours are created, 
+    Generally, tracks the attribute groups controller instance to keep a handle on when behaviours are created, 
     deleted etc. and updates the attriubtes controller when the user makes a value change. 
     """
     
@@ -223,7 +223,7 @@ class UiController(PyswarmObject):
         Nulls out the UI components, => will be rebuilt when needed.
         """
         self._uiWindow = None
-        self._uiComponentToAttributesLookup = {}
+        self._uiComponentToAttributeGroupLookup = {}
         self._tabLayout = None
         self._changeDefaultBehaviourMenu = None
         self._removeBehaviourMenu = None
@@ -266,37 +266,37 @@ class UiController(PyswarmObject):
     uiVisible = property(_getUiVisible)
     
 #####################       
-    def addNewBehaviourToUI(self, newBehaviourAttributes):        
+    def addNewBehaviourToUI(self, newBehaviourAttributeGroup):        
         """
-        Adds a new behaviour attributes set to the UI (i.e. a new behaviour tab).
+        Adds a new behaviour attribute group to the UI (i.e. a new behaviour tab).
         Builds all the necessary UI components and hooks them up to the relevant attributes.
         
-        :param newBehaviourAttributes: behaviour attributes (AttributeGroupObject subclass).
+        :param newBehaviourAttributeGroup: behaviour attribute group (AttributeGroupObject subclass).
         """
-        self._makeDeleteBehaviourMenuItem(newBehaviourAttributes)
-        self._makeSelectAgentsWithBehaviourMenuItem(newBehaviourAttributes, False)
-        self._makeSelectAgentsWithBehaviourMenuItem(newBehaviourAttributes, True)
-        self._makeChangeDefaultBehaviourMenuItem(newBehaviourAttributes)
-        self._makeAssignAgentsToBehaviourMenuItem(newBehaviourAttributes)
-        self._makeBehaviourTab(newBehaviourAttributes)
+        self._makeDeleteBehaviourMenuItem(newBehaviourAttributeGroup)
+        self._makeSelectAgentsWithBehaviourMenuItem(newBehaviourAttributeGroup, False)
+        self._makeSelectAgentsWithBehaviourMenuItem(newBehaviourAttributeGroup, True)
+        self._makeChangeDefaultBehaviourMenuItem(newBehaviourAttributeGroup)
+        self._makeAssignAgentsToBehaviourMenuItem(newBehaviourAttributeGroup)
+        self._makeBehaviourTab(newBehaviourAttributeGroup)
         
         self._tabLayout.setSelectTabIndex(self._tabLayout.getNumberOfChildren())
         
 #####################        
-    def removeBehaviourFromUI(self, behaviourAttributes):
+    def removeBehaviourFromUI(self, behaviourAttributeGroup):
         """
-        Removes all UI components related to the given behaviour attributes set (i.e. deletes the behaviour tab).
+        Removes all UI components related to the given behaviour attribute group (i.e. deletes the behaviour tab).
         
-        :param behaviourAttributes: behaviour attributes (AttributeGroupObject subclass).
+        :param behaviourAttributeGroup: behaviour attribute group (AttributeGroupObject subclass).
         """
-        behaviourId = behaviourAttributes.behaviourId
+        behaviourId = behaviourAttributeGroup.behaviourId
         
-        for uiComponent in self._uiComponentToAttributesLookup[behaviourId]:
+        for uiComponent in self._uiComponentToAttributeGroupLookup[behaviourId]:
             try:
                 uib.DeleteComponent(uiComponent)
             except:
                 pass
-        del self._uiComponentToAttributesLookup[behaviourId]
+        del self._uiComponentToAttributeGroupLookup[behaviourId]
         
 #####################
     def updateDefaultBehaviourInUI(self, oldDefaultId, newDefaultId):
@@ -306,7 +306,7 @@ class UiController(PyswarmObject):
         :param oldDefaultId: Behaviour ID of the instance that is now no longer the default.
         :param newDefaultId: Behaviour ID of the instance that has just been made the default.
         """
-        for uiComponent in self._uiComponentToAttributesLookup[oldDefaultId]:
+        for uiComponent in self._uiComponentToAttributeGroupLookup[oldDefaultId]:
             # here, we go through all UI components linked to the previous default behaviour and
             # re-enabling ability to delete it, and silencing "cannot delete default" annotations...
             parent = uiComponent.getParent()
@@ -319,7 +319,7 @@ class UiController(PyswarmObject):
                 uiComponent.setEnable(True)
                 uiComponent.setAnnotation(_REMOVE_BEHAVIOUR_ANNOTATION_)
                 
-        for uiComponent in self._uiComponentToAttributesLookup[newDefaultId]:
+        for uiComponent in self._uiComponentToAttributeGroupLookup[newDefaultId]:
             # ...and here we do the opposite, for the newly-made default behaviour we disable
             # ability to delete it, and enable annotations to say as much.
             parent = uiComponent.getParent()
@@ -395,11 +395,11 @@ class UiController(PyswarmObject):
         uib.MakeMenuItem("Make Values Default", lambda *args: self._didSelectMakeValuesDefault(None))
         
         uib.MakeMenu("Behaviours")
-        behaviourAttributesList = self._attributeGroupsController._behaviourAttributesList
+        behaviourAttributeGroupList = self._attributeGroupsController._behaviourAttributeGroupsList
         
         self._changeDefaultBehaviourMenu = uib.MakeMenuItemWithSubMenu("Change Default")
-        for behaviourAttributes in behaviourAttributesList:
-            self._makeChangeDefaultBehaviourMenuItem(behaviourAttributes)
+        for behaviourAttributeGroup in behaviourAttributeGroupList:
+            self._makeChangeDefaultBehaviourMenuItem(behaviourAttributeGroup)
         uib.SetAsChildMenuLayout(self._changeDefaultBehaviourMenu)
 
         uib.MakeMenuSeparator()
@@ -409,27 +409,27 @@ class UiController(PyswarmObject):
         uib.SetAsChildMenuLayout(createBehaviourMenu)
         
         self._removeBehaviourMenu = uib.MakeMenuItemWithSubMenu("Remove Behaviour")
-        for behaviourAttributes in behaviourAttributesList:
-            self._makeDeleteBehaviourMenuItem(behaviourAttributes)
+        for behaviourAttributeGroup in behaviourAttributeGroupList:
+            self._makeDeleteBehaviourMenuItem(behaviourAttributeGroup)
         uib.SetAsChildMenuLayout(self._removeBehaviourMenu)
         
         uib.MakeMenuItem("Remove All Behaviours", self._didSelectRemoveAllBehaviours)
         
         uib.MakeMenu("Agents")
         self._selectAgentsWithMenu = uib.MakeMenuItemWithSubMenu("Select Agents With:")
-        for behaviourAttributes in behaviourAttributesList:
-            self._makeSelectAgentsWithBehaviourMenuItem(behaviourAttributes, False)
+        for behaviourAttributeGroup in behaviourAttributeGroupList:
+            self._makeSelectAgentsWithBehaviourMenuItem(behaviourAttributeGroup, False)
         uib.SetAsChildMenuLayout(self._selectAgentsWithMenu)
         
         self._selectAgentsNotWithMenu = uib.MakeMenuItemWithSubMenu("Select Agents Without:")
-        for behaviourAttributes in behaviourAttributesList:
-            self._makeSelectAgentsWithBehaviourMenuItem(behaviourAttributes, True)
+        for behaviourAttributeGroup in behaviourAttributeGroupList:
+            self._makeSelectAgentsWithBehaviourMenuItem(behaviourAttributeGroup, True)
         uib.SetAsChildMenuLayout(self._selectAgentsNotWithMenu)
          
         uib.MakeMenuSeparator()
         self._assignAgentsToMenu = uib.MakeMenuItemWithSubMenu("Assign Agents To:")
-        for behaviourAttributes in behaviourAttributesList:
-            self._makeAssignAgentsToBehaviourMenuItem(behaviourAttributes)
+        for behaviourAttributeGroup in behaviourAttributeGroupList:
+            self._makeAssignAgentsToBehaviourMenuItem(behaviourAttributeGroup)
         uib.SetAsChildMenuLayout(self._assignAgentsToMenu)
         
         uib.MakeMenu("Help")
@@ -438,13 +438,13 @@ class UiController(PyswarmObject):
         uib.MakeMenuItem("About", self._didSelectAbout)
 
 ########
-    def _makeChangeDefaultBehaviourMenuItem(self, attributes):
+    def _makeChangeDefaultBehaviourMenuItem(self, attributeGroup):
         """
         Adds an item to the "Change Default Behaviour" sub-menu, under "Behaviours" menu.
         
-        :param attributes: behaviour attributes set (AttributeGroupObject subclass).
+        :param attributeGroup: behaviour attributes group (AttributeGroupObject subclass).
         """
-        behaviourId = attributes.behaviourId
+        behaviourId = attributeGroup.behaviourId
         uib.SetParentMenuLayout(self._changeDefaultBehaviourMenu)
         
         menuItem = uib.MakeMenuItem(behaviourId, lambda *args: self._didSelectChangeDefaultBehaviour(behaviourId))
@@ -463,13 +463,13 @@ class UiController(PyswarmObject):
         uib.MakeMenuItem(behaviourTypeName, lambda *args: self._didSelectAddNewBehaviour(behaviourTypeName))
 
 ########
-    def _makeDeleteBehaviourMenuItem(self, attributes):
+    def _makeDeleteBehaviourMenuItem(self, attributeGroup):
         """
         Adds an item to the "Remove Behaviour" sub-menu, under "Behaviours" menu.
         
-        :param attributes: corresponding behaviour attributes set (AttributeGroupObject subclass).
+        :param attributeGroup: corresponding behaviour attributes group (AttributeGroupObject subclass).
         """
-        behaviourId = attributes.behaviourId
+        behaviourId = attributeGroup.behaviourId
         uib.SetParentMenuLayout(self._removeBehaviourMenu)
         
         menuItem = uib.MakeMenuItem(behaviourId, 
@@ -480,27 +480,27 @@ class UiController(PyswarmObject):
         self._linkUiComponentToBehaviourId(menuItem, behaviourId)
         
 ########
-    def _makeSelectAgentsWithBehaviourMenuItem(self, attributes, inverted):
+    def _makeSelectAgentsWithBehaviourMenuItem(self, attributeGroup, inverted):
         """
         Adds an item to either "Select Agents With" or "Select Agents Without" sub-menus, under "Agents" menu.
         
-        :param attributes: corresponding behaviour attributes set (AttributeGroupObject subclass).
+        :param attributeGroup: corresponding behaviour attributes group (AttributeGroupObject subclass).
         :param inverted: True = "Select Agents Without", False = "Select Agents With" 
         """
-        behaviourId = attributes.behaviourId
+        behaviourId = attributeGroup.behaviourId
         uib.SetParentMenuLayout(self._selectAgentsWithMenu if(not inverted) else self._selectAgentsNotWithMenu)
         menuItem = uib.MakeMenuItem(behaviourId, 
                                     lambda *args: self.delegate.makeAgentsWithBehaviourSelected(behaviourId, inverted))
         self._linkUiComponentToBehaviourId(menuItem, behaviourId)
 
 ########
-    def _makeAssignAgentsToBehaviourMenuItem(self, attributes):
+    def _makeAssignAgentsToBehaviourMenuItem(self, attributeGroup):
         """
         Adds an item to "Assign Agents To" sub-menu, under "Agents" menu.
         
-        :param attributes:  corresponding behaviour attributes set (AttributeGroupObject subclass).
+        :param attributeGroup:  corresponding behaviour attributes group (AttributeGroupObject subclass).
         """
-        behaviourId = attributes.behaviourId
+        behaviourId = attributeGroup.behaviourId
         uib.SetParentMenuLayout(self._assignAgentsToMenu)
         menuItem = uib.MakeMenuItem(("%s..." % behaviourId),
                                     lambda *args: self.delegate.showAssignAgentsWindowForBehaviour(behaviourId))
@@ -529,37 +529,37 @@ class UiController(PyswarmObject):
         self._makeAgentAttributesTab(self._attributeGroupsController.agentMovementAttributeGroup,
                                      self._attributeGroupsController.agentPerceptionAttributeGroup)
         
-        for behaviourAttributes in self._attributeGroupsController._behaviourAttributesList:
-            self._makeBehaviourTab(behaviourAttributes, (behaviourAttributes.behaviourId == self._defaultBehaviourId))
+        for behaviourAttributeGroup in self._attributeGroupsController._behaviourAttributeGroupsList:
+            self._makeBehaviourTab(behaviourAttributeGroup, (behaviourAttributeGroup.behaviourId == self._defaultBehaviourId))
             
         uib.SetAsChildLayout(self._tabLayout)
         
 ########
-    def _makeAgentAttributesTab(self, movementAttributes, perceptionAttributes):
+    def _makeAgentAttributesTab(self, movementAttributeGroup, perceptionAttributeGroup):
         """
         Builds the left-most tab "Agent Attributes", creating it with the current values from the given attribute
         sets and hooking up the UI components to update the sets when changed by the user.
         
-        :param movementAttributes: AgentMovementAttributeGroup instance.
-        :param perceptionAttributes: AgentPerceptionAttributeGroup instance.
+        :param movementAttributeGroup: AgentMovementAttributeGroup instance.
+        :param perceptionAttributeGroup: AgentPerceptionAttributeGroup instance.
         """
         formLayout = uib.MakeFormLayout("Agent Attributes")
         scrollLayout = uib.MakeScrollLayout()
         
         movementLayout = uib.MakeFrameLayout("Agent Movement")
-        movementAttributes.populateUiLayout()
+        movementAttributeGroup.populateUiLayout()
         uib.SetAsChildLayout(movementLayout)
         
         awarenessLayout = uib.MakeFrameLayout("Agent Perception")
-        perceptionAttributes.populateUiLayout()
+        perceptionAttributeGroup.populateUiLayout()
         uib.SetAsChildLayout(awarenessLayout, scrollLayout)
         
         buttonStripLayout = uib.MakeButtonStrip((("Quick Setup",
                                                   self._didPressQuickSetup,
                                                   "Makes some initial changes to the Maya scene to get up and running."),
                                                  ("Load Defaults",
-                                                  lambda *args: self._didSelectRestoreAgentValues(movementAttributes.behaviourId, 
-                                                                                                  perceptionAttributes.behaviourId),
+                                                  lambda *args: self._didSelectRestoreAgentValues(movementAttributeGroup.behaviourId, 
+                                                                                                  perceptionAttributeGroup.behaviourId),
                                                   "Reset agent attributes to default values."),))[0]
         
         uib.SetAsChildLayout(buttonStripLayout)
@@ -567,20 +567,20 @@ class UiController(PyswarmObject):
         uib.SetAsChildLayout(formLayout)
         
 ########
-    def _makeBehaviourTab(self, behaviourAttributes, isDefaultBehaviour=False):
+    def _makeBehaviourTab(self, behaviourAttributeGroup, isDefaultBehaviour=False):
         """
-        Builds a new behaviour tab in the UI with the given behaviour attributes set, using the current values and
+        Builds a new behaviour tab in the UI with the given behaviour attributes group, using the current values and
         hooking up the UI components to update the attributes as necessary.
         
-        :param behaviourAttributes: behaviour attributes set (AttributeGroupObject subclass).
+        :param behaviourAttributeGroup: behaviour attributes group (AttributeGroupObject subclass).
         :param isDefaultBehaviour: True = corresponding behaviour to the attribute set is the default, False = not the default.
         """
-        behaviourId = behaviourAttributes.behaviourId
+        behaviourId = behaviourAttributeGroup.behaviourId
         uib.SetParentLayout(self._tabLayout)
         
         formLayout = uib.MakeFormLayout(behaviourId if(not isDefaultBehaviour) else behaviourId + '*')
         scrollLayout = uib.MakeScrollLayout()
-        behaviourAttributes.populateUiLayout()
+        behaviourAttributeGroup.populateUiLayout()
         uib.SetAsChildLayout(scrollLayout)
         
         buttonStripTuple = uib.MakeButtonStrip((("Assign Agents...", 
@@ -618,10 +618,10 @@ class UiController(PyswarmObject):
         :param component: the PyMel UI component.
         :param behaviourId: Behaviour ID of the corresponding behaviour.
         """
-        componentList = self._uiComponentToAttributesLookup.get(behaviourId)
+        componentList = self._uiComponentToAttributeGroupLookup.get(behaviourId)
         if(componentList is None):
             componentList = []
-            self._uiComponentToAttributesLookup[behaviourId] = componentList
+            self._uiComponentToAttributeGroupLookup[behaviourId] = componentList
         
         componentList.append(component)
 

@@ -23,8 +23,8 @@ def AgentBehaviourIsFollowPath(agent):
     return (type(agent.state.behaviourAttributes) == fpba.FollowPathDataBlob)
 
 #######################
-def AttributesAreFollowPath(attributes):
-    return (isinstance(attributes, fpba.FollowPathAttributeGroup))
+def AttributesAreFollowPath(attributeGroup):
+    return (isinstance(attributeGroup, fpba.FollowPathAttributeGroup))
 
 #######################
 
@@ -68,9 +68,9 @@ class FollowPath(BehaviourBaseObject):
     def __str__(self):
         return ("<%s: - tpSt=%.2f, tpEnd=%.2f, inf=%2.f>" % 
                 (super(FollowPath, self).__str__(),
-                 self.attributes.taperStart, 
-                 self.attributes.taperEnd, 
-                 self.attributes.pathInfluenceMagnitude))
+                 self.attributeGroup.taperStart, 
+                 self.attributeGroup.taperEnd, 
+                 self.attributeGroup.pathInfluenceMagnitude))
         
 #############################
     def _getMetaStr(self):
@@ -81,12 +81,8 @@ class FollowPath(BehaviourBaseObject):
 
 ######################
     def _getPathCurve(self):
-        return self.attributes.pathCurve
+        return self.attributeGroup.pathCurve
     _pathCurve = property(_getPathCurve)
-    
-######################
-    def _createBehaviourAttributes(self):
-        return fpba.FollowPathAttributeGroup()
 
 ################################      
     def _getCurrentFollowCount(self):
@@ -127,8 +123,8 @@ class FollowPath(BehaviourBaseObject):
                 
                 currentParamValue = self._pathCurve.getParamAtPoint(pymelClosestCurvePoint, space='world')
                 lengthAlongCurve = currentParamValue / self._endParam
-                fromStartWidth = (1 - lengthAlongCurve) * behaviourAttributes.pathDevianceThreshold * self.attributes.taperStart
-                fromEndWidth = lengthAlongCurve * behaviourAttributes.pathDevianceThreshold * self.attributes.taperEnd
+                fromStartWidth = (1 - lengthAlongCurve) * behaviourAttributes.pathDevianceThreshold * self.attributeGroup.taperStart
+                fromEndWidth = lengthAlongCurve * behaviourAttributes.pathDevianceThreshold * self.attributeGroup.taperEnd
                 finalWidth = fromStartWidth + fromEndWidth
                 
                 if(pyswarmCurveClosestPoint.distanceSquaredFrom(agent.currentPosition) > finalWidth **2):
@@ -139,13 +135,13 @@ class FollowPath(BehaviourBaseObject):
                     pyswarmTangentVector = sceneInterface.Vector3FromPymelVector(tangent)
                     
                     desiredAcceleration += pyswarmTangentVector
-                    desiredAcceleration.normalise(self.attributes.pathInfluenceMagnitude)
+                    desiredAcceleration.normalise(self.attributeGroup.pathInfluenceMagnitude)
             
-            if(self.attributes.pathInfluenceMagnitude < 1.0):
+            if(self.attributeGroup.pathInfluenceMagnitude < 1.0):
                 normalDesiredAcceleration = self._normalBehaviour.getCompoundDesiredAcceleration(agent, nearbyAgents)
-                normalBehaviourInfluence = 1 - self.attributes.pathInfluenceMagnitude
+                normalBehaviourInfluence = 1 - self.attributeGroup.pathInfluenceMagnitude
                 normalDesiredAcceleration *= normalBehaviourInfluence
-                desiredAcceleration *= self.attributes.pathInfluenceMagnitude
+                desiredAcceleration *= self.attributeGroup.pathInfluenceMagnitude
                 desiredAcceleration.add(normalDesiredAcceleration)
             
             self._matchPreferredVelocityIfNecessary(agent, desiredAcceleration)
@@ -160,7 +156,7 @@ class FollowPath(BehaviourBaseObject):
     def endCurveBehaviourForAgent(self, agent):
         if(agent in self._currentlyFollowingSet):
             self._currentlyFollowingSet.remove(agent)     
-            self._notifyDelegateBehaviourEndedForAgent(agent, self.attributes.followOnBehaviourID)
+            self._notifyDelegateBehaviourEndedForAgent(agent, self.attributeGroup.followOnBehaviourID)
             
 # END OF CLASS
 ###################################

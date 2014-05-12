@@ -36,8 +36,8 @@ def AgentIsInBasePyramid(agent):
             agent.state.behaviourAttributes.currentStatus == gdba.WorldWarZDataBlob.inBasePyramid)
 
 #######################    
-def AttributesAreWorldWarZ(attributes):
-    return (isinstance(attributes, gdba.WorldWarZAttributeGroup))
+def AttributesAreWorldWarZ(attributeGroup):
+    return (isinstance(attributeGroup, gdba.WorldWarZAttributeGroup))
 
 #######################
 
@@ -83,11 +83,11 @@ class WorldWarZ(BehaviourBaseObject):
     """
     
     
-    def __init__(self, worldWarZAttributes, normalBehaviourInstance, delegate=None):
+    def __init__(self, worldWarZAttributeGroup, normalBehaviourInstance, delegate=None):
         """basePos, lipPos and finalPos must be Pymel Locator instances.
         normalBehaviourInstance = ClassicBoidBehaviour instance.
         """
-        super(WorldWarZ, self).__init__(worldWarZAttributes, delegate)
+        super(WorldWarZ, self).__init__(worldWarZAttributeGroup, delegate)
         
         self._baseToFinalDirection = v3.Vector3() # direction vector from baseLocator to finalLocator
         
@@ -117,15 +117,15 @@ class WorldWarZ(BehaviourBaseObject):
     def __str__(self):            
         return ("<%s - pos=%s, lip=%s, final=%s, base->final=%s, infect=%s>" % 
                 (super(WorldWarZ, self).__str__(),
-                 self.attributes.basePyramidGoal, 
-                 self.attributes.wallLipGoal, 
-                 self.attributes.finalGoal, 
+                 self.attributeGroup.basePyramidGoal, 
+                 self.attributeGroup.wallLipGoal, 
+                 self.attributeGroup.finalGoal, 
                  self._baseToFinalDirection,
-                 "Y" if self.attributes.useInfectionSpread else "N"))
+                 "Y" if self.attributeGroup.useInfectionSpread else "N"))
 
 #########    
     def _getMetaStr(self):
-        leadersString = ', '.join([("%d" % agentId) for agentId in self.attributes.allLeaderIds])
+        leadersString = ', '.join([("%d" % agentId) for agentId in self.attributeGroup.allLeaderIds])
         pyramidString = ''.join([("\t%s\n" % agent) for agent in self._basePyramidDistanceLookup])
         
         return ("<ldrs=%s, avDist=%s, maxDist=%s, avPos=%s\natLoctn=\n%s>" % 
@@ -138,7 +138,7 @@ class WorldWarZ(BehaviourBaseObject):
         """Lists of agents must be rebuild on every frame, this method clears the lists
         and sets up everything for a new frame."""
         
-        if(self.attributes.useInfectionSpread):
+        if(self.attributeGroup.useInfectionSpread):
             self._performInfectionSpreadReset = not self._infectionSpreadMode
             self._infectionSpreadMode = True
         else:
@@ -153,7 +153,7 @@ class WorldWarZ(BehaviourBaseObject):
         self._basePyramidDistanceLookup.clear()
         
         # now, re-check goal location in case it's moved within the scene...  
-        self._baseToFinalDirection = self.attributes.finalGoal - self.attributes.basePyramidGoal
+        self._baseToFinalDirection = self.attributeGroup.finalGoal - self.attributeGroup.basePyramidGoal
 
 #######################
     def onAgentUpdated(self, agent):
@@ -162,7 +162,7 @@ class WorldWarZ(BehaviourBaseObject):
         """
         self._normalBehaviour.onAgentUpdated(agent)
         
-        baseToAgentVec = agent.currentPosition - self.attributes.basePyramidGoal
+        baseToAgentVec = agent.currentPosition - self.attributeGroup.basePyramidGoal
         agentAttributes = agent.state.behaviourAttributes
         agentStatus = self._effectiveGoalStatusForAgent(agent)
         
@@ -175,7 +175,7 @@ class WorldWarZ(BehaviourBaseObject):
                 # still on top of wall moving towards final goal
                 agentStatus = gdba.WorldWarZDataBlob.overWallLip
         else:
-            if(agent.currentPosition.y >= (self.attributes.wallLipGoal.y - 0.1)): # TODO - make this check more robust.
+            if(agent.currentPosition.y >= (self.attributeGroup.wallLipGoal.y - 0.1)): # TODO - make this check more robust.
                 # agent has reached top of the wall, now will move twds final goal
                 agentStatus = gdba.WorldWarZDataBlob.atWallLip
             elif(baseToAgentVec.magnitudeSquared(True) < agentAttributes.pyramidJoinAtDistance **2):
@@ -190,7 +190,7 @@ class WorldWarZ(BehaviourBaseObject):
                     agentAttributes.didArriveAtBasePyramid = False
                 
                 if(not agentAttributes.didArriveAtBasePyramid):
-                    if(self._infectionSpreadMode and self.attributes.agentIsLeader(agent.agentId)):
+                    if(self._infectionSpreadMode and self.attributeGroup.agentIsLeader(agent.agentId)):
                         # agent has been designated as a leader
                         self._leaderPositions.append(agent.currentPosition)
                         agentStatus = gdba.WorldWarZDataBlob.goalChase
@@ -269,7 +269,7 @@ class WorldWarZ(BehaviourBaseObject):
 #######################
     def _inBasePyramidBehaviour(self, agent, desiredAcceleration):
         if(self._goalStatusForAgent(agent) == gdba.WorldWarZDataBlob.inBasePyramid):        
-            directionToGoal = self.attributes.basePyramidGoal - agent.currentPosition
+            directionToGoal = self.attributeGroup.basePyramidGoal - agent.currentPosition
             horizontalComponent = directionToGoal.horizontalVector()
             horizontalComponent.normalise(self._basePyramidPushUpwardsMagnitudeHorizontal())
             
@@ -371,7 +371,7 @@ class WorldWarZ(BehaviourBaseObject):
         if(not agent in self._basePyramidDistanceLookup):
             
             if(distanceVector is None):
-                distanceVector = agent.currentPosition - self.attributes.basePyramidGoal
+                distanceVector = agent.currentPosition - self.attributeGroup.basePyramidGoal
             self._agentDistance_runningTotal.u += distanceVector.magnitude(True)
             self._agentDistance_runningTotal.v += distanceVector.y
             self._needsAverageDistanceCalc = True         
@@ -392,7 +392,7 @@ class WorldWarZ(BehaviourBaseObject):
         of 'push-up' behaviour
         """
         if(agent in self._basePyramidDistanceLookup):            
-            distanceVec = agent.currentPosition - self.attributes.basePyramidGoal
+            distanceVec = agent.currentPosition - self.attributeGroup.basePyramidGoal
             self._agentDistance_runningTotal.u -= distanceVec.magnitude(True)
             self._agentDistance_runningTotal.v -= distanceVec.y
             self._needsAverageDistanceCalc = True  
@@ -434,13 +434,13 @@ class WorldWarZ(BehaviourBaseObject):
     def _basePyramidPushUpwardsMagnitudeHorizontal(self):
         """Acceleration applied by each agent in the horizontal direction (towards 
         the baseLocator) after having joined the basePyramid."""
-        return self.attributes.basePyramidPushInwardsForce
+        return self.attributeGroup.basePyramidPushInwardsForce
 
 #########     
     def _basePyramidPushUpwardsMagnitudeVertical(self):
         """Acceleration applied by each agent in the vertical direction (towards 
         the lipLocator) after having joined the basePyramid."""
-        return self.attributes.basePyramidPushUpwardsForce
+        return self.attributeGroup.basePyramidPushUpwardsForce
         
 #######################
     def _goalChaseAttractorPositionForAgent(self, agent):
@@ -448,16 +448,16 @@ class WorldWarZ(BehaviourBaseObject):
         towards (when following goalChase behaviour)."""
         
         returnValue = None
-        numLeaders = self.attributes.numberOfLeaders
+        numLeaders = self.attributeGroup.numberOfLeaders
 
         if(agent.state.behaviourAttributes.didArriveAtBasePyramid or 
-           numLeaders == 0 or self.attributes.agentIsLeader(agent.agentId)):
-            returnValue = self.attributes.basePyramidGoal
+           numLeaders == 0 or self.attributeGroup.agentIsLeader(agent.agentId)):
+            returnValue = self.attributeGroup.basePyramidGoal
         elif(numLeaders == 1):
             returnValue = self._leaderPositions[0]
         else:
             candidateLeaderPosition = None
-            minDistanceSquared = agent.currentPosition.distanceSquaredFrom(self.attributes.basePyramidGoal)
+            minDistanceSquared = agent.currentPosition.distanceSquaredFrom(self.attributeGroup.basePyramidGoal)
             for leaderPosition in self._leaderPositions:
                 candidateDistanceSquared = agent.currentPosition.distanceSquaredFrom(leaderPosition)
                 if(candidateDistanceSquared < minDistanceSquared):
@@ -467,7 +467,7 @@ class WorldWarZ(BehaviourBaseObject):
             if(candidateLeaderPosition is not None):
                 returnValue = candidateLeaderPosition
             else:
-                returnValue = self.attributes.basePyramidGoal
+                returnValue = self.attributeGroup.basePyramidGoal
                 
         if(self._performCollapse):
             returnValue.invert()        
@@ -478,13 +478,13 @@ class WorldWarZ(BehaviourBaseObject):
     def _getShouldJump(self, agent):
         """Returns True if agent should jump up onto basePyramid, False otherwise."""
         
-        distanceVec = agent.currentPosition - self.attributes.basePyramidGoal
+        distanceVec = agent.currentPosition - self.attributeGroup.basePyramidGoal
         distance = distanceVec.magnitude(True)
         behaviourAttributes = agent.state.behaviourAttributes
         
         if(distance > behaviourAttributes.pyramidJoinAtDistance and # TODO - should add the distances here?? or not??
            distance < behaviourAttributes.pyramidJoinAtDistance + behaviourAttributes.pyramidJumpOnDistance and 
-           random.uniform(0, 1.0) < self.attributes.pyramidJumpOnProbability):
+           random.uniform(0, 1.0) < self.attributeGroup.pyramidJumpOnProbability):
             return True
         else:
             return False
@@ -529,7 +529,7 @@ class WorldWarZ(BehaviourBaseObject):
                 if(newStatus >= gdba.WorldWarZDataBlob.inBasePyramid):
                     agentAttributes.didArriveAtBasePyramid = True
                     if(newStatus == gdba.WorldWarZDataBlob.reachedFinalGoal):
-                        self._notifyDelegateBehaviourEndedForAgent(agent, self.attributes.followOnBehaviourID)
+                        self._notifyDelegateBehaviourEndedForAgent(agent, self.attributeGroup.followOnBehaviourID)
                 
         if(newStatus == gdba.WorldWarZDataBlob.inBasePyramid):
             self._registerAgentAtBasePyramid(agent, distanceVector)
@@ -546,7 +546,7 @@ class WorldWarZ(BehaviourBaseObject):
             if(status == gdba.WorldWarZDataBlob.inBasePyramid):
                 agent.debugColour = colours.WorldWarZ_InBasePyramid(agent)
             elif(status == gdba.WorldWarZDataBlob.goalChase):
-                if(self.attributes.useInfectionSpread and self.attributes.agentIsLeader(agent.agentId)):
+                if(self.attributeGroup.useInfectionSpread and self.attributeGroup.agentIsLeader(agent.agentId)):
                     agent.debugColour =  colours.WorldWarZ_IsLeader
                 else:
                     agent.debugColour = colours.WorldWarZ_ChasingGoal

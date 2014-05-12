@@ -328,8 +328,8 @@ class GlobalAttributeGroup(ago.AttributeGroupObject):
     defaultBehaviourId = property(_getDefaultBehaviourId)
     
 ########
-    def setDefaultBehaviourAttributes(self, defaultAttributes):
-        self._defaultBehaviourId.value = defaultAttributes.behaviourId
+    def setDefaultBehaviourAttributeGroup(self, defaultAttributeGroup):
+        self._defaultBehaviourId.value = defaultAttributeGroup.behaviourId
     
 #####################
     def _getProgressUpdatesEnabled(self):

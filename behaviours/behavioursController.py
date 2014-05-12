@@ -25,8 +25,8 @@ class BehavioursController(PyswarmObject, BehaviourDelegate):
     def __init__(self, attributeGroupsController):
         self._attributeGroupsController = attributeGroupsController
         self._behavioursLookup = {}
-        defaultAttributes = attributeGroupsController.getBehaviourAttributesWithId(attributeGroupsController.defaultBehaviourId)
-        self.createBehaviourForNewAttributes(defaultAttributes)
+        defaultAttributeGroup = attributeGroupsController.getBehaviourAttributeGroupWithId(attributeGroupsController.defaultBehaviourId)
+        self.createBehaviourForNewAttributeGroup(defaultAttributeGroup)
         
 #############################
     def _getDefaultBehaviour(self):
@@ -48,15 +48,15 @@ class BehavioursController(PyswarmObject, BehaviourDelegate):
         return self._behavioursLookup[behaviourId]
        
 ########
-    def createBehaviourForNewAttributes(self, newAttributes):
-        if(cb.AttributesAreClassicBoid(newAttributes)):
-            newBehaviour = cb.ClassicBoid(newAttributes, self._attributeGroupsController)
-        elif(gd.AttributesAreWorldWarZ(newAttributes)):
-            newBehaviour = gd.WorldWarZ(newAttributes, self.defaultBehaviour, self)
-        elif(fp.AttributesAreFollowPath(newAttributes)):
-            newBehaviour = fp.FollowPath(newAttributes, self.defaultBehaviour, self)
+    def createBehaviourForNewAttributeGroup(self, newAttributeGroup):
+        if(cb.AttributesAreClassicBoid(newAttributeGroup)):
+            newBehaviour = cb.ClassicBoid(newAttributeGroup, self._attributeGroupsController)
+        elif(gd.AttributesAreWorldWarZ(newAttributeGroup)):
+            newBehaviour = gd.WorldWarZ(newAttributeGroup, self.defaultBehaviour, self)
+        elif(fp.AttributesAreFollowPath(newAttributeGroup)):
+            newBehaviour = fp.FollowPath(newAttributeGroup, self.defaultBehaviour, self)
         else:
-            raise RuntimeError("Cannot create new behavior, unrecognised attribute type: %s" % type(newAttributes))
+            raise RuntimeError("Cannot create new behavior, unrecognised attribute type: %s" % type(newAttributeGroup))
         
         self._behavioursLookup[newBehaviour.behaviourId] = newBehaviour
     

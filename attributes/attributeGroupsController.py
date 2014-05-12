@@ -35,9 +35,9 @@ class AttributeGroupsController(PyswarmObject):
         self._agentPerceptionAttributeGroup = apa.AgentPerceptionAttributeGroup()
         
         defaultBehaviourId = cbba.ClassicBoidAttributeGroup.BehaviourTypeName()
-        defaultBehaviourAttributes = cbba.ClassicBoidAttributeGroup(defaultBehaviourId, self._globalAttributeGroup)
-        self._behaviourAttributesList = [defaultBehaviourAttributes]        
-        self._globalAttributeGroup.setDefaultBehaviourAttributes(defaultBehaviourAttributes)
+        defaultBehaviourAttributeGroup = cbba.ClassicBoidAttributeGroup(defaultBehaviourId, self._globalAttributeGroup)
+        self._behaviourAttributeGroupsList = [defaultBehaviourAttributeGroup]        
+        self._globalAttributeGroup.setDefaultBehaviourAttributeGroup(defaultBehaviourAttributeGroup)
         
         self.restoreDefaultAttributeValuesFromFile()
         self._notifyOnBehavioursListChanged()
@@ -45,7 +45,7 @@ class AttributeGroupsController(PyswarmObject):
 #############################        
     def __str__(self):
         stringsList = ["Behaviours: "]
-        stringsList.extend([("\"%s\", " % attributes.behaviourId) for attributes in self._allSections()])
+        stringsList.extend([("\"%s\", " % attributes.behaviourId) for attributes in self._allAttributeGroups()])
         stringsList.append("  (default=\"%s\")" % self.defaultBehaviourId)
         
         return ''.join(stringsList)
@@ -53,7 +53,7 @@ class AttributeGroupsController(PyswarmObject):
 #######   
     def _getMetaStr(self):
         stringsList = ["Values: "]
-        stringsList.extend([("<\t%s\n>\n" % attributes.metaStr) for attributes in self._allSections()])
+        stringsList.extend([("<\t%s\n>\n" % attributes.metaStr) for attributes in self._allAttributeGroups()])
         
         return ''.join(stringsList)
  
@@ -78,19 +78,19 @@ class AttributeGroupsController(PyswarmObject):
     agentPerceptionAttributeGroup = property(_getAgentPerceptionAttributeGroup)
 
 ########
-    def getBehaviourAttributesWithId(self, behaviourId):
-        for attributes in self._behaviourAttributesList:
+    def getBehaviourAttributeGroupWithId(self, behaviourId):
+        for attributes in self._behaviourAttributeGroupsList:
             if(attributes.behaviourId == behaviourId):
                 return attributes
         
         raise ValueError("Unrecognised behaviour id: %s" % behaviourId)
 
 #####################
-    def _allSections(self):
-        sectionsList = [self.globalAttributeGroup, self.agentMovementAttributeGroup, self.agentPerceptionAttributeGroup] 
-        sectionsList.extend(self._behaviourAttributesList)
+    def _allAttributeGroups(self):
+        groupsList = [self.globalAttributeGroup, self.agentMovementAttributeGroup, self.agentPerceptionAttributeGroup] 
+        groupsList.extend(self._behaviourAttributeGroupsList)
         
-        return sectionsList
+        return groupsList
  
 #####################   
     def behaviourTypeNamesList(self):
@@ -98,12 +98,12 @@ class AttributeGroupsController(PyswarmObject):
     
 #####################    
     def onFrameUpdated(self):
-        for attributes in self._allSections():
+        for attributes in self._allAttributeGroups():
             attributes.onFrameUpdated()
             
 ########
     def onCalculationsCompleted(self):
-        for attributes in self._allSections():
+        for attributes in self._allAttributeGroups():
             attributes.onCalculationsCompleted()
 
 #####################            
@@ -115,7 +115,7 @@ class AttributeGroupsController(PyswarmObject):
         currentMaxIndex = -1
         titleStem = attributesClass.BehaviourTypeName()
         
-        for attributes in filter(lambda attbs: type(attbs) == attributesClass, self._behaviourAttributesList):
+        for attributes in filter(lambda attbs: type(attbs) == attributesClass, self._behaviourAttributeGroupsList):
             try:
                 indexSuffix = int(attributes.behaviourId.replace(titleStem, ""))
                 currentMaxIndex = max(indexSuffix, currentMaxIndex)
@@ -130,25 +130,25 @@ class AttributeGroupsController(PyswarmObject):
 
 #####################        
     def _notifyOnBehavioursListChanged(self):
-        behaviourIDsList = [at.behaviourId for at in self._behaviourAttributesList]
+        behaviourIDsList = [at.behaviourId for at in self._behaviourAttributeGroupsList]
         defaultBehaviourId = self.defaultBehaviourId
         
-        for attributes in self._behaviourAttributesList:
+        for attributes in self._behaviourAttributeGroupsList:
             attributes.onBehaviourListUpdated(behaviourIDsList, defaultBehaviourId)
             
 #####################       
-    def _addNewBehaviourAttributes(self, newBehaviourAttributes):
-        self.restoreDefaultAttributeValuesFromFile(newBehaviourAttributes)
-        self._behaviourAttributesList.append(newBehaviourAttributes)
+    def _addNewBehaviourAttributeGroup(self, newBehaviourAttributeGroup):
+        self.restoreDefaultAttributeValuesFromFile(newBehaviourAttributeGroup)
+        self._behaviourAttributeGroupsList.append(newBehaviourAttributeGroup)
         
         self._notifyOnBehavioursListChanged()
  
 #####################      
     def _getBehaviourTypeNameToConstructorLookup(self):
         """IMPORTANT - All defined behaviours *must* be included in this method!"""
-        lookup = { cbba.ClassicBoidAttributeGroup.BehaviourTypeName() : self.addClassicBoidAttributes,
-                   gdba.WorldWarZAttributeGroup.BehaviourTypeName() : self.addWorldWarZAttributes,
-                   fpba.FollowPathAttributeGroup.BehaviourTypeName() : self.addFollowPathAttributes }
+        lookup = { cbba.ClassicBoidAttributeGroup.BehaviourTypeName() : self.addClassicBoidAttributeGroup,
+                   gdba.WorldWarZAttributeGroup.BehaviourTypeName() : self.addWorldWarZAttributeGroup,
+                   fpba.FollowPathAttributeGroup.BehaviourTypeName() : self.addFollowPathAttributeGroup }
         
         return lookup
 
@@ -162,42 +162,42 @@ class AttributeGroupsController(PyswarmObject):
             raise ValueError("Unrecognised behaviour type name: %s" % behaviourTypeName)
  
 ########       
-    def addClassicBoidAttributes(self):
+    def addClassicBoidAttributeGroup(self):
         behaviourId = self._getNewBehaviourIdForAttibutesClass(cbba.ClassicBoidAttributeGroup)
-        newBehaviourAttributes = cbba.ClassicBoidAttributeGroup(behaviourId, self._globalAttributeGroup)
-        self._addNewBehaviourAttributes(newBehaviourAttributes)
+        newBehaviourAttributeGroup = cbba.ClassicBoidAttributeGroup(behaviourId, self._globalAttributeGroup)
+        self._addNewBehaviourAttributeGroup(newBehaviourAttributeGroup)
         
-        return newBehaviourAttributes
+        return newBehaviourAttributeGroup
  
 ########   
-    def addWorldWarZAttributes(self, wallLipGoal=None, basePyramidGoalHeight=None, finalGoal=None):
+    def addWorldWarZAttributeGroup(self, wallLipGoal=None, basePyramidGoalHeight=None, finalGoal=None):
         behaviourId = self._getNewBehaviourIdForAttibutesClass(gdba.WorldWarZAttributeGroup)
-        newBehaviourAttributes = gdba.WorldWarZAttributeGroup(behaviourId, self._globalAttributeGroup,
+        newBehaviourAttributeGroup = gdba.WorldWarZAttributeGroup(behaviourId, self._globalAttributeGroup,
                                                                     wallLipGoal, basePyramidGoalHeight, finalGoal)
-        self._addNewBehaviourAttributes(newBehaviourAttributes)
+        self._addNewBehaviourAttributeGroup(newBehaviourAttributeGroup)
         
-        return newBehaviourAttributes
+        return newBehaviourAttributeGroup
 
 ########    
-    def addFollowPathAttributes(self, pathCurve=None):
+    def addFollowPathAttributeGroup(self, pathCurve=None):
         behaviourId = self._getNewBehaviourIdForAttibutesClass(fpba.FollowPathAttributeGroup)
-        newBehaviourAttributes = fpba.FollowPathAttributeGroup(behaviourId, pathCurve)
-        self._addNewBehaviourAttributes(newBehaviourAttributes)
+        newBehaviourAttributeGroup = fpba.FollowPathAttributeGroup(behaviourId, pathCurve)
+        self._addNewBehaviourAttributeGroup(newBehaviourAttributeGroup)
         
-        return newBehaviourAttributes
+        return newBehaviourAttributeGroup
 
 ########
-    def removeBehaviour(self, behaviourAttributes):
-        if(isinstance(behaviourAttributes, basestring)):
-            behaviourAttributes = self.getBehaviourAttributesWithId(behaviourAttributes)
+    def removeBehaviour(self, behaviourAttributeGroup):
+        if(isinstance(behaviourAttributeGroup, basestring)):
+            behaviourAttributeGroup = self.getBehaviourAttributeGroupWithId(behaviourAttributeGroup)
         
-        if(behaviourAttributes.behaviourId == self.defaultBehaviourId):
+        if(behaviourAttributeGroup.behaviourId == self.defaultBehaviourId):
             raise ValueError("Default behaviour \"%s\" cannot be deleted." % self.defaultBehaviourId)
         else:
-            self._behaviourAttributesList.remove(behaviourAttributes)
+            self._behaviourAttributeGroupsList.remove(behaviourAttributeGroup)
             self._notifyOnBehavioursListChanged()
             
-        return behaviourAttributes
+        return behaviourAttributeGroup
     
 #####################
     def changeDefaultBehaviour(self, newDefaultBehaviourId):
@@ -205,21 +205,21 @@ class AttributeGroupsController(PyswarmObject):
             util.LogWarning("\"%s\" is already the default - no changes made." % newDefaultBehaviourId)
             return False
         else:
-            newDefaultBehaviourAttributes = self.getBehaviourAttributesWithId(newDefaultBehaviourId)
-            self._globalAttributeGroup.setDefaultBehaviourAttributes(newDefaultBehaviourAttributes)
+            newDefaultBehaviourAttributeGroup = self.getBehaviourAttributeGroupWithId(newDefaultBehaviourId)
+            self._globalAttributeGroup.setDefaultBehaviourAttributeGroup(newDefaultBehaviourAttributeGroup)
             self._notifyOnBehavioursListChanged()
             
             return True
     
 #####################
     def purgeRepositories(self):
-        for attributes in self._allSections():
+        for attributes in self._allAttributeGroups():
             attributes.purgeDataBlobRepository()
         
 #####################   
-    def restoreDefaultAttributeValuesFromFile(self, section=None):
-        if(isinstance(section, basestring)):
-            section = self.getBehaviourAttributesWithId(section)
+    def restoreDefaultAttributeValuesFromFile(self, group=None):
+        if(isinstance(group, basestring)):
+            group = self.getBehaviourAttributeGroupWithId(group)
             
         configReader = ConfigParser.ConfigParser()
         configReader.optionxform = str 
@@ -228,12 +228,13 @@ class AttributeGroupsController(PyswarmObject):
         if(configReader.read(filePath)):
             util.LogDebug("Parsing file \'%s\' for default values..." % filePath)
             
-            sectionsList = self._allSections() if(section is None) else [section]
-            for sectionIterator in sectionsList:
-                result = sectionIterator.getDefaultsFromConfigReader(configReader)
+            groupsList = self._allAttributeGroups() if(group is None) else [group]
+            for groupIterator in groupsList:
+                result = groupIterator.getDefaultsFromConfigReader(configReader)
                 if(not result):
-                    util.LogInfo("Found new attributes - writing \"%s\" section to defaults file..." % sectionIterator.BehaviourTypeName())
-                    self.makeCurrentAttributeValuesDefault(sectionIterator)
+                    util.LogInfo("Found new attributes - writing \"%s\" group to defaults file..." 
+                                 % groupIterator.BehaviourTypeName())
+                    self.makeCurrentAttributeValuesDefault(groupIterator)
         else:
             util.LogWarning("Could not find default attribute values file %s, creating a new one..." % filePath)
             self.makeCurrentAttributeValuesDefault()
@@ -241,9 +242,9 @@ class AttributeGroupsController(PyswarmObject):
         util.LogDebug("Finished parsing default values.")
     
 ########
-    def makeCurrentAttributeValuesDefault(self, section=None):
-        if(isinstance(section, basestring)):
-            section = self.getBehaviourAttributesWithId(section)
+    def makeCurrentAttributeValuesDefault(self, group=None):
+        if(isinstance(group, basestring)):
+            group = self.getBehaviourAttributeGroupWithId(group)
             
         filePath = fl.DefaultAttributeValuesLocation()
         configWriter = ConfigParser.ConfigParser()
@@ -251,18 +252,19 @@ class AttributeGroupsController(PyswarmObject):
         configWriter.read(filePath)
         writtenAttributeTypesSet = set()
         
-        if(section is None):
-            for sectionIterator in self._allSections():
-                sectionType = type(sectionIterator)
+        if(group is None):
+            for groupIterator in self._allAttributeGroups():
+                groupType = type(groupIterator)
                 
-                if(sectionType not in writtenAttributeTypesSet):
-                    sectionIterator.setDefaultsToConfigWriter(configWriter)
-                    writtenAttributeTypesSet.add(sectionType)
+                if(groupType not in writtenAttributeTypesSet):
+                    groupIterator.setDefaultsToConfigWriter(configWriter)
+                    writtenAttributeTypesSet.add(groupType)
                 else:
-                    util.LogInfo("Found multiple instances of behaviour type: \"%s\". \
-Default values taken from first instance only." % sectionIterator.BehaviourTypeName())
+                    util.LogInfo("Found multiple instances of behaviour type: \"%s\". "
+                                 "Default values taken from first instance only." 
+                                 % groupIterator.BehaviourTypeName())
         else:
-            section.setDefaultsToConfigWriter(configWriter)
+            group.setDefaultsToConfigWriter(configWriter)
                 
         defaultsFile = open(filePath, "w")   
         configWriter.write(defaultsFile)

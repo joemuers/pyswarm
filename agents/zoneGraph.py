@@ -11,7 +11,7 @@
 
 
 from pyswarmObject import PyswarmObject
-from attributes.attributeGroupObject import AttributesListener
+from attributes.attributeGroupObject import AttributeGroupListener
 import vectors.vector3 as v3
 import utils.general as util
 
@@ -87,7 +87,7 @@ class _ZoneRegionIteratable(object):
     
     
 #############################
-class ZoneGraph(PyswarmObject, AttributesListener):
+class ZoneGraph(PyswarmObject, AttributeGroupListener):
     
     def __init__(self, attributeGroupsController):
         self._currentFrameIteration = 0

@@ -572,9 +572,9 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
         
         :param behaviourTypeName: Behaviour type, e.g. "ClassicBoid", "FollowPath".
         """
-        newBehaviour = self._attributeGroupsController.addBehaviourForTypeName(behaviourTypeName)
-        if(newBehaviour is not None):
-            self._onNewBehaviourAttributesAdded(newBehaviour)
+        newBehaviourAttributeGroup = self._attributeGroupsController.addBehaviourForTypeName(behaviourTypeName)
+        if(newBehaviourAttributeGroup is not None):
+            self._onNewBehaviourAttributeGroupAdded(newBehaviourAttributeGroup)
             
 ########
     def removeBehaviour(self, behaviourId):
@@ -584,9 +584,9 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
         
         :param behaviourId: Behaviour ID of behaviour instance to be deleted. 
         """
-        deletedAttributes = self._attributeGroupsController.removeBehaviour(behaviourId)
-        if(deletedAttributes is not None):
-            self._onBehaviourAttributesDeleted(deletedAttributes)
+        deletedAttributeGroup = self._attributeGroupsController.removeBehaviour(behaviourId)
+        if(deletedAttributeGroup is not None):
+            self._onBehaviourAttributeGroupDeleted(deletedAttributeGroup)
         else:
             util.LogWarning("Could not remove behaviour \"%s\"" % behaviourId)
 
@@ -669,8 +669,8 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
         """
         Creates a behaviour instance of type ClassicBoid. 
         """
-        newBehaviour = self._attributeGroupsController.addClassicBoidAttributes()
-        self._onNewBehaviourAttributesAdded(newBehaviour)
+        newBehaviour = self._attributeGroupsController.addClassicBoidAttributeGroup()
+        self._onNewBehaviourAttributeGroupAdded(newBehaviour)
         
 ########
     def addWorldWarZBehaviour(self, wallLipGoal=None, basePyramidGoalHeight=None, finalGoal=None):
@@ -681,8 +681,8 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
         :param basePyramidGoalHeight: Height, in Maya scene units, from ground-level base of wall to wall-lip goal.
         :param finalGoal: Locator giving location of final beyond-the-wall goal.
         """
-        newBehaviour = self._attributeGroupsController.addWorldWarZAttributes(wallLipGoal, basePyramidGoalHeight, finalGoal)
-        self._onNewBehaviourAttributesAdded(newBehaviour)
+        newBehaviour = self._attributeGroupsController.addWorldWarZAttributeGroup(wallLipGoal, basePyramidGoalHeight, finalGoal)
+        self._onNewBehaviourAttributeGroupAdded(newBehaviour)
         
 ########        
     def addFollowPathBehaviour(self, pathCurve=None):
@@ -691,37 +691,37 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
         
         :param pathCurve: Nurbs curve (Maya path, or PyMel PyNode instance) giving the path to follow; or None to select it later.
         """
-        newBehaviour = self._attributeGroupsController.addFollowPathAttributes(pathCurve)
-        self._onNewBehaviourAttributesAdded(newBehaviour)
+        newBehaviour = self._attributeGroupsController.addFollowPathAttributeGroup(pathCurve)
+        self._onNewBehaviourAttributeGroupAdded(newBehaviour)
 
 #############################      
-    def _onNewBehaviourAttributesAdded(self, newBehaviourAttributes):
+    def _onNewBehaviourAttributeGroupAdded(self, newBehaviourAttributeGroup):
         """
-        Creates a new corresponding behaviour instance for the given behaviour attributes set.
-        Should be called when a new attributes set has been created.
+        Creates a new corresponding behaviour instance for the given behaviour attributes group.
+        Should be called when a new attributes group has been created.
         
-        :param newBehaviourAttributes: newly created attributes instance (AttributesBoseObject subclass).
+        :param newBehaviourAttributeGroup: newly created attribute group instance (AttributeGroupObject subclass).
         """
-        self._behavioursController.createBehaviourForNewAttributes(newBehaviourAttributes)
-        self._uiController.addNewBehaviourToUI(newBehaviourAttributes)
+        self._behavioursController.createBehaviourForNewAttributeGroup(newBehaviourAttributeGroup)
+        self._uiController.addNewBehaviourToUI(newBehaviourAttributeGroup)
         
-        util.LogInfo("Added new behaviour \"%s\"" % newBehaviourAttributes.behaviourId)
+        util.LogInfo("Added new behaviour \"%s\"" % newBehaviourAttributeGroup.behaviourId)
 
 #############################        
-    def _onBehaviourAttributesDeleted(self, deletedAttributes):
+    def _onBehaviourAttributeGroupDeleted(self, deletedAttributeGroup):
         """
         Deletes the corresponding behaviour instance for the given attriutes set, and re-assigns
         any agents that were following it to the default behaviour.
-        Should be called when the attributes set has been deleted.
+        Should be called when the attributes group has been deleted.
         
-        :param deletedAttributes: recently deleted attributes instance (AttributesBoseObject subclass).
+        :param deletedAttributeGroup: recently deleted attributes instance (AttributeGroupBoseObject subclass).
         """
-        deletedBehaviourId = deletedAttributes.behaviourId
+        deletedBehaviourId = deletedAttributeGroup.behaviourId
         deletedBehaviour = self._behavioursController.removeBehaviourWithId(deletedBehaviourId)
         agentsFollowingOldBehaviour = self._agentsController.getAgentsFollowingBehaviour(deletedBehaviour)
         
         self._agentsController.makeAgentsFollowDefaultBehaviour(agentsFollowingOldBehaviour)
-        self._uiController.removeBehaviourFromUI(deletedAttributes)
+        self._uiController.removeBehaviourFromUI(deletedAttributeGroup)
         
         util.LogInfo("Removed behaviour \"%s\"" % deletedBehaviourId)
         

@@ -25,8 +25,8 @@ def AgentBehaviourIsClassicBoid(agent):
     return (type(agent.state.behaviourAttributes) == cbba.ClassicBoidDataBlob)
 
 ######################
-def AttributesAreClassicBoid(attributes):
-    return isinstance(attributes, cbba.ClassicBoidAttributeGroup)
+def AttributesAreClassicBoid(attributeGroup):
+    return isinstance(attributeGroup, cbba.ClassicBoidAttributeGroup)
     
 ######################
 
@@ -35,18 +35,18 @@ def AttributesAreClassicBoid(attributes):
 #######################################
 class ClassicBoid(BehaviourBaseObject):
     
-    def __init__(self, classicBoidAttributes, attributeGroupsController):
-        super(ClassicBoid, self).__init__(classicBoidAttributes)
+    def __init__(self, classicBoidAttributeGroup, attributeGroupsController):
+        super(ClassicBoid, self).__init__(classicBoidAttributeGroup)
         
-        self._movementAttributes = attributeGroupsController.agentMovementAttributeGroup
+        self._movementAttributeGroup = attributeGroupsController.agentMovementAttributeGroup
         self._globalAttributeGroup = attributeGroupsController.globalAttributeGroup
         
         self._doNotClampMovement = False
         
 ######################         
     def getDesiredAccelerationForAgent(self, agent, nearbyAgentsList):
-        if(self.attributes.shouldKickstartAgent(agent.agentId)):
-            return self.attributes.getKickstartVector()
+        if(self.attributeGroup.shouldKickstartAgent(agent.agentId)):
+            return self.attributeGroup.getKickstartVector()
         else:
             desiredAcceleration = v3.Vector3()
             self._doNotClampMovement = False
@@ -61,17 +61,17 @@ class ClassicBoid(BehaviourBaseObject):
                                                    movementAttributes.maxAcceleration, 
                                                    movementAttributes.maxVelocity, 
                                                    movementAttributes.maxTurnRate,
-                                                   self._movementAttributes.maxTurnRateChange,
+                                                   self._movementAttributeGroup.maxTurnRateChange,
                                                    movementAttributes.preferredTurnVelocity)
                 elif(self._avoidNearbyAgentsBehaviour(agent, desiredAcceleration) and 
-                     self.attributes.separationIsMutuallyExclusive):
+                     self.attributeGroup.separationIsMutuallyExclusive):
                     
                     self._clampMovementIfNecessary(agent, 
                                                    desiredAcceleration, 
                                                    movementAttributes.maxAcceleration, 
                                                    movementAttributes.maxVelocity, 
                                                    movementAttributes.maxTurnRate,
-                                                   self._movementAttributes.maxTurnRateChange,
+                                                   self._movementAttributeGroup.maxTurnRateChange,
                                                    movementAttributes.preferredTurnVelocity)
                 else:
                     behaviourAttributes = agent.state.behaviourAttributes
@@ -106,7 +106,7 @@ class ClassicBoid(BehaviourBaseObject):
                                                    movementAttributes.maxAcceleration, 
                                                    movementAttributes.maxVelocity, 
                                                    movementAttributes.maxTurnRate,
-                                                   self._movementAttributes.maxTurnRateChange,
+                                                   self._movementAttributeGroup.maxTurnRateChange,
                                                    movementAttributes.preferredTurnVelocity)
             self._setDebugColoursForAgent(agent)
             
@@ -140,7 +140,7 @@ class ClassicBoid(BehaviourBaseObject):
     def _avoidNearbyAgentsBehaviour(self, agent, desiredAcceleration):
         """Adds WEIGHTED result to desiredAcceleration, IF separation is not mutually exclusive (otherwise
         result is not weighted)."""
-        if(self.attributes.separationIsMutuallyExclusive) : weighting = 1
+        if(self.attributeGroup.separationIsMutuallyExclusive) : weighting = 1
         else: weighting = agent.behaviourAttributes.separationWeighting
 
         if(agent.isCollided and weighting > 0):  # Problem here - we're driving the velocity directly... should be done by Maya really
@@ -235,8 +235,8 @@ class ClassicBoid(BehaviourBaseObject):
         """
         magAccel = desiredAcceleration.magnitude()
         
-        if(magAccel < self._movementAttributes.minVelocity and 
-           agent.currentVelocity.magnitude() < self._movementAttributes.minVelocity and 
+        if(magAccel < self._movementAttributeGroup.minVelocity and 
+           agent.currentVelocity.magnitude() < self._movementAttributeGroup.minVelocity and 
            agent.hasNeighbours and not agent.isCollided and not agent.isCrowded):
             desiredAcceleration.reset(agent.state.movementAttributes.maxAcceleration, 0, 0)
             desiredHeading = random.uniform(-179, 179)

@@ -41,12 +41,12 @@ class BehaviourBaseObject(PyswarmObject):
     __metaclass__ = ABCMeta
     
 ##########################
-    def __init__(self, attributes, delegate=None):
+    def __init__(self, attributeGroup, delegate=None):
         if(delegate is not None and not isinstance(delegate, BehaviourDelegate)): 
             raise TypeError
         else:
             self._delegate = weakref.ref(delegate) if(delegate is not None) else None
-            self._attributes = attributes
+            self._attributeGroup = attributeGroup
 
 ##########################
     def __str__(self):
@@ -66,13 +66,13 @@ class BehaviourBaseObject(PyswarmObject):
             self._delegate = weakref.ref(self._delegate)
 
 ##########################            
-    def _getAttributes(self):
-        return self._attributes
-    attributes = property(_getAttributes)
+    def _getAttributeGroup(self):
+        return self._attributeGroup
+    attributeGroup = property(_getAttributeGroup)
     
 ##########################
     def _getBehaviourId(self):
-        return self._attributes.behaviourId
+        return self._attributeGroup.behaviourId
     behaviourId = property(_getBehaviourId)
 
 ##########################    
@@ -114,7 +114,7 @@ class BehaviourBaseObject(PyswarmObject):
                 agent.state.behaviourAttributes.onUnassigned()
             except:
                 pass
-            agent.state.behaviourAttributes = self.attributes.getDataBlobForAgent(agent)
+            agent.state.behaviourAttributes = self.attributeGroup.getDataBlobForAgent(agent)
 
 ##########################    
     @abstractmethod
@@ -131,7 +131,7 @@ class BehaviourBaseObject(PyswarmObject):
             agentPrimaryAttributes = agent.state.behaviourAttributes
             
             agent.currentBehaviour = self
-            ownAttributes = self.attributes.getDataBlobForAgent(agent)
+            ownAttributes = self.attributeGroup.getDataBlobForAgent(agent)
             agent.state.behaviourAttributes = ownAttributes
 
             result = self.getDesiredAccelerationForAgent(agent, nearbyAgentsList)

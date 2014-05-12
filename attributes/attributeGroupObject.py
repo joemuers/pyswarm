@@ -22,14 +22,14 @@ from ConfigParser import NoSectionError
 
 
 ########################################
-class AttributesListener(object):
+class AttributeGroupListener(object):
     __metaclass__ = ABCMeta
     
     @abstractmethod
     def onAttributeChanged(self, sectionObject, attributeName):
         raise NotImplemented
 
-#END OF CLASS - AttributesListener
+#END OF CLASS - AttributeGroupListener
 ########################################
 
 
@@ -334,7 +334,7 @@ Recommend this is hard-coded rather than done at runtime." % attributeName)
     
 #####################    
     def addListener(self, listener):
-        if(not isinstance(listener, AttributesListener)):
+        if(not isinstance(listener, AttributeGroupListener)):
             raise TypeError("Tried to add listener %s of type %s" % (listener, type(listener)))
         else:
             self._listeners.add(weakref.ref(listener, self._removeDeadListenerReference))
