@@ -10,18 +10,19 @@
 # ------------------------------------------------------------
 
 
-from pyswarmObject import PyswarmObject
-
-import globalAttributeGroup as ga
-import agentPerceptionAttributeGroup as apa
-import agentMovementAttributeGroup as ama
-import behaviour.classicBoidAttributeGroup as cbba
-import behaviour.worldWarZAttributeGroup as gdba
-import behaviour.followPathAttributeGroup as fpba
-import utils.general as util
-import utils.fileLocations as fl
-
 import ConfigParser
+
+from pyswarm.pyswarmObject import PyswarmObject
+import pyswarm.utils.general as util
+import pyswarm.utils.fileLocations as fl
+
+import pyswarm.attributes.globalAttributeGroup as ga
+import pyswarm.attributes.agentPerceptionAttributeGroup as apa
+import pyswarm.attributes.agentMovementAttributeGroup as ama
+
+import pyswarm.attributes.behaviour.classicBoidAttributeGroup as cb
+import pyswarm.attributes.behaviour.worldWarZAttributeGroup as wwz
+import pyswarm.attributes.behaviour.followPathAttributeGroup as fp
 
 
 
@@ -34,8 +35,8 @@ class AttributeGroupsController(PyswarmObject):
         self._agentMovementAttributeGroup = ama.AgentMovementAttributeGroup()
         self._agentPerceptionAttributeGroup = apa.AgentPerceptionAttributeGroup()
         
-        defaultBehaviourId = cbba.ClassicBoidAttributeGroup.BehaviourTypeName()
-        defaultBehaviourAttributeGroup = cbba.ClassicBoidAttributeGroup(defaultBehaviourId, self._globalAttributeGroup)
+        defaultBehaviourId = cb.ClassicBoidAttributeGroup.BehaviourTypeName()
+        defaultBehaviourAttributeGroup = cb.ClassicBoidAttributeGroup(defaultBehaviourId, self._globalAttributeGroup)
         self._behaviourAttributeGroupsList = [defaultBehaviourAttributeGroup]        
         self._globalAttributeGroup.setDefaultBehaviourAttributeGroup(defaultBehaviourAttributeGroup)
         
@@ -146,9 +147,9 @@ class AttributeGroupsController(PyswarmObject):
 #####################      
     def _getBehaviourTypeNameToConstructorLookup(self):
         """IMPORTANT - All defined behaviours *must* be included in this method!"""
-        lookup = { cbba.ClassicBoidAttributeGroup.BehaviourTypeName() : self.addClassicBoidAttributeGroup,
-                   gdba.WorldWarZAttributeGroup.BehaviourTypeName() : self.addWorldWarZAttributeGroup,
-                   fpba.FollowPathAttributeGroup.BehaviourTypeName() : self.addFollowPathAttributeGroup }
+        lookup = { cb.ClassicBoidAttributeGroup.BehaviourTypeName() : self.addClassicBoidAttributeGroup,
+                   wwz.WorldWarZAttributeGroup.BehaviourTypeName() : self.addWorldWarZAttributeGroup,
+                   fp.FollowPathAttributeGroup.BehaviourTypeName() : self.addFollowPathAttributeGroup }
         
         return lookup
 
@@ -163,16 +164,16 @@ class AttributeGroupsController(PyswarmObject):
  
 ########       
     def addClassicBoidAttributeGroup(self):
-        behaviourId = self._getNewBehaviourIdForAttibutesClass(cbba.ClassicBoidAttributeGroup)
-        newBehaviourAttributeGroup = cbba.ClassicBoidAttributeGroup(behaviourId, self._globalAttributeGroup)
+        behaviourId = self._getNewBehaviourIdForAttibutesClass(cb.ClassicBoidAttributeGroup)
+        newBehaviourAttributeGroup = cb.ClassicBoidAttributeGroup(behaviourId, self._globalAttributeGroup)
         self._addNewBehaviourAttributeGroup(newBehaviourAttributeGroup)
         
         return newBehaviourAttributeGroup
  
 ########   
     def addWorldWarZAttributeGroup(self, wallLipGoal=None, basePyramidGoalHeight=None, finalGoal=None):
-        behaviourId = self._getNewBehaviourIdForAttibutesClass(gdba.WorldWarZAttributeGroup)
-        newBehaviourAttributeGroup = gdba.WorldWarZAttributeGroup(behaviourId, self._globalAttributeGroup,
+        behaviourId = self._getNewBehaviourIdForAttibutesClass(wwz.WorldWarZAttributeGroup)
+        newBehaviourAttributeGroup = wwz.WorldWarZAttributeGroup(behaviourId, self._globalAttributeGroup,
                                                                     wallLipGoal, basePyramidGoalHeight, finalGoal)
         self._addNewBehaviourAttributeGroup(newBehaviourAttributeGroup)
         
@@ -180,8 +181,8 @@ class AttributeGroupsController(PyswarmObject):
 
 ########    
     def addFollowPathAttributeGroup(self, pathCurve=None):
-        behaviourId = self._getNewBehaviourIdForAttibutesClass(fpba.FollowPathAttributeGroup)
-        newBehaviourAttributeGroup = fpba.FollowPathAttributeGroup(behaviourId, pathCurve)
+        behaviourId = self._getNewBehaviourIdForAttibutesClass(fp.FollowPathAttributeGroup)
+        newBehaviourAttributeGroup = fp.FollowPathAttributeGroup(behaviourId, pathCurve)
         self._addNewBehaviourAttributeGroup(newBehaviourAttributeGroup)
         
         return newBehaviourAttributeGroup

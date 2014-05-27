@@ -21,13 +21,14 @@ The module is roughly split into sections:
  Windows, Menus, Layouts, Input Fields (biggest section by far), Miscellaneous Items.
 """
 
-import attributes.attributeTypes as at
-import utils.general as util
-import utils.sceneInterface as scene
-import utils.fileLocations as fl
 
 import pymel.core as pm
 import sys
+
+import pyswarm.attributes.attributeTypes as at
+import pyswarm.utils.general as util
+import pyswarm.utils.sceneInterface as scene
+import pyswarm.utils.fileLocations as fl
 
 
 
@@ -461,6 +462,8 @@ def MakeSliderGroup(attribute, annotation=None):
     
     if(annotation is not None):
         inputGroup.setAnnotation(annotation)
+    elif(attribute.annotation is not None):
+        inputGroup.setAnnotation(attribute.annotation)
     
     return inputGroup
 
@@ -504,6 +507,8 @@ def MakeFieldGroup(attribute, annotation=None,
     
     if(annotation is not None):
         inputGroup.setAnnotation(annotation)
+    elif(attribute.annotation is not None):
+        inputGroup.setAnnotation(attribute.annotation)
     
     return inputGroup
 
@@ -589,6 +594,8 @@ def MakeCheckboxGroup(attribute, extraLabel=None, annotation=None, leftColumnWid
     attribute.uiEnableMethod = checkbox.setEnable
     if(annotation is not None):
         checkbox.setAnnotation(annotation)
+    elif(attribute.annotation is not None):
+        checkbox.setAnnotation(attribute.annotation)
     
     SetAsChildLayout(rowLayout)
     
@@ -621,6 +628,8 @@ def MakeRandomizeOptionsMenu(randomizerController, annotation=None):
     randomizerController.uiEnableMethod = rowLayout.setEnable
     if(annotation is not None):
         optionMenu.setAnnotation(annotation)
+    elif(randomizerController.annotation is not None):
+        optionMenu.setAnnotation(randomizerController.annotation)
     
     SetAsChildLayout(rowLayout)
     
@@ -678,6 +687,8 @@ def MakeStringOptionsField(stringAttribute, optionsListStrings, annotation=None)
     stringAttribute.uiEnableMethod = optionMenu.setEnable
     if(annotation is not None):
         optionMenu.setAnnotation(annotation)
+    elif(stringAttribute.annotation is not None):
+        optionMenu.setAnnotation(stringAttribute.annotation)
     
     SetAsChildLayout(rowLayout)
     
@@ -704,6 +715,8 @@ def MakeObjectSelectorField(objectAttribute, annotation=None):
                                       adjustableColumn=1, columnWidth2=(150, 50))
     if(annotation is not None):
         nameField.setAnnotation(annotation)
+    elif(objectAttribute.annotation is not None):
+        nameField.setAnnotation(objectAttribute.annotation)
         
     objectAttribute.updateUiCommand = (lambda val: nameField.setText(val.name() if(val is not None) else "<None>"))
     objectAttribute._updateInputUiComponents()
@@ -789,6 +802,8 @@ def MakeLocationField(locationAttribute, withButton=False, leftColumnWidth=__LEF
     locationAttribute.uiEnableMethod = locationField.setEnable
     if(annotation is not None):
         locationField.setAnnotation(annotation)
+    elif(locationAttribute.annotation is not None):
+        locationField.setAnnotation(locationAttribute.annotation)
         
     if(withButton):
         button = pm.button(label="...", annotation=("Select/clear locator for %s" % at.LocationAttribute.attributeLabel), 
@@ -820,6 +835,8 @@ def MakeVectorField(vectorAttribute, annotation=None):
     vectorAttribute.uiEnableMethod = vectorField.setEnable
     if(annotation is not None):
         vectorField.setAnnotation(annotation)
+    elif(vectorAttribute.annotation is not None):
+        vectorField.setAnnotation(vectorAttribute.annotation)
         
     SetAsChildLayout(rowLayout)
     
@@ -854,6 +871,8 @@ def MakePassiveTextField(stringAttribute, buttonCallback, annotation=None, isEdi
                                       columnWidth2=(rightColumnWidth - buttonWidth, buttonWidth))
     if(annotation is not None):
         textField.setAnnotation(annotation)
+    elif(stringAttribute.annotation is not None):
+        textField.setAnnotation(stringAttribute.annotation)
     
     stringAttribute.updateUiCommand = textField.setText
     if(isEditable):
@@ -888,6 +907,8 @@ def MakeSimpleIntField(intAttribute, annotation=None):
         intField.setMaxValue(intAttribute.maximumValue)
     if(annotation is not None):
         intField.setAnnotation(annotation)
+    elif(intAttribute.annotation is not None):
+        intField.setAnnotation(intAttribute.annotation)
         
     intField.changeCommand(lambda *args: intAttribute._setValue(intField.getValue()))
     

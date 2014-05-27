@@ -10,12 +10,14 @@
 # ------------------------------------------------------------
 
 
-from pyswarmObject import PyswarmObject
-from attributes.attributeGroupObject import AttributeGroupListener
-import vectors.vector3 as v3
-import utils.general as util
-
 import itertools
+
+from pyswarm.pyswarmObject import PyswarmObject
+from pyswarm.attributes.attributeGroupObject import AttributeGroupListener
+import pyswarm.vectors.vector3 as v3
+import pyswarm.utils.general as util
+
+
 
 #############################
 class _Zone(PyswarmObject):

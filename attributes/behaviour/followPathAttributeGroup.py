@@ -10,10 +10,10 @@
 # ------------------------------------------------------------
 
 
-import attributes.attributeGroupObject as ago
-import attributes.attributeTypes as at
-import utils.sceneInterface as scene
-import ui.uiBuilder as uib
+import pyswarm.utils.sceneInterface as scene
+import pyswarm.ui.uiBuilder as uib
+import pyswarm.attributes.attributeGroupObject as ago
+import pyswarm.attributes.attributeTypes as at
 
 
 

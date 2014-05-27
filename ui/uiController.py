@@ -10,14 +10,15 @@
 # ------------------------------------------------------------
 
 
-from pyswarmObject import PyswarmObject
-import uiBuilder as uib
-import utils.general as util
-import utils.fileLocations as fl
-import utils.packageInfo as pi
-
 from abc import ABCMeta, abstractmethod
 import weakref
+
+from pyswarm.pyswarmObject import PyswarmObject
+import pyswarm.utils.general as util
+import pyswarm.utils.fileLocations as fl
+import pyswarm.utils.packageInfo as pi
+
+import pyswarm.ui.uiBuilder as uib
 
 
 

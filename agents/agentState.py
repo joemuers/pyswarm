@@ -10,10 +10,9 @@
 # ------------------------------------------------------------
 
 
-from pyswarmObject import PyswarmObject
-
-import vectors.vector3 as v3
-import utils.general as util
+from pyswarm.pyswarmObject import PyswarmObject
+import pyswarm.vectors.vector3 as v3
+import pyswarm.utils.general as util
 
 
 

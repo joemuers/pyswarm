@@ -10,14 +10,15 @@
 # ------------------------------------------------------------
 
 
-from pyswarmObject import PyswarmObject
-import attributeTypes as at
-import utils.general as util
-import ui.uiBuilder as uib
-
 from abc import ABCMeta, abstractmethod
-import weakref
 from ConfigParser import NoSectionError
+import weakref
+
+from pyswarm.pyswarmObject import PyswarmObject
+import pyswarm.utils.general as util
+import pyswarm.ui.uiBuilder as uib
+
+import pyswarm.attributes.attributeTypes as at
 
 
 

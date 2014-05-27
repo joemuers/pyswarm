@@ -10,30 +10,37 @@
 # ------------------------------------------------------------
 
 
-from pyswarmObject import PyswarmObject
-
 import math as mth
 import random as rand
 
-import vector2 as bv2
+from pyswarm.pyswarmObject import PyswarmObject
 
+import pyswarm.vectors.vector2 as v2
 
-def IsVector2(otherVector):
-    return type(otherVector) is bv2.Vector2
-
-def IsVector3(otherVector):
-    return type(otherVector) is Vector3
 
 
 __MAGNITUDE_UNDEFINED__ = -1.0
 
+
+
+#####
+def IsVector2(otherVector):
+    return type(otherVector) is v2.Vector2
+
+#####
+def IsVector3(otherVector):
+    return type(otherVector) is Vector3
+
+
+
+#####
 class Vector3(PyswarmObject):
     """
     3D vector with various trig functions.  
     
     Most classes in this package now use vector3, not 2. Although
     Vector3 has been written to be more or less backwards compatable
-    (i.e. can be used in place of a bv2 and will still behave correctly).
+    (i.e. can be used in place of a v2 and will still behave correctly).
     As such, note that self.u is interchangeable with self.x, and self.v is interchangeable
     with self.z.
     
@@ -270,7 +277,7 @@ class Vector3(PyswarmObject):
         """
         Returns Vector2 equivalent of self.
         """
-        return bv2.Vector2(self.x, self.z)
+        return v2.Vector2(self.x, self.z)
     
 #######################
     def degreeHeading(self):

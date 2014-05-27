@@ -10,13 +10,13 @@
 # ------------------------------------------------------------
 
 
-from pyswarmObject import PyswarmObject
-import utils.general as util
-import utils.sceneInterface as scene
+from pyswarm.pyswarmObject import PyswarmObject
+import pyswarm.utils.general as util
+import pyswarm.utils.sceneInterface as scene
+import pyswarm.vectors.vector3 as v3
+import pyswarm.agents.zoneGraph as zg
 
-import vectors.vector3 as v3
-import zoneGraph as zg
-import agent as ag
+import pyswarm.agents.agent as ag
 
 
 

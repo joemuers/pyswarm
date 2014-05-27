@@ -10,15 +10,14 @@
 # ------------------------------------------------------------
 
 
-from pyswarmObject import PyswarmObject
-
-import vectors.vector3 as v3
-import utils.general as util
-import utils.sceneInterface as scene
-
 from abc import ABCMeta, abstractmethod
 import random
 import weakref
+
+from pyswarm.pyswarmObject import PyswarmObject
+import pyswarm.vectors.vector3 as v3
+import pyswarm.utils.general as util
+import pyswarm.utils.sceneInterface as scene
 
 
 
@@ -60,6 +59,8 @@ class _SingleAttributeBaseObject(PyswarmObject):
         self.logValueChanges = True
         
         self.excludeFromDefaults = False
+        
+        self.annotation = None # for reference only, not used internally
 
 #####################         
     def __str__(self):

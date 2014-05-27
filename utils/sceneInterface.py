@@ -10,13 +10,15 @@
 # ------------------------------------------------------------
 
 
-import vectors.vector3 as v3
-import utils.general as util
-
 import pymel.core as pm
 import pymel.core.nodetypes as pmn  # Eclipse doesn't like pm.nodetypes for some reason... 
 import pymel.core.language as la    # (perhaps an issue with the Pymel predefinitions?)
 import maya.cmds as cmds
+
+import pyswarm.vectors.vector3 as v3
+
+import pyswarm.utils.general as util
+
 
 
 ######################################

@@ -10,11 +10,11 @@
 # ------------------------------------------------------------
 
 
-from pyswarmObject import PyswarmObject
+from pyswarm.pyswarmObject import PyswarmObject
+import pyswarm.utils.general as util
+import pyswarm.utils.sceneInterface as scene
 
-import uiBuilder as uib
-import utils.general as util
-import utils.sceneInterface as scene
+import pyswarm.ui.uiBuilder as uib
 
 
 

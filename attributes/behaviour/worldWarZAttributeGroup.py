@@ -10,12 +10,12 @@
 # ------------------------------------------------------------
 
 
-import attributes.attributeGroupObject as ago
-import attributes.attributeTypes as at
-import ui.uiBuilder as uib
-import ui.agentSelectionWindow as asw
-import utils.general as util
-import utils.sceneInterface as scene
+import pyswarm.ui.uiBuilder as uib
+import pyswarm.ui.agentSelectionWindow as asw
+import pyswarm.utils.general as util
+import pyswarm.utils.sceneInterface as scene
+import pyswarm.attributes.attributeGroupObject as ago
+import pyswarm.attributes.attributeTypes as at
 
 
 

@@ -10,12 +10,12 @@
 # ------------------------------------------------------------
 
 
-from pyswarmObject import PyswarmObject
-from behaviourBaseObject import BehaviourDelegate
+from pyswarm.pyswarmObject import PyswarmObject
 
-import classicBoid as cb
-import worldWarZ as gd
-import followPath as fp
+from pyswarm.behaviours.behaviourBaseObject import BehaviourDelegate
+import pyswarm.behaviours.classicBoid as cb
+import pyswarm.behaviours.worldWarZ as gd
+import pyswarm.behaviours.followPath as fp
 
 
 

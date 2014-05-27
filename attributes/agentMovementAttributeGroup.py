@@ -10,9 +10,10 @@
 # ------------------------------------------------------------
 
 
-import attributeGroupObject as ago
-import attributeTypes as at
-import ui.uiBuilder as uib
+import pyswarm.ui.uiBuilder as uib
+
+import pyswarm.attributes.attributeGroupObject as ago
+import pyswarm.attributes.attributeTypes as at
 
 
 
@@ -75,29 +76,29 @@ class AgentMovementAttributeGroup(ago.AttributeGroupObject):
         uib.MakeSliderGroup(self._maxVelocity, self._getMaxVelocityForBlob.__doc__)
         uib.MakeRandomizerFields(self._maxVelocity_Random)
         uib.MakeSeparator()
-        uib.MakeSliderGroup(self._minVelocity)
+        uib.MakeSliderGroup(self._minVelocity, self._getMinVelocity.__doc__)
         uib.MakeSeparator()
-        uib.MakeSliderGroup(self._preferredVelocity)
+        uib.MakeSliderGroup(self._preferredVelocity, self._getPreferredVelocityForBlob.__doc__)
         uib.MakeRandomizerFields(self._preferredVelocity_Random)
         uib.MakeSeparator()
-        uib.MakeSliderGroup(self._maxAcceleration)
+        uib.MakeSliderGroup(self._maxAcceleration, self._getMaxAccelerationForBlob.__doc__)
         uib.MakeRandomizerFields(self._maxAcceleration_Random)
         uib.SetAsChildLayout(columnLayout, speedFrameLayout)
         
         turnFrameLayout = uib.MakeFrameLayout("Turning")
         columnLayout = uib.MakeColumnLayout()
-        uib.MakeSliderGroup(self._maxTurnRate)
+        uib.MakeSliderGroup(self._maxTurnRate, self._getMaxTurnRateForBlob.__doc__)
         uib.MakeRandomizerFields(self._maxTurnRate_Random)
         uib.MakeSeparator()
-        uib.MakeSliderGroup(self._maxTurnRateChange)
+        uib.MakeSliderGroup(self._maxTurnRateChange, self._getMaxTurnRateChange.__doc__)
         uib.MakeSeparator()
-        uib.MakeSliderGroup(self._preferredTurnVelocity)
+        uib.MakeSliderGroup(self._preferredTurnVelocity, self._getPreferredTurnVelocityForBlob.__doc__)
         uib.MakeRandomizerFields(self._preferredTurnVelocity_Random)
         uib.SetAsChildLayout(columnLayout, turnFrameLayout)
         
         miscellaneousFrameLayout = uib.MakeFrameLayout("Misc.")
         columnLayout = uib.MakeColumnLayout()
-        uib.MakeSliderGroup(self._jumpAcceleration)
+        uib.MakeSliderGroup(self._jumpAcceleration, self._getJumpAccelerationForBlob.__doc__)
         uib.MakeRandomizerFields(self._jumpAcceleration_Random)
         uib.SetAsChildLayout(columnLayout, miscellaneousFrameLayout)
         
@@ -122,32 +123,47 @@ class AgentMovementAttributeGroup(ago.AttributeGroupObject):
         
 #####################     
     def _getMinVelocity(self):
+        """Agents travelling slower than this velocity under normal behaviuor will be accelerated."""
+        
         return self._minVelocity.value
     minVelocity  = property(_getMinVelocity) 
     
 #####################     
     def _getMaxTurnRateChange(self):
+        """The maximum rate of change in how sharply an agent is turning, i.e. the angular acceleration."""
+        
         return self._maxTurnRateChange.value
     maxTurnRateChange = property(_getMaxTurnRateChange)
           
 #####################     
     def _getMaxVelocityForBlob(self, dataBlob):
-        """Maximum velocity that agents will travel at under normal behaviour."""
+        """Maximum velocity agents will travel at under normal behaviour."""
+        
         return self._maxVelocity_Random.valueForIntegerId(dataBlob.agentId)
    
     def _getPreferredVelocityForBlob(self, dataBlob):
+        """Agents will tend towards this speed under normal behaviour."""
+        
         return self._preferredVelocity_Random.valueForIntegerId(dataBlob.agentId)
      
     def _getMaxAccelerationForBlob(self, dataBlob):
+        """Maximum rate of change in agent velocity under normal behaviour."""
+        
         return self._maxAcceleration_Random.valueForIntegerId(dataBlob.agentId)
      
     def _getMaxTurnRateForBlob(self, dataBlob):
+        """Maximum rate of turn for a given agent."""
+        
         return self._maxTurnRate_Random.valueForIntegerId(dataBlob.agentId)
  
     def _getPreferredTurnVelocityForBlob(self, dataBlob):
+        """While turning towards a given heading, agents will tend towards this rate of turn."""
+        
         return self._preferredTurnVelocity_Random.valueForIntegerId(dataBlob.agentId)
      
     def _getJumpAccelerationForBlob(self, dataBlob):
+        """The initial "upwards" acceleration given to an agent when "jumping"."""
+        
         return self._jumpAcceleration_Random.valueForIntegerId(dataBlob.agentId)
 
 # END OF CLASS

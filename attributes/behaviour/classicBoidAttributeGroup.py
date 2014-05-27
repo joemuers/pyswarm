@@ -10,14 +10,15 @@
 # ------------------------------------------------------------
 
 
-import attributes.attributeGroupObject as ago
-import attributes.attributeTypes as at
-import ui.uiBuilder as uib
-import ui.agentSelectionWindow as asw
-import utils.general as util
-import vectors.vector3 as v3
-
 import random as rand
+
+import pyswarm.ui.uiBuilder as uib
+import pyswarm.ui.agentSelectionWindow as asw
+import pyswarm.utils.general as util
+import pyswarm.vectors.vector3 as v3
+
+import pyswarm.attributes.attributeGroupObject as ago
+import pyswarm.attributes.attributeTypes as at
 
 
 

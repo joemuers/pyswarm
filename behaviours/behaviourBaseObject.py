@@ -10,12 +10,11 @@
 # ------------------------------------------------------------
 
 
-from pyswarmObject import PyswarmObject
-
-import vectors.vector3 as v3
-
 from abc import ABCMeta, abstractmethod
 import weakref
+
+from pyswarm.pyswarmObject import PyswarmObject
+import pyswarm.vectors.vector3 as v3
 
 
 

@@ -10,9 +10,10 @@
 # ------------------------------------------------------------
 
 
-import attributeGroupObject as ago
-import ui.uiBuilder as uib
-import attributeTypes as at
+import pyswarm.ui.uiBuilder as uib
+
+import pyswarm.attributes.attributeGroupObject as ago
+import pyswarm.attributes.attributeTypes as at
 
 
 
@@ -80,22 +81,22 @@ class AgentPerceptionAttributeGroup(ago.AttributeGroupObject):
         
         uib.MakeStringOptionsField(self._proximityWeightingString, AgentPerceptionAttributeGroup._WeightingStrings_)
         uib.MakeSeparator()
-        uib.MakeSliderGroup(self._neighbourhoodSize)
+        uib.MakeSliderGroup(self._neighbourhoodSize, self._getNeighbourhoodSizeForBlob.__doc__)
         uib.MakeRandomizerFields(self._neighbourhoodSize_Random)
         uib.MakeSeparator()
-        uib.MakeSliderGroup(self._nearRegionSize)
+        uib.MakeSliderGroup(self._nearRegionSize, self._getNearRegionSizeForBlob.__doc__)
         uib.MakeRandomizerFields(self._nearRegionSize_Random)
         uib.MakeSeparator()
-        uib.MakeSliderGroup(self._collisionRegionSize)
+        uib.MakeSliderGroup(self._collisionRegionSize, self._getCollisionRegionSizeForBlob.__doc__)
         uib.MakeRandomizerFields(self._collisionRegionSize_Random)
         uib.SetAsChildLayout(columnLayout, regionSizeFrame)
         
         fieldOfVisionFrame = uib.MakeFrameLayout("Field of Vision")
         columnLayout = uib.MakeColumnLayout()
-        uib.MakeSliderGroup(self._blindRegionAngle)
+        uib.MakeSliderGroup(self._blindRegionAngle, self._getBlindRegionAngleForBlob.__doc__)
         uib.MakeRandomizerFields(self._blindRegionAngle_Random)
         uib.MakeSeparator()
-        uib.MakeSliderGroup(self._forwardVisionAngle)
+        uib.MakeSliderGroup(self._forwardVisionAngle, self._getForwardVisionAngleForBlob.__doc__)
         uib.MakeRandomizerFields(self._forwardVisionAngle_Random)
         uib.SetAsChildLayout(columnLayout, fieldOfVisionFrame)
         
@@ -129,43 +130,61 @@ class AgentPerceptionAttributeGroup(ago.AttributeGroupObject):
 
 #####################         
     def _getMaxNeighbourhoodSize(self):
+        """Largest possible radius size for neighbourhood region of any agent in this swarm instance."""
+        
         return (self._neighbourhoodSize.value + 
                 (self._neighbourhoodSize.value * self._neighbourhoodSize_Random.randomizeMultiplierAttribute))
     maxNeighbourhoodSize = property(_getMaxNeighbourhoodSize)
 
 #####################
     def _getUseNoWeighting(self):
+        """Returns True if preferential weightings should *not* be applied to other agents within an agents neighbourhood region."""
+        
         return self._proximityWeightingOption == AgentPerceptionAttributeGroup._WeightingNone_
     useNoWeighting = property(_getUseNoWeighting)
 
 ########    
     def _getUseLinearWeighting(self):
+        """Returns True if linear weighting, based on distance, should be applied to other agents within an agent's neighbourhood region."""
+        
         return self._proximityWeightingOption == AgentPerceptionAttributeGroup._WeightingLinear_
     useLinearWeighting = property(_getUseLinearWeighting)
 
 ########    
     def _getUseInverseSquareWeighting(self):
+        """Returns True if weightings, derived as an inverse square of distance, should be applied 
+            to other agents within an agent's neighbourhood region."""
+            
         return self._proximityWeightingOption == AgentPerceptionAttributeGroup._WeightingInverseSquare_
     useInverseSquareWeighting = property(_getUseInverseSquareWeighting)
     
 ########
     def _getNeighbourhoodSizeForBlob(self, dataBlob):
+        """Radius of agent's "neighbourhood" - the region within which it is aware of other agents and reacts to them."""
+        
         return self._neighbourhoodSize_Random.valueForIntegerId(dataBlob.agentId)
     
 ########
     def _getNearRegionSizeForBlob(self, dataBlob):
+        """Radius of region within which other agents are considered to be within very close proximity (i.e. too close) to an agent."""
+        
         return self._nearRegionSize_Random.valueForIntegerId(dataBlob.agentId)
     
 ########
     def _getCollisionRegionSizeForBlob(self, dataBlob):
+        """Radius of region within which other agents are considered to have collided with an agent."""
+        
         return self._collisionRegionSize_Random.valueForIntegerId(dataBlob.agentId)
         
 ########
     def _getBlindRegionAngleForBlob(self, dataBlob):
+        """Angle of vision *behind* an agent, within which it is unaware of other agents, regardless of proximity."""
+        
         return self._blindRegionAngle_Random.valueForIntegerId(dataBlob.agentId)
     
 ########
     def _getForwardVisionAngleForBlob(self, dataBlob):
+        """Angle of vision in front of an agent within which it will have a preferential awareness of other nearby agents."""
         return self._forwardVisionAngle_Random.valueForIntegerId(dataBlob.agentId)
 
 # END OF CLASS

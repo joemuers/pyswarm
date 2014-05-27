@@ -24,12 +24,13 @@ Logging, general Maya info (project file location, frame number etc), script job
 manipulation, and some general purpose Python methods.
 """
 
-import packageInfo as pi
 
 import logging
 import os
 import pymel.core as pm
 import pymel.core.system as sm
+
+import pyswarm.utils.packageInfo as pi
 
 
 

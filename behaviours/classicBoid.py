@@ -10,23 +10,23 @@
 # ------------------------------------------------------------
 
 
-from behaviourBaseObject import BehaviourBaseObject
-from utils import colours
-
-import attributes.behaviour.classicBoidAttributeGroup as cbba
-import vectors.vector3 as v3
-
 import random
+
+from pyswarm.utils import colours
+import pyswarm.attributes.behaviour.classicBoidAttributeGroup as cb
+import pyswarm.vectors.vector3 as v3
+
+from pyswarm.behaviours.behaviourBaseObject import BehaviourBaseObject
 
 
 
 ######################
 def AgentBehaviourIsClassicBoid(agent):
-    return (type(agent.state.behaviourAttributes) == cbba.ClassicBoidDataBlob)
+    return (type(agent.state.behaviourAttributes) == cb.ClassicBoidDataBlob)
 
 ######################
 def AttributesAreClassicBoid(attributeGroup):
-    return isinstance(attributeGroup, cbba.ClassicBoidAttributeGroup)
+    return isinstance(attributeGroup, cb.ClassicBoidAttributeGroup)
     
 ######################
 

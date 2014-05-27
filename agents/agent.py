@@ -10,12 +10,12 @@
 # ------------------------------------------------------------
 
 
-from pyswarmObject import PyswarmObject
-from utils import sceneInterface
+from pyswarm.pyswarmObject import PyswarmObject
+from pyswarm.utils import sceneInterface
+import pyswarm.vectors.vector3 as v3
+import pyswarm.utils.colours as col
 
-import vectors.vector3 as v3
-import agentState as agt
-import utils.colours as brc
+import pyswarm.agents.agentState as ags
 
 
 
@@ -58,7 +58,7 @@ class Agent(PyswarmObject):
     """
 
     def __init__(self, particleId, attributeGroupsController, startingBehaviour):
-        self.state = agt.AgentState(particleId, attributeGroupsController)
+        self.state = ags.AgentState(particleId, attributeGroupsController)
         
         self.currentBehaviour = None
         
@@ -70,7 +70,7 @@ class Agent(PyswarmObject):
         self._stickinessScale = -1.0
         self._stickinessChanged = False
         
-        self.debugColour = brc.DefaultColour
+        self.debugColour = col.DefaultColour
         
         startingBehaviour.assignAgent(self)
 
@@ -150,7 +150,7 @@ class Agent(PyswarmObject):
         self._needsBehaviourCalculation = True         
         self._needsBehaviourCommit = False
         
-        self.debugColour = brc.DefaultColour
+        self.debugColour = col.DefaultColour
         
         self.currentBehaviour.onAgentUpdated(self)
            

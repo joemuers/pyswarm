@@ -10,20 +10,24 @@
 # ------------------------------------------------------------
 
 
-from pyswarmObject import PyswarmObject
-
 import random as rand
 import math as mth
 
-
-
-def IsVector2(otherVector):
-    return type(otherVector) == Vector2
+from pyswarm.pyswarmObject import PyswarmObject
 
 
 
 __MAGNITUDE_UNDEFINED__ = -1.0
 
+
+
+#####
+def IsVector2(otherVector):
+    return type(otherVector) == Vector2
+
+
+
+#####
 class Vector2(PyswarmObject):
     """
     2D vector with various trig functions.

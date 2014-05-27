@@ -10,14 +10,15 @@
 # ------------------------------------------------------------
 
 
-import attributeGroupObject as ago
-import attributeTypes as at
-import ui.uiBuilder as uib
-import vectors.vector3 as v3
-import utils.general as util
-import utils.sceneInterface as scene
-import utils.fileLocations as fl
-import utils.colours as colour
+import pyswarm.ui.uiBuilder as uib
+import pyswarm.vectors.vector3 as v3
+import pyswarm.utils.general as util
+import pyswarm.utils.sceneInterface as scene
+import pyswarm.utils.fileLocations as fl
+import pyswarm.utils.colours as colour
+
+import pyswarm.attributes.attributeGroupObject as ago
+import pyswarm.attributes.attributeTypes as at
 
 
 
@@ -409,10 +410,10 @@ class GlobalAttributeGroup(ago.AttributeGroupObject):
         
         borderLayoutMid = uib.MakeBorderingLayout()
         columnLayoutBottom = uib.MakeColumnLayout()
-        uib.MakeCheckboxGroup(self._enabled, leftColumnWidth=_TOP_PANEL_LEFT_COLUMN_WIDTH_) 
-        uib.MakeLocationField(self._sceneBounds1, leftColumnWidth=_TOP_PANEL_LEFT_COLUMN_WIDTH_)
-        uib.MakeLocationField(self._sceneBounds2, leftColumnWidth=_TOP_PANEL_LEFT_COLUMN_WIDTH_)
-        uib.MakeCheckboxGroup(self._useDebugColours, "Enable", leftColumnWidth=_TOP_PANEL_LEFT_COLUMN_WIDTH_)
+        uib.MakeCheckboxGroup(self._enabled, leftColumnWidth=_TOP_PANEL_LEFT_COLUMN_WIDTH_, annotation=self._getEnabled.__doc__) 
+        uib.MakeLocationField(self._sceneBounds1, leftColumnWidth=_TOP_PANEL_LEFT_COLUMN_WIDTH_, annotation=self._getSceneBounds1.__doc__)
+        uib.MakeLocationField(self._sceneBounds2, leftColumnWidth=_TOP_PANEL_LEFT_COLUMN_WIDTH_, annotation=self._getSceneBounds2.__doc__)
+        uib.MakeCheckboxGroup(self._useDebugColours, "Enable", leftColumnWidth=_TOP_PANEL_LEFT_COLUMN_WIDTH_, annotation=self._getUseDebugColours.__doc__)
         uib.SetAsChildLayout(columnLayoutBottom, borderLayoutMid)
         
         borderLayoutBottom = uib.MakeBorderingLayout()
@@ -434,6 +435,8 @@ class GlobalAttributeGroup(ago.AttributeGroupObject):
 
 #####################  
     def _getEnabled(self):
+        """If this PySwarm instance is disabled, all automatic reading from and updating of the Maya scene will be switched off."""
+        
         return self._enabled.value
     def _setEnabled(self, value):
         self._enabled = value
@@ -441,16 +444,22 @@ class GlobalAttributeGroup(ago.AttributeGroupObject):
     
 #####################
     def _getLowerBounds(self):
+        """Vector3 giving the lower corner of the PySwarm scene bounding box.  Derived from sceneBounds1 & 2."""
+        
         return self._lowerBounds
     lowerBounds = property(_getLowerBounds)
 
 ########    
     def _getUpperBounds(self):
+        """Vector3 giving the upper corner of the PySwarm scene bounding box.  Derived from sceneBounds1 & 2."""
+        
         return self._upperBounds
     upperBounds = property(_getUpperBounds)
     
 ########
     def _getSceneBounds1(self):
+        """Vector3 giving one of the user-specified corners of the PySwarm scene bounding box."""
+        
         return self._sceneBounds1.value
     def _setSceneBounds1(self, value):
         self._sceneBounds1.value = value
@@ -458,6 +467,8 @@ class GlobalAttributeGroup(ago.AttributeGroupObject):
     
 ########
     def _getSceneBounds2(self):
+        """Vector3 giving one of the user-specified corners of the PySwarm scene bounding box."""
+        
         return self._sceneBounds2.value
     def _setSceneBounds2(self, value):
         self._sceneBounds2.value = value
@@ -465,51 +476,76 @@ class GlobalAttributeGroup(ago.AttributeGroupObject):
 
 #####################     
     def _getAccelerationDueToGravity(self):
+        """Rate of acceleration, per frame, due to gravity on PySwqrm agents in the scene.  This does *not* control anything,\n
+        but is used for calibration and should reflect the corresponding setup in the Maya scene."""
+         
         return self._accelerationDueToGravity.value
     accelerationDueToGravity = property(_getAccelerationDueToGravity)
 
 #####################     
     def _getListRebuildFrequency(self):
+        """Number of frames between each recalculation of which agents are nearby, in close proximity etc.\n
+        A lower value (higher frequency) will cause faster "reaction" times in agents, but will also increase the\n
+        amount of CPU calculation required."""
+        
         return self._listRebuildFrequency.value
     listRebuildFrequency = property(_getListRebuildFrequency)
 
 #####################     
     def _getUseDebugColours(self):
+        """If enabled, particles will be coloured according to status and behaviour."""
+        
         return self._useDebugColours.value
     useDebugColours = property(_getUseDebugColours)  
 
 #####################
     def _getQuickSetupEnableSelfCollide(self):
+        """If enabled, pressing "Quick Setup" will enable self collisions on the corresponding nParticles."""
+        
         return self._quickSetupEnableSelfCollide.value
     quickSetupEnableSelfCollide = property(_getQuickSetupEnableSelfCollide)
     
 ########
     def _getQuickSetupDisableFriction(self):
+        """If enabled, pressing "Quick Setup" will disable friction on the corresponding nParticles and nParticle ground plane."""
+        
         return self._quickSetupDisableFriction.value
     quickSetupDisableFriction = property(_getQuickSetupDisableFriction)    
     
 ########
     def _getQuickSetupDisableIgnoreGravity(self):
+        """If enabled, pressing "Quick Setup" will disable the "ignore gravity" attribute on the corresponding nParticles."""
+       
         return self._quickSetupDisableIgnoreGravity.value
     quickSetupDisableIgnoreGravity = property(_getQuickSetupDisableIgnoreGravity)
     
 ########
     def _getQuickSetupChangeRenderType(self):
+        """If enabled, pressing "Quick Setup" will change the render type of the corresponding nParticles to spheres."""
+       
         return self._quickSetupChangeRenderType.value
     quickSetupChangeRenderType = property(_getQuickSetupChangeRenderType)
     
 ########
     def _getQuickSetupEnableGroundPlane(self):
+        """If enabled, pressing "Quick Setup" will enable the ground plane of the corresponding nParticle instance."""
+      
         return self._quickSetupEnableGroundPlane.value
     quickSetupEnableGroundPlane = property(_getQuickSetupEnableGroundPlane)
     
 ########
     def _getQuickSetupChangeSpaceScale(self):
+        """If enabled, pressing "Quick Setup" will change the space scale attribute of the \n
+        corresponding nParticle instance to 0.01."""
+        
         return self._quickSetupChangeSpaceScale.value
     quickSetupChangeSpaceScale = property(_getQuickSetupChangeSpaceScale)
     
 ########
     def _getQuickSetupTranslateAbovePlane(self):
+        """If enabled, pressing "Quick Setup" will move all the nParticles upwards, such that the \n
+        lowest particle sits above the ground plane."""
+        
         return self._quickSetupTranslateAbovePlane.value
     quickSetupTranslateAbovePlane = property(_getQuickSetupTranslateAbovePlane)
     

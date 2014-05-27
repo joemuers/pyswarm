@@ -10,34 +10,34 @@
 # ------------------------------------------------------------
 
 
-from behaviourBaseObject import BehaviourBaseObject
-from utils import colours
-
-import attributes.behaviour.worldWarZAttributeGroup as gdba
-import vectors.vector2 as v2
-import vectors.vector3 as v3
-
 import random
+
+from pyswarm.utils import colours
+import pyswarm.attributes.behaviour.worldWarZAttributeGroup as wwz
+import pyswarm.vectors.vector2 as v2
+import pyswarm.vectors.vector3 as v3
+
+from pyswarm.behaviours.behaviourBaseObject import BehaviourBaseObject
 
 
 
 #######################
 def AgentBehaviourIsWorldWarZ(agent):
-    return (type(agent.state.behaviourAttributes) == gdba.WorldWarZDataBlob)
+    return (type(agent.state.behaviourAttributes) == wwz.WorldWarZDataBlob)
 
 #######################
 def AgentIsChasingGoal(agent):
     return (AgentBehaviourIsWorldWarZ(agent) and 
-            agent.state.behaviourAttributes.currentStatus == gdba.WorldWarZDataBlob.goalChase)
+            agent.state.behaviourAttributes.currentStatus == wwz.WorldWarZDataBlob.goalChase)
 
 #######################
 def AgentIsInBasePyramid(agent):
     return (AgentBehaviourIsWorldWarZ(agent) and 
-            agent.state.behaviourAttributes.currentStatus == gdba.WorldWarZDataBlob.inBasePyramid)
+            agent.state.behaviourAttributes.currentStatus == wwz.WorldWarZDataBlob.inBasePyramid)
 
 #######################    
 def AttributesAreWorldWarZ(attributeGroup):
-    return (isinstance(attributeGroup, gdba.WorldWarZAttributeGroup))
+    return (isinstance(attributeGroup, wwz.WorldWarZAttributeGroup))
 
 #######################
 
@@ -170,17 +170,17 @@ class WorldWarZ(BehaviourBaseObject):
             # agent has cleared the wall...
             if(self._baseToFinalDirection.magnitudeSquared(True) < baseToAgentVec.magnitudeSquared(True)):
                 # reached final goal
-                agentStatus = gdba.WorldWarZDataBlob.reachedFinalGoal
+                agentStatus = wwz.WorldWarZDataBlob.reachedFinalGoal
             else:
                 # still on top of wall moving towards final goal
-                agentStatus = gdba.WorldWarZDataBlob.overWallLip
+                agentStatus = wwz.WorldWarZDataBlob.overWallLip
         else:
             if(agent.currentPosition.y >= (self.attributeGroup.wallLipGoal.y - 0.1)): # TODO - make this check more robust.
                 # agent has reached top of the wall, now will move twds final goal
-                agentStatus = gdba.WorldWarZDataBlob.atWallLip
+                agentStatus = wwz.WorldWarZDataBlob.atWallLip
             elif(baseToAgentVec.magnitudeSquared(True) < agentAttributes.pyramidJoinAtDistance **2):
                 # agent is close enough to be considered as being at the basePyramid
-                agentStatus = gdba.WorldWarZDataBlob.inBasePyramid
+                agentStatus = wwz.WorldWarZDataBlob.inBasePyramid
             else:
                 # agent is still some distance away & will simply chase the baseLocator/leader for now
                 
@@ -193,20 +193,20 @@ class WorldWarZ(BehaviourBaseObject):
                     if(self._infectionSpreadMode and self.attributeGroup.agentIsLeader(agent.agentId)):
                         # agent has been designated as a leader
                         self._leaderPositions.append(agent.currentPosition)
-                        agentStatus = gdba.WorldWarZDataBlob.goalChase
-                    elif(agentStatus == gdba.WorldWarZDataBlob._uninitialised):
+                        agentStatus = wwz.WorldWarZDataBlob.goalChase
+                    elif(agentStatus == wwz.WorldWarZDataBlob._uninitialised):
                         # newly assigned/reset agent => initialise accordingly
-                        if(self._infectionSpreadMode): agentStatus = gdba.WorldWarZDataBlob.normal
-                        else: agentStatus = gdba.WorldWarZDataBlob.goalChase
-                    elif(agentStatus == gdba.WorldWarZDataBlob.pending):
+                        if(self._infectionSpreadMode): agentStatus = wwz.WorldWarZDataBlob.normal
+                        else: agentStatus = wwz.WorldWarZDataBlob.goalChase
+                    elif(agentStatus == wwz.WorldWarZDataBlob.pending):
                         # agent has been 'infected' - check the countdown
                         agentAttributes.goalChaseCountdown -= 1
                         if(agentAttributes.goalChaseCountdown < 0):
-                            agentStatus = gdba.WorldWarZDataBlob.goalChase
+                            agentStatus = wwz.WorldWarZDataBlob.goalChase
                     else:
-                        agentStatus = gdba.WorldWarZDataBlob.goalChase
-                elif(agentStatus > gdba.WorldWarZDataBlob.inBasePyramid):
-                    agentStatus = gdba.WorldWarZDataBlob.goalChase
+                        agentStatus = wwz.WorldWarZDataBlob.goalChase
+                elif(agentStatus > wwz.WorldWarZDataBlob.inBasePyramid):
+                    agentStatus = wwz.WorldWarZDataBlob.goalChase
                     
         self._setGoalStatusForAgent(agent, agentStatus, baseToAgentVec)
         self._setDebugColourForAgent(agent)
@@ -241,8 +241,8 @@ class WorldWarZ(BehaviourBaseObject):
 
 #######################
     def _overWallLipBehaviour(self, agent, desiredAcceleration):
-        if(self._goalStatusForAgent(agent) == gdba.WorldWarZDataBlob.overWallLip or 
-           self._goalStatusForAgent(agent) == gdba.WorldWarZDataBlob.reachedFinalGoal):
+        if(self._goalStatusForAgent(agent) == wwz.WorldWarZDataBlob.overWallLip or 
+           self._goalStatusForAgent(agent) == wwz.WorldWarZDataBlob.reachedFinalGoal):
             
             targetVelocity = v3.Vector3(self._baseToFinalDirection.x, 0, self._baseToFinalDirection.z)
             targetVelocity.normalise(agent.state.behaviourAttributes.goalChaseSpeed)
@@ -256,7 +256,7 @@ class WorldWarZ(BehaviourBaseObject):
 
 #######################        
     def _atWallLipBehaviour(self, agent, desiredAcceleration):
-        if(self._goalStatusForAgent(agent) == gdba.WorldWarZDataBlob.atWallLip):
+        if(self._goalStatusForAgent(agent) == wwz.WorldWarZDataBlob.atWallLip):
             desiredAcceleration.x = self._baseToFinalDirection.x
             desiredAcceleration.z = self._baseToFinalDirection.z
             desiredAcceleration.normalise(agent.state.behaviourAttributes.goalChaseSpeed) # TODO - misleading place to use goalChaseSpeed, should use something else??
@@ -268,7 +268,7 @@ class WorldWarZ(BehaviourBaseObject):
 
 #######################
     def _inBasePyramidBehaviour(self, agent, desiredAcceleration):
-        if(self._goalStatusForAgent(agent) == gdba.WorldWarZDataBlob.inBasePyramid):        
+        if(self._goalStatusForAgent(agent) == wwz.WorldWarZDataBlob.inBasePyramid):        
             directionToGoal = self.attributeGroup.basePyramidGoal - agent.currentPosition
             horizontalComponent = directionToGoal.horizontalVector()
             horizontalComponent.normalise(self._basePyramidPushUpwardsMagnitudeHorizontal())
@@ -294,7 +294,7 @@ class WorldWarZ(BehaviourBaseObject):
         
 #######################
     def _atBasePyramidBorderBehaviour(self, agent, desiredAcceleration):
-        if(self._goalStatusForAgent(agent) == gdba.WorldWarZDataBlob.goalChase and agent.isCrowded):
+        if(self._goalStatusForAgent(agent) == wwz.WorldWarZDataBlob.goalChase and agent.isCrowded):
             joinPyramidDistanceSquared = agent.state.behaviourAttributes.pyramidJoinAtDistance **2
             goalChaseSpeedSquared = agent.state.behaviourAttributes.goalChaseSpeed **2
             
@@ -302,7 +302,7 @@ class WorldWarZ(BehaviourBaseObject):
                 # as the basePyramid grows in size, it's perceived 'boundary' (i.e. the position at which agents are said 
                 # to have joined the pyramid and can start their 'climbing' behaviour) is not fixed. So to determine it, we
                 # look at other agents in the immediate vicinity and see if they themselves are in the pyramid.
-                if(self._goalStatusForAgent(nearbyAgent) == gdba.WorldWarZDataBlob.inBasePyramid and 
+                if(self._goalStatusForAgent(nearbyAgent) == wwz.WorldWarZDataBlob.inBasePyramid and 
                    (nearbyAgent.currentPosition.distanceSquaredFrom(agent.currentPosition) < joinPyramidDistanceSquared) and
                    (nearbyAgent.currentVelocity.magnitudeSquared(True) < goalChaseSpeedSquared or # TODO - should comp-to nearbyAgent's *own* GC speed..
                     agent.currentVelocity.magnitudeSquared(True) < goalChaseSpeedSquared or 
@@ -310,14 +310,14 @@ class WorldWarZ(BehaviourBaseObject):
                     # TODO - just expand the goal's radius here...
                     # play around with this algorithm if agents get added in a strange manner...
                     returnVal = self._goalChaseBehaviour(agent, desiredAcceleration) 
-                    self._setGoalStatusForAgent(agent, gdba.WorldWarZDataBlob.inBasePyramid)
+                    self._setGoalStatusForAgent(agent, wwz.WorldWarZDataBlob.inBasePyramid)
                     
                     return returnVal
         return False
     
 #######################  
     def _goalChaseBehaviour(self, agent, desiredAcceleration):
-        if(self._goalStatusForAgent(agent) == gdba.WorldWarZDataBlob.goalChase):
+        if(self._goalStatusForAgent(agent) == wwz.WorldWarZDataBlob.goalChase):
             maxAcceleration = agent.state.movementAttributes.maxAcceleration
             directionVec = self._goalChaseAttractorPositionForAgent(agent) - agent.currentPosition
             directionVec.normalise(maxAcceleration)
@@ -346,7 +346,7 @@ class WorldWarZ(BehaviourBaseObject):
 
 ########
     def _startGoalChaseCountdownIfNecessary(self, agent):
-        if(self._goalStatusForAgent(agent) == gdba.WorldWarZDataBlob.normal):
+        if(self._goalStatusForAgent(agent) == wwz.WorldWarZDataBlob.normal):
             nearestNeighbour = None
             nearestNeighbourDistanceSquared = float('inf')                    
             for nearbyAgent in agent.state.nearbyList:
@@ -357,8 +357,8 @@ class WorldWarZ(BehaviourBaseObject):
                         nearestNeighbourDistanceSquared = distance.magnitudeSquared()
                         
             if(nearestNeighbour is not None and # TODO - this check could also be against == state.pending...??
-               self._goalStatusForAgent(nearbyAgent) >= gdba.WorldWarZDataBlob.goalChase):
-                self._setGoalStatusForAgent(agent, gdba.WorldWarZDataBlob.pending)
+               self._goalStatusForAgent(nearbyAgent) >= wwz.WorldWarZDataBlob.goalChase):
+                self._setGoalStatusForAgent(agent, wwz.WorldWarZDataBlob.pending)
                 return True
             
         return False
@@ -499,22 +499,22 @@ class WorldWarZ(BehaviourBaseObject):
             currentStatus = agent.state.behaviourAttributes.currentStatus
             
             if(self._infectionSpreadMode):
-                if(self._performInfectionSpreadReset and currentStatus <= gdba.WorldWarZDataBlob.goalChase):
-                    return gdba.WorldWarZDataBlob._uninitialised
+                if(self._performInfectionSpreadReset and currentStatus <= wwz.WorldWarZDataBlob.goalChase):
+                    return wwz.WorldWarZDataBlob._uninitialised
                 else:
                     return currentStatus
             else:
-                if(currentStatus < gdba.WorldWarZDataBlob.goalChase): 
-                    return gdba.WorldWarZDataBlob._uninitialised
+                if(currentStatus < wwz.WorldWarZDataBlob.goalChase): 
+                    return wwz.WorldWarZDataBlob._uninitialised
                 else:
                     return currentStatus
         else:
             raise RuntimeError(("Agent %d is following behaviour %s" % (agent.agentId, agent.currentBehaviour.behaviourId)))
-            return gdba.WorldWarZDataBlob._uninitialised
+            return wwz.WorldWarZDataBlob._uninitialised
 
 #######################    
     def _setGoalStatusForAgent(self, agent, newStatus, distanceVector=None):
-        if(newStatus == gdba.WorldWarZDataBlob._uninitialised):
+        if(newStatus == wwz.WorldWarZDataBlob._uninitialised):
             raise RuntimeError("Attempted to set agent behaviour status == uninitialised")
         
         agentAttributes = agent.state.behaviourAttributes
@@ -522,16 +522,16 @@ class WorldWarZ(BehaviourBaseObject):
         if(newStatus != agentAttributes.currentStatus):
             agentAttributes.currentStatus = newStatus
             
-            if(newStatus == gdba.WorldWarZDataBlob.pending):
+            if(newStatus == wwz.WorldWarZDataBlob.pending):
                 agentAttributes.goalChaseCountdown = agentAttributes.incubationPeriod
             else:
                 agentAttributes.goalChaseCountdown = -1
-                if(newStatus >= gdba.WorldWarZDataBlob.inBasePyramid):
+                if(newStatus >= wwz.WorldWarZDataBlob.inBasePyramid):
                     agentAttributes.didArriveAtBasePyramid = True
-                    if(newStatus == gdba.WorldWarZDataBlob.reachedFinalGoal):
+                    if(newStatus == wwz.WorldWarZDataBlob.reachedFinalGoal):
                         self._notifyDelegateBehaviourEndedForAgent(agent, self.attributeGroup.followOnBehaviourID)
                 
-        if(newStatus == gdba.WorldWarZDataBlob.inBasePyramid):
+        if(newStatus == wwz.WorldWarZDataBlob.inBasePyramid):
             self._registerAgentAtBasePyramid(agent, distanceVector)
         else:
             self._deRegisterAgentFromBasePyramid(agent)
@@ -543,16 +543,16 @@ class WorldWarZ(BehaviourBaseObject):
         else:
             status = self._goalStatusForAgent(agent)
             
-            if(status == gdba.WorldWarZDataBlob.inBasePyramid):
+            if(status == wwz.WorldWarZDataBlob.inBasePyramid):
                 agent.debugColour = colours.WorldWarZ_InBasePyramid(agent)
-            elif(status == gdba.WorldWarZDataBlob.goalChase):
+            elif(status == wwz.WorldWarZDataBlob.goalChase):
                 if(self.attributeGroup.useInfectionSpread and self.attributeGroup.agentIsLeader(agent.agentId)):
                     agent.debugColour =  colours.WorldWarZ_IsLeader
                 else:
                     agent.debugColour = colours.WorldWarZ_ChasingGoal
-            elif(status == gdba.WorldWarZDataBlob.atWallLip or status == gdba.WorldWarZDataBlob.overWallLip):
+            elif(status == wwz.WorldWarZDataBlob.atWallLip or status == wwz.WorldWarZDataBlob.overWallLip):
                 agent.debugColour = colours.WorldWarZ_OverTheWall
-            elif(status == gdba.WorldWarZDataBlob.reachedFinalGoal):
+            elif(status == wwz.WorldWarZDataBlob.reachedFinalGoal):
                 agent.debugColour = colours.WorldWarZ_ReachedGoal
             
 #######################            

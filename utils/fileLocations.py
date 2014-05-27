@@ -10,11 +10,12 @@
 # ------------------------------------------------------------
 
 
-import utils.general as util
-import resources
-import packageInfo as pi
-
 import os.path as osp
+
+import pyswarm.utils.general as util
+import pyswarm.resources
+
+import pyswarm.utils.packageInfo as pi
 
 
 
@@ -87,7 +88,7 @@ def SaveFileExtension():
 
 ##########################################
 def DefaultAttributeValuesLocation():
-    filePath = osp.dirname(resources.__file__)
+    filePath = osp.dirname(pyswarm.resources.__file__)
     filePath = osp.normpath(osp.join(filePath, _DEFAULT_VALUES_FILENAME_))
     
     if(not osp.exists(filePath)):
@@ -97,7 +98,7 @@ def DefaultAttributeValuesLocation():
     
 ##########################################
 def LogoImageLocation():
-    filePath = osp.dirname(resources.__file__)
+    filePath = osp.dirname(pyswarm.resources.__file__)
     filePath = osp.normpath(osp.join(filePath, _BADGE_IMAGE_))
 
     if(not osp.exists(filePath)):

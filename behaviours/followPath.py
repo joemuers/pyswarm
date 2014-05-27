@@ -10,21 +10,21 @@
 # ------------------------------------------------------------
 
 
-from behaviourBaseObject import BehaviourBaseObject
-from utils import sceneInterface
+from pyswarm.utils import sceneInterface
+import pyswarm.attributes.behaviour.followPathAttributeGroup as fp
+import pyswarm.vectors.vector3 as v3
 
-import attributes.behaviour.followPathAttributeGroup as fpba
-import vectors.vector3 as v3
+from pyswarm.behaviours.behaviourBaseObject import BehaviourBaseObject
 
 
 
 #######################
 def AgentBehaviourIsFollowPath(agent):
-    return (type(agent.state.behaviourAttributes) == fpba.FollowPathDataBlob)
+    return (type(agent.state.behaviourAttributes) == fp.FollowPathDataBlob)
 
 #######################
 def AttributesAreFollowPath(attributeGroup):
-    return (isinstance(attributeGroup, fpba.FollowPathAttributeGroup))
+    return (isinstance(attributeGroup, fp.FollowPathAttributeGroup))
 
 #######################
 

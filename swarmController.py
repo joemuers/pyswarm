@@ -10,23 +10,24 @@
 # ------------------------------------------------------------
 
 
-import pyswarmObject as pso
-import agents.agentsController as agc
-import attributes.attributeGroupsController as ac
-import behaviours.behavioursController as bc
-import ui.uiController as uic
-import ui.agentSelectionWindow as asw
-import utils.general as util
-import utils.sceneInterface as scene
-import utils.fileLocations as fl
-import utils.packageInfo as pi
-
 import os
 import sys
 try:
     import cPickle as pickle
 except:
     import pickle
+    
+import pyswarm.agents.agentsController as agc
+import pyswarm.attributes.attributeGroupsController as ac
+import pyswarm.behaviours.behavioursController as bc
+import pyswarm.ui.uiController as uic
+import pyswarm.ui.agentSelectionWindow as asw
+import pyswarm.utils.general as util
+import pyswarm.utils.sceneInterface as scene
+import pyswarm.utils.fileLocations as fl
+import pyswarm.utils.packageInfo as pi
+
+import pyswarm.pyswarmObject as pso
 
 
 
