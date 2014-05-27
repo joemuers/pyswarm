@@ -121,7 +121,7 @@ class ClassicBoidAttributeGroup(ago.AttributeGroupObject):
         uib.MakeVectorField(self._kickstartMaxValue)
         uib.MakeVectorField(self._kickstartMinValue)
         buttonTitle = "Kick Now" if(not self.kickOnNextFrame) else "Kick Now*"
-        self._kickstartNowButton = uib.MakeButtonStandalone("Kick Now", self._didPressKickstartNow)[1]
+        self._kickstartNowButton = uib.MakeButtonStandalone(buttonTitle, self._didPressKickstartNow)[1]
         self._kickstartNowButton.setEnable(self._kickstartEnabled.value)
         uib.SetAsChildLayout(columnLayout, frameLayout)
         
