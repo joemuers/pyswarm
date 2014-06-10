@@ -37,7 +37,7 @@ class _Zone(PyswarmObject):
                 (self._xMin, self._xMax, self._zMin, self._zMax))    
         
     ################
-    def _getMetaStr(self):
+    def _getDebugStr(self):
         agentStringsList = [("\n\t%s" % agent) for agent in self.agentSet]
         return ("<xMin=%.2f, xMax=%.2f, zMin=%.2f, zMax=%.2f, count=%d\nagents=%s \n>" %
                 (self._xMin, self._xMax, self._zMin, self._zMax, len(self.agentSet), "".join(agentStringsList)))    
@@ -207,12 +207,12 @@ class ZoneGraph(PyswarmObject, AttributeGroupListener):
             return "UNOPTIMISED... Agents list: ".join([(("%s, " % agent) for agent in self._zoneMap)])
         
 ########################################
-    def _getMetaStr(self):
+    def _getDebugStr(self):
         if(self._useSpatialHashing):
             zoneStringsList = []
             for xIndex, zArray in enumerate(self._zoneMap):
                 for zIndex, zone in enumerate(zArray):
-                    zoneStringsList.append("(%d,%d)=%s\n" % (xIndex, zIndex, zone.metaStr))
+                    zoneStringsList.append("(%d,%d)=%s\n" % (xIndex, zIndex, zone.debugStr))
             return "".join(zoneStringsList)
         else:
             return "UNOPTIMISED... Agents list: ".join([(("%s, " % agent) for agent in self._zoneMap)])

@@ -158,7 +158,7 @@ class AttributeGroupObject(PyswarmObject, at.SingleAttributeDelegate):
         return ("Attribute set:%s" % self.behaviourId)
       
 ########
-    def _getMetaStr(self):
+    def _getDebugStr(self):
         agentsString = ', '.join([("%d" % blob.agentId) for blob in sorted(self._dataBlobs.itervalues())])
         attributesString = ', '.join([("%s=%s" % (attribute.attributeLabel, attribute.value)) 
                                       for attribute in self._allAttributes()])
@@ -202,7 +202,7 @@ class AttributeGroupObject(PyswarmObject, at.SingleAttributeDelegate):
         raise NotImplemented
    
 #####################    
-    _ALLATTRIBUTES_RECURSIVE_CHECK_ = ["metaStr"] # list of attributes (i.e. property accessors) which also call
+    _ALLATTRIBUTES_RECURSIVE_CHECK_ = ["debugStr"] # list of attributes (i.e. property accessors) which also call
     #                                             # "_allAttributes" - they must be skipped to avoid a recursive loop
     def _allAttributes(self):
         attributesList = []

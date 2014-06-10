@@ -73,7 +73,7 @@ class FollowPath(BehaviourBaseObject):
                  self.attributeGroup.pathInfluenceMagnitude))
         
 #############################
-    def _getMetaStr(self):
+    def _getDebugStr(self):
         agentStringsList = [("\n\t%s" % agent) for agent in self._currentlyFollowingSet]
         
         return ("<crv=%s, strt=%s, end=%s (prm=%.2f), following:%s>" % 

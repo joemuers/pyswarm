@@ -52,8 +52,8 @@ class AgentsController(PyswarmObject):
             return ("nodeName=%s, currently empty" % self._particleShapeName)
 
 ########
-    def _getMetaStr(self):
-        return ''.join([("\t%s\n" % agent.metaStr) for agent in sorted(self.allAgents)])
+    def _getDebugStr(self):
+        return ''.join([("\t%s\n" % agent.debugStr) for agent in sorted(self.allAgents)])
 
 #############################
     def _getZoneStr(self):
@@ -61,9 +61,9 @@ class AgentsController(PyswarmObject):
     zoneStr = property(_getZoneStr)
  
 ########    
-    def _getZoneMetaStr(self):
-        return self._zoneGraph.metaStr
-    zoneMetaStr = property(_getZoneMetaStr)
+    def _getZoneDebugStr(self):
+        return self._zoneGraph.debugStr
+    zoneDebugStr = property(_getZoneDebugStr)
 
 #############################        
     def agent(self, agentId):

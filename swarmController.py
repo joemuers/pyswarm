@@ -361,8 +361,8 @@ class SwarmController(pso.PyswarmObject, uic.UiControllerDelegate):
         return self._agentsController.__str__()
 
 ########    
-    def _getMetaStr(self):
-        return self._agentsController.metaStr
+    def _getDebugStr(self):
+        return self._agentsController.debugStr
 
 #############################    
     def __getstate__(self):

@@ -72,7 +72,7 @@ class AgentState(PyswarmObject):
                  "Y" if(self._isTouchingGround) else "N"))
     
 ################### 
-    def _getMetaStr(self):
+    def _getDebugStr(self):
         nearStringsList = [("%d," % nearbyAgent.agentId) for nearbyAgent in self.nearbyList]
         crowdStringsList = [("%d," % crowdingAgent.agentId) for crowdingAgent in self.crowdedList]
         collisionStringsList = [("%d," % collidingAgent.agentId) for collidingAgent in self.collisionList]

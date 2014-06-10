@@ -79,8 +79,8 @@ class Agent(PyswarmObject):
         return "<%s, stck=%.2f, bhvr=\"%s\">" % (self.state, self.stickinessScale, self.currentBehaviour.behaviourId)
     
 ########
-    def _getMetaStr(self):          
-        return ("<%s, desiredAccel=%s>" % (self.state.metaStr, self._desiredAcceleration))
+    def _getDebugStr(self):          
+        return ("<%s, desiredAccel=%s>" % (self.state.debugStr, self._desiredAcceleration))
  
 #####################   
     def __eq__(self, other):

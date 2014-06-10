@@ -75,7 +75,7 @@ class AgentSelectionWindow(PyswarmObject):
                  self._particleShapeName))
 
 ########    
-    def _getMetaStr(self):
+    def _getDebugStr(self):
         selectedAgentsStr = ', '.join([("%d" % agentId) for agentId in self._currentlySelectedAgentsList])
         return ("<SelectionMethod=%s, selectedText=\"%s\", endCmd=%s, selection: %s>" %
                 (AgentSelectionWindow.__SelectionOptionStrings__[self._selectedOption],

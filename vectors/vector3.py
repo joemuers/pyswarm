@@ -79,7 +79,7 @@ class Vector3(PyswarmObject):
         return "<x=%.4f, y=%.4f, z=%.4f>" % (self.x, self.y, self.z)
 
 #####################    
-    def _getMetaStr(self):
+    def _getDebugStr(self):
         magStr = ("%.4f" % self._magnitude) if(self._magnitude != __MAGNITUDE_UNDEFINED__) else "notCalc\'d"
         magSqStr = ("%.4f" % self._magnitudeSquared) if(self._magnitudeSquared != __MAGNITUDE_UNDEFINED__) else "notCalc\'d"
         twoDMagStr = ("%.4f" % self._2dMagnitude) if(self._2dMagnitude != __MAGNITUDE_UNDEFINED__) else "notCalc\'d"

@@ -67,7 +67,7 @@ class _SingleAttributeBaseObject(PyswarmObject):
         return str(self.value)
 
 ########
-    def _getMetaStr(self):
+    def _getDebugStr(self):
         return ("<label=%s, delegate=%s, exclude=%s, updateUi=%s, uiEnable=%s>" %
                 (self._attributeLabel, self.delegate, self.excludeFromDefaults,
                  self.updateUiCommand, self.uiEnableMethod))
@@ -191,9 +191,9 @@ class IntAttribute(_SingleAttributeBaseObject):
         super(IntAttribute, self).__init__(attributeLabel, value, delegate)
         
 #####################        
-    def _getMetaStr(self):
+    def _getDebugStr(self):
         return ("%s minVal=%s, maxVal=%s" % 
-                (super(IntAttribute, self)._getMetaStr(), self._minimumValue, self._maximumValue))
+                (super(IntAttribute, self)._getDebugStr(), self._minimumValue, self._maximumValue))
  
 #####################        
     def _getMinimumValue(self):
@@ -357,8 +357,8 @@ class RandomizeController(_SingleAttributeBaseObject):
         return ("opt=%s, mult=%s" % (super(RandomizeController, self).__str__(), self._randomizerAttribute.__str__()))
     
 ########
-    def _getMetaStr(self):
-        return ("<opt=%s, mult=%s>" % (super(RandomizeController, self)._getMetaStr(), self._randomizerAttribute.metaStr))
+    def _getDebugStr(self):
+        return ("<opt=%s, mult=%s>" % (super(RandomizeController, self)._getDebugStr(), self._randomizerAttribute.debugStr))
 
 #####################    
     def _getNestedAttribute(self):
@@ -461,8 +461,8 @@ class MayaObjectAttribute(_SingleAttributeBaseObject):
         super(MayaObjectAttribute, self).__init__(*args, **kwargs)
 
 #####################        
-    def _getMetaStr(self):
-        return ("%s, objType=%s" % (super(MayaObjectAttribute, self)._getMetaStr(), self.objectType))
+    def _getDebugStr(self):
+        return ("%s, objType=%s" % (super(MayaObjectAttribute, self)._getDebugStr(), self.objectType))
 
 #####################     
     def getRawAttribute(self):
@@ -506,8 +506,8 @@ class LocationAttribute(MayaObjectAttribute):
         super(LocationAttribute, self).__init__(*args, **kwargs)
 
 #####################        
-    def _getMetaStr(self):
-        return ("%s, boundLctr=%s" % (super(LocationAttribute, self)._getMetaStr(), self._boundLocator))
+    def _getDebugStr(self):
+        return ("%s, boundLctr=%s" % (super(LocationAttribute, self)._getDebugStr(), self._boundLocator))
  
 #####################        
     def _getObjectType(self):

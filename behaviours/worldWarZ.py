@@ -124,7 +124,7 @@ class WorldWarZ(BehaviourBaseObject):
                  "Y" if self.attributeGroup.useInfectionSpread else "N"))
 
 #########    
-    def _getMetaStr(self):
+    def _getDebugStr(self):
         leadersString = ', '.join([("%d" % agentId) for agentId in self.attributeGroup.allLeaderIds])
         pyramidString = ''.join([("\t%s\n" % agent) for agent in self._basePyramidDistanceLookup])
         

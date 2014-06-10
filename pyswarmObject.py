@@ -20,20 +20,20 @@ class PyswarmObject(object):
     """
     Base class for all the other PySwarm classes in this package.  Treated as an abstract class, I
     suppose (although, technically, it isn't one).
-    Raison d'etre just to kind of formalise the 'metaStr' implementation...
+    Raison d'etre just to kind of formalise the 'debugStr' implementation...
     
-    Throughout the classes in this package, metaStr is used as a complement to the usual
-    __str__ method for giving detailed info on the more 'meta' attributes.  
+    Throughout the classes in this package, the debugStr property is used as a complement to the usual
+    __str__ method for giving more detailed info on it's attributes.  
     It's purely for logging and debugging.
     """
     
-    def _getMetaStr(self):
+    def _getDebugStr(self):
         """
-        Override to provide a seperate output for self.metaStr property
+        Override to provide a seperate output for self.debugStr property
         """
-        return ("<_getMetaStr has not been implemented for type %s>" % type(self))
-    metaStr = property(lambda obj:obj._getMetaStr())  # the lambda complication is necessary to make this property
-    #                                                 # accessor work correctly with the inheritance heirarchy.
+        return ("<_getDebugStr has not been implemented for type %s>" % type(self))
+    debugStr = property(lambda obj:obj._getDebugStr())  # the lambda complication is necessary to make this property
+    #                                                   # accessor work correctly with the inheritance heirarchy.
     
 ###########################
     def __getstate__(self):

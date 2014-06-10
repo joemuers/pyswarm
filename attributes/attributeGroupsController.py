@@ -52,9 +52,9 @@ class AttributeGroupsController(PyswarmObject):
         return ''.join(stringsList)
  
 #######   
-    def _getMetaStr(self):
+    def _getDebugStr(self):
         stringsList = ["Values: "]
-        stringsList.extend([("<\t%s\n>\n" % attributes.metaStr) for attributes in self._allAttributeGroups()])
+        stringsList.extend([("<\t%s\n>\n" % attributes.debugStr) for attributes in self._allAttributeGroups()])
         
         return ''.join(stringsList)
  
