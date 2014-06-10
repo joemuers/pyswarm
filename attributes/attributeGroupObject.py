@@ -89,8 +89,8 @@ class _FollowOnBehaviourAttributeInterface(object):
         self._followOnBehaviour.excludeFromDefaults = True
  
 #####################        
-    def _makeFollowOnBehaviourOptionGroup(self):
-        cmdTuple = uib.MakeStringOptionsField(self._followOnBehaviour, self._followOnBehaviourIDs)
+    def _makeFollowOnBehaviourOptionGroup(self, annotation=None):
+        cmdTuple = uib.MakeStringOptionsField(self._followOnBehaviour, self._followOnBehaviourIDs, annotation=annotation)
         self._followOnBehaviourMenu, self._followOnBehaviourMenuItems = cmdTuple
  
 #####################

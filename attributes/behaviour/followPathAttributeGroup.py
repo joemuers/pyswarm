@@ -60,20 +60,20 @@ class FollowPathAttributeGroup(ago.AttributeGroupObject, ago._FollowOnBehaviourA
     
 #####################
     def populateUiLayout(self):
-        uib.MakeObjectSelectorField(self._pathCurve)
+        uib.MakeObjectSelectorField(self._pathCurve, annotation=self._getPathCurve.__doc__)
         uib.MakeSeparator()
-        uib.MakeSliderGroup(self._pathDevianceThreshold)
+        uib.MakeSliderGroup(self._pathDevianceThreshold, annotation=self._getPathDevianceThresholdForBlob.__doc__)
         uib.MakeRandomizerFields(self._pathDevianceThreshold_Random)
         uib.MakeSeparator()
-        uib.MakeSliderGroup(self._goalDistanceThreshold)
+        uib.MakeSliderGroup(self._goalDistanceThreshold, annotation=self._getGoalDistanceThresholdForBlob.__doc__)
         uib.MakeRandomizerFields(self._goalDistanceThreshold_Random)
         uib.MakeSeparator()
-        uib.MakeSliderGroup(self._pathInfluenceMagnitude)
+        uib.MakeSliderGroup(self._pathInfluenceMagnitude, annotation=self._getPathInfluenceMagnitude.__doc__)
         uib.MakeSeparator()
-        uib.MakeSliderGroup(self._startingTaper)
-        uib.MakeSliderGroup(self._endingTaper)
+        uib.MakeSliderGroup(self._startingTaper, annotation=self._getTaperStart.__doc__)
+        uib.MakeSliderGroup(self._endingTaper, annotation=self._getTaperEnd.__doc__)
         uib.MakeSeparator()
-        self._makeFollowOnBehaviourOptionGroup()
+        self._makeFollowOnBehaviourOptionGroup(annotation=self._getFollowOnBehaviourID.__doc__)
         
 #####################
     def _createDataBlobForAgent(self, agent):
@@ -92,32 +92,46 @@ class FollowPathAttributeGroup(ago.AttributeGroupObject, ago._FollowOnBehaviourA
 
 #####################            
     def _getPathCurve(self):
+        """Nurbs curve instance to provide a path along which agents will follow."""
         return self._pathCurve.value
     pathCurve = property(_getPathCurve)
 
 #####################     
     def _getPathDevianceThresholdForBlob(self, dataBlob):
+        """Maximum distance, perpendicular to the curve path, which agents will stray 
+        from the curve before trying to move back towards it."""
         return self._pathDevianceThreshold_Random.valueForIntegerId(dataBlob.agentId)
      
     def _getGoalDistanceThresholdForBlob(self, dataBlob):
+        """Distance from the end point of the curve (the "goal") at which agents will cease to follow the path of the curve."""
         return self._goalDistanceThreshold_Random.valueForIntegerId(dataBlob.agentId)
 
 #####################     
     def _getPathInfluenceMagnitude(self):
+        """Weighting of the path-following force in relation to that of the default behaviour (which is also applied
+        to agents whilst following a curve path).
+        0 == agents will continue to follow default behaviour and ignore the path.
+        1 == agents will follow the path rigidly, without any deviation."""
         return self._pathDevianceThreshold.value
     pathInfluenceMagnitude = property(_getPathInfluenceMagnitude)
 
 #####################    
     def _getTaperStart(self):
+        """Determines the width of the path at the start of the curve, as a weighted multiplier of Path Deviance Threshold.
+        A low value relative to the Ending Taper will \"funnel\" agents though a narrow gap at the start of the curve path."""
         return self._startingTaper.value
     taperStart = property(_getTaperStart)
     
     def _getTaperEnd(self):
+        """Determines the width of the path at the end of the curve, as a weighted multiplier of Path Deviance Threshold.
+        A low value in relative to the Starting Taper will \"funnel\" agents though a narrow gap at the end of the curve path."""
         return self._endingTaper.value
     taperEnd = property(_getTaperEnd)
 
 #####################
     def _getFollowOnBehaviourID(self):
+        """Follow Path is a \"finite\" behaviour, i.e. will end once agents reach their goal.
+        Once agents reach the end of the curve, they will be switched over to the Follow-On behaviour."""
         return self._followOnBehaviour.value
     followOnBehaviourID = property(_getFollowOnBehaviourID)
 

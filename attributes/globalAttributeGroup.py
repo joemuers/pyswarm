@@ -46,7 +46,8 @@ class _PreferencesWindow(object):
                                                            accelerationAttribute.value, 
                                                            minimumValue=accelerationAttribute.minimumValue, 
                                                            maximumValue=accelerationAttribute.maximumValue)
-        self._listRebuildFrequency = at.IntAttribute(listRebuildAttribute.attributeLabel, listRebuildAttribute.value)
+        self._listRebuildFrequency = at.IntAttribute(listRebuildAttribute.attributeLabel, 
+                                                     listRebuildAttribute.value)
 
         self._pairAttributeWithParentAttribute(self._accelerationDueToGravity, accelerationAttribute)
         self._pairAttributeWithParentAttribute(self._listRebuildFrequency, listRebuildAttribute)
@@ -99,6 +100,7 @@ class _PreferencesWindow(object):
 #####################
     def _pairAttributeWithParentAttribute(self, attribute, parentAttribute):
         self._attributesToParentLookup.append((attribute, parentAttribute))
+        attribute.annotation = parentAttribute.annotation
         attribute.logValueChanges = False
         
 ########
@@ -123,10 +125,13 @@ class _PreferencesWindow(object):
             columnLayout = uib.MakeColumnLayout()
             
             self._debugLoggingCheckBox = uib.MakeCheckboxStandalone("Debug Logging", util.LogLevelIsDebug(), 
-                                                                    leftColumnWidth=_PREFERENCES_WINDOW_LEFT_COLUMN_WIDTH_)[1]
+                                                                    leftColumnWidth=_PREFERENCES_WINDOW_LEFT_COLUMN_WIDTH_,
+                                                                    annotation="Shows/hides verbose debug logging in the Script Editor")[1]
                                                                     
             self._progressUpdatesEnabledCheckbox = uib.MakeCheckboxStandalone("Progress Bar Enabled", self._progressUpdatesEnabled, 
-                                                                              leftColumnWidth=_PREFERENCES_WINDOW_LEFT_COLUMN_WIDTH_)[1]
+                                                                              leftColumnWidth=_PREFERENCES_WINDOW_LEFT_COLUMN_WIDTH_,
+                                                                              annotation="Enables/disables updates in the progress bar in the main window\n"
+                                                                              "(disabling can boost performance if you have a small number of agents).")[1]
             
             uib.MakeFieldGroup(self._accelerationDueToGravity, leftColumnWidth=_PREFERENCES_WINDOW_LEFT_COLUMN_WIDTH_)
             uib.MakeFieldGroup(self._listRebuildFrequency, leftColumnWidth=_PREFERENCES_WINDOW_LEFT_COLUMN_WIDTH_)
@@ -135,20 +140,29 @@ class _PreferencesWindow(object):
                                                                        ("Maya Scene", "Manual"),
                                                                        None,
                                                                        vertical=True,
-                                                                       leftColumnWidth=_PREFERENCES_WINDOW_LEFT_COLUMN_WIDTH_)
+                                                                       leftColumnWidth=_PREFERENCES_WINDOW_LEFT_COLUMN_WIDTH_,
+                                                                       annotation="Determines how the PySwarm session is saved:\n"
+                                                                       "Maya Scene = will be saved automatically whenever your Maya scene is saved.\n"
+                                                                       "Manual = will only save when you do it yourself via the File menu.")
             saveFrequencyOption = (_PreferencesWindow._withMayaScene_ 
                                    if(util.SceneSavedScriptJobExists()) else _PreferencesWindow._manual_)
             self._saveFrequencyRadioButtons.setSelect(saveFrequencyOption)
             
+            saveLocationAnnotation = ("Determines the name/location of the PySwarm save file:\n"
+                                      "Auto = will be saved in the \"scripts\" folder in your project database, using the\n"
+                                      "       same name as your Maya scene file.\n"
+                                      "User defined = will always use the specified path (overwrites any previous save files).")
             self._saveLocationTextField = uib.MakePassiveTextField(self._saveLocation, 
                                                                    self._filePickerButtonWasPressed,
                                                                    isEditable=True,
-                                                                   leftColumnWidth=_PREFERENCES_WINDOW_LEFT_COLUMN_WIDTH_)
+                                                                   leftColumnWidth=_PREFERENCES_WINDOW_LEFT_COLUMN_WIDTH_,
+                                                                   annotation=saveLocationAnnotation)
             self._saveLocationRadioButtons = uib.MakeRadioButtonGroup("", 
                                                                       ("Auto", "User defined"), 
                                                                       self._onRadioButtonChange,
                                                                       vertical=False,
-                                                                      leftColumnWidth=_PREFERENCES_WINDOW_LEFT_COLUMN_WIDTH_)
+                                                                      leftColumnWidth=_PREFERENCES_WINDOW_LEFT_COLUMN_WIDTH_,
+                                                                      annotation=saveLocationAnnotation)
             self._saveModeOption = (_PreferencesWindow._userDefined_ 
                                     if(fl.HaveUserProvidedSavePath()) else _PreferencesWindow._autoGenerated_) 
             self._saveLocationRadioButtons.setSelect(self._saveModeOption)
@@ -233,6 +247,10 @@ class _PreferencesWindow(object):
 
 
 
+#======================================================================================
+
+
+
 #######################################
 class GlobalAttributeGroup(ago.AttributeGroupObject):
 
@@ -268,13 +286,16 @@ class GlobalAttributeGroup(ago.AttributeGroupObject):
         self._listRebuildFrequency = at.IntAttribute("List Rebuild Frequency:", 5)
         self._useDebugColours = at.BoolAttribute("Debug Colour Particles", True)
         
-        self._quickSetupEnableSelfCollide = at.BoolAttribute("Enable Self Collide", True)
-        self._quickSetupDisableFriction = at.BoolAttribute("Disable Friction", True)
-        self._quickSetupDisableIgnoreGravity = at.BoolAttribute("Disable Ignore Gravity", True)
-        self._quickSetupChangeRenderType = at.BoolAttribute("Change Render Type", True)
-        self._quickSetupEnableGroundPlane = at.BoolAttribute("Enable Ground Plane", True)
-        self._quickSetupChangeSpaceScale = at.BoolAttribute("Change Space Scale", True)
-        self._quickSetupTranslateAbovePlane = at.BoolAttribute("Translate Above Plane", True)
+        self._quickSetupEnableSelfCollide = at.BoolAttribute("Enable Self Collide", True, annotation=self._getQuickSetupEnableSelfCollide.__doc__)
+        self._quickSetupDisableFriction = at.BoolAttribute("Disable Friction", True, annotation=self._getQuickSetupDisableFriction.__doc__)
+        self._quickSetupDisableIgnoreGravity = at.BoolAttribute("Disable Ignore Gravity", True, annotation=self._getQuickSetupDisableIgnoreGravity.__doc__)
+        self._quickSetupChangeRenderType = at.BoolAttribute("Change Render Type", True, annotation=self._getQuickSetupChangeRenderType.__doc__)
+        self._quickSetupEnableGroundPlane = at.BoolAttribute("Enable Ground Plane", True, annotation=self._getQuickSetupEnableGroundPlane.__doc__)
+        self._quickSetupChangeSpaceScale = at.BoolAttribute("Change Space Scale", True, annotation=self._getQuickSetupChangeSpaceScale.__doc__)
+        self._quickSetupTranslateAbovePlane = at.BoolAttribute("Translate Above Plane", True, annotation=self._getQuickSetupTranslateAbovePlane.__doc__)
+        
+        self._accelerationDueToGravity.annotation = self._getAccelerationDueToGravity.__doc__
+        self._listRebuildFrequency.annotation = self._getListRebuildFrequency.__doc__
         
         self._preferencesWindow = _PreferencesWindow(self._accelerationDueToGravity, self._listRebuildFrequency, 
                                                      self._onPreferencesUpdated, sceneSaveMethod,
@@ -476,7 +497,7 @@ class GlobalAttributeGroup(ago.AttributeGroupObject):
 
 #####################     
     def _getAccelerationDueToGravity(self):
-        """Rate of acceleration, per frame, due to gravity on PySwqrm agents in the scene.  This does *not* control anything,\n
+        """Rate of acceleration, per frame, due to gravity on PySwqrm agents in the scene.  This does *not* control anything,
         but is used for calibration and should reflect the corresponding setup in the Maya scene."""
          
         return self._accelerationDueToGravity.value
@@ -484,8 +505,8 @@ class GlobalAttributeGroup(ago.AttributeGroupObject):
 
 #####################     
     def _getListRebuildFrequency(self):
-        """Number of frames between each recalculation of which agents are nearby, in close proximity etc.\n
-        A lower value (higher frequency) will cause faster "reaction" times in agents, but will also increase the\n
+        """Number of frames between each recalculation of which agents are nearby, in close proximity etc.
+        A lower value (higher frequency) will cause faster "reaction" times in agents, but will also increase the
         amount of CPU calculation required."""
         
         return self._listRebuildFrequency.value
@@ -535,7 +556,7 @@ class GlobalAttributeGroup(ago.AttributeGroupObject):
     
 ########
     def _getQuickSetupChangeSpaceScale(self):
-        """If enabled, pressing "Quick Setup" will change the space scale attribute of the \n
+        """If enabled, pressing "Quick Setup" will change the space scale attribute of the
         corresponding nParticle instance to 0.01."""
         
         return self._quickSetupChangeSpaceScale.value
@@ -543,8 +564,8 @@ class GlobalAttributeGroup(ago.AttributeGroupObject):
     
 ########
     def _getQuickSetupTranslateAbovePlane(self):
-        """If enabled, pressing "Quick Setup" will move all the nParticles upwards, such that the \n
-        lowest particle sits above the ground plane."""
+        """If enabled, pressing "Quick Setup" will move all the nParticles upwards, such that 
+        the lowest particle sits above the ground plane."""
         
         return self._quickSetupTranslateAbovePlane.value
     quickSetupTranslateAbovePlane = property(_getQuickSetupTranslateAbovePlane)

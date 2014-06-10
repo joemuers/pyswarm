@@ -326,7 +326,7 @@ def AddScriptNodesIfNecessary(moduleReference, sceneSetupMethod, frameUpdateMeth
     :param sceneCloseMethod: bound method to run when the Maya scene closes.
     """
     swarmControllerModuleName = moduleReference.__name__
-    modulePath = os.path.dirname(moduleReference.__file__)
+    modulePath = os.path.dirname(os.path.dirname(moduleReference.__file__))
     moduleHandle = ("__%s_IMPORT_FOR_SCRIPTNODE_UPDATES__" % pi.PackageName().upper())
     headerPadding = '#' * len(pi.PackageName())
     scriptHeaderString = ("####################%s########################\n"

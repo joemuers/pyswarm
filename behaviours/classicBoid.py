@@ -63,16 +63,15 @@ class ClassicBoid(BehaviourBaseObject):
                                                    movementAttributes.maxTurnRate,
                                                    self._movementAttributeGroup.maxTurnRateChange,
                                                    movementAttributes.preferredTurnVelocity)
-                elif(self._avoidNearbyAgentsBehaviour(agent, desiredAcceleration) and 
-                     self.attributeGroup.separationIsMutuallyExclusive):
-                    
-                    self._clampMovementIfNecessary(agent, 
-                                                   desiredAcceleration, 
-                                                   movementAttributes.maxAcceleration, 
-                                                   movementAttributes.maxVelocity, 
-                                                   movementAttributes.maxTurnRate,
-                                                   self._movementAttributeGroup.maxTurnRateChange,
-                                                   movementAttributes.preferredTurnVelocity)
+                elif(self._avoidNearbyAgentsBehaviour(agent, desiredAcceleration)):
+                    if(self.attributeGroup.separationIsMutuallyExclusive):
+                        self._clampMovementIfNecessary(agent, 
+                                                       desiredAcceleration, 
+                                                       movementAttributes.maxAcceleration, 
+                                                       movementAttributes.maxVelocity, 
+                                                       movementAttributes.maxTurnRate,
+                                                       self._movementAttributeGroup.maxTurnRateChange,
+                                                       movementAttributes.preferredTurnVelocity)
                 else:
                     behaviourAttributes = agent.state.behaviourAttributes
                     tempVector = v3.Vector3()
@@ -138,10 +137,14 @@ class ClassicBoid(BehaviourBaseObject):
         
 ######################                  
     def _avoidNearbyAgentsBehaviour(self, agent, desiredAcceleration):
-        """Adds WEIGHTED result to desiredAcceleration, IF separation is not mutually exclusive (otherwise
-        result is not weighted)."""
-        if(self.attributeGroup.separationIsMutuallyExclusive) : weighting = 1
-        else: weighting = agent.behaviourAttributes.separationWeighting
+        """
+        Adds WEIGHTED result to desiredAcceleration, IF separation is not mutually exclusive (otherwise
+        result is not weighted).
+        """
+        if(self.attributeGroup.separationIsMutuallyExclusive): 
+            weighting = 1
+        else: 
+            weighting = agent.behaviourAttributes.separationWeighting
 
         if(agent.isCollided and weighting > 0):  # Problem here - we're driving the velocity directly... should be done by Maya really
             ######### might not really need this if particle self-collisions are working properly... ??

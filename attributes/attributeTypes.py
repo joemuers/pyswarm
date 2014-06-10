@@ -41,7 +41,7 @@ class _SingleAttributeBaseObject(PyswarmObject):
     __metaclass__ = ABCMeta
     
 ####################
-    def __init__(self, attributeLabel, value, delegate=None):
+    def __init__(self, attributeLabel, value, delegate=None, annotation=None):
         self._attributeLabel = attributeLabel
         self._value = self._getValueFromInput(value)
         
@@ -60,7 +60,7 @@ class _SingleAttributeBaseObject(PyswarmObject):
         
         self.excludeFromDefaults = False
         
-        self.annotation = None # for reference only, not used internally
+        self.annotation = annotation # for reference only, not used internally
 
 #####################         
     def __str__(self):

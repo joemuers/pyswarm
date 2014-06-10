@@ -115,38 +115,39 @@ class ClassicBoidAttributeGroup(ago.AttributeGroupObject):
     def populateUiLayout(self):
         frameLayout = uib.MakeFrameLayout("Kickstart")
         columnLayout = uib.MakeColumnLayout()
-        uib.MakeCheckboxGroup(self._kickstartEnabled)
-        uib.MakeSimpleIntField(self._kickstartFrameNumber)
-        uib.MakePassiveTextField(self._kickstartAgentsText, self._didPressKickstartAgentSelect)
-        uib.MakeVectorField(self._kickstartMaxValue)
-        uib.MakeVectorField(self._kickstartMinValue)
+        uib.MakeCheckboxGroup(self._kickstartEnabled, annotation=self.shouldKickstartAgent.__doc__)
+        uib.MakeSimpleIntField(self._kickstartFrameNumber, annotation="Frame number on which agents will be given a kickstart.")
+        uib.MakePassiveTextField(self._kickstartAgentsText, self._didPressKickstartAgentSelect, 
+                                 annotation="Selection of agents which will receive a kickstart.")
+        uib.MakeVectorField(self._kickstartMaxValue, annotation="Maximum possible acceleration in x,y,z that a kickstart will apply to an agent.")
+        uib.MakeVectorField(self._kickstartMinValue, annotation="Minimum possible acceleration in x,y,z that a kickstart will apply to an agent.")
         buttonTitle = "Kick Now" if(not self.kickOnNextFrame) else "Kick Now*"
-        self._kickstartNowButton = uib.MakeButtonStandalone(buttonTitle, self._didPressKickstartNow)[1]
+        self._kickstartNowButton = uib.MakeButtonStandalone(buttonTitle, self._didPressKickstartNow, annotation="Kickstart the selected agents on the next frame update.")[1]
         self._kickstartNowButton.setEnable(self._kickstartEnabled.value)
         uib.SetAsChildLayout(columnLayout, frameLayout)
         
         frameLayout = uib.MakeFrameLayout("Seperation")
         columnLayout = uib.MakeColumnLayout()
-        uib.MakeCheckboxGroup(self._mutuallyExclusive)
-        uib.MakeSliderGroup(self._separationWeighting)
+        uib.MakeCheckboxGroup(self._mutuallyExclusive, annotation=self._getSeparationIsMutuallyExclusive.__doc__)
+        uib.MakeSliderGroup(self._separationWeighting, annotation=self._getSeparationWeightingForBlob.__doc__)
         uib.MakeRandomizerFields(self._separationWeighting_Random)
         uib.SetAsChildLayout(columnLayout, frameLayout)
         
         frameLayout = uib.MakeFrameLayout("Alignment")
         columnLayout = uib.MakeColumnLayout()
-        uib.MakeSliderGroup(self._alignmentWeighting)
+        uib.MakeSliderGroup(self._alignmentWeighting, annotation=self._getAlignmentWeightingForBlob.__doc__)
         uib.MakeRandomizerFields(self._alignmentWeighting_Random)
         uib.MakeSeparator()
-        uib.MakeSliderGroup(self._alignmentDirectionThreshold)
+        uib.MakeSliderGroup(self._alignmentDirectionThreshold, annotation=self._getAlignmentDirectionThresholdForBlob.__doc__)
         uib.MakeRandomizerFields(self._alignmentDirectionThreshold_Random)
         uib.SetAsChildLayout(columnLayout, frameLayout)
         
         frameLayout = uib.MakeFrameLayout("Cohesion")
         columnLayout = uib.MakeColumnLayout()
-        uib.MakeSliderGroup(self._cohesionWeighting)
+        uib.MakeSliderGroup(self._cohesionWeighting, annotation=self._getCohesionWeightingForBlob.__doc__)
         uib.MakeRandomizerFields(self._cohesionWeighting_Random)
         uib.MakeSeparator()
-        uib.MakeSliderGroup(self._cohesionPositionThreshold)
+        uib.MakeSliderGroup(self._cohesionPositionThreshold, annotation=self._getCohesionPositionThresholdForBlob.__doc__)
         uib.MakeRandomizerFields(self._cohesionPositionThreshold_Random)
         uib.SetAsChildLayout(columnLayout, frameLayout)
         
@@ -213,10 +214,15 @@ class ClassicBoidAttributeGroup(ago.AttributeGroupObject):
 
 #####################
     def shouldKickstartAgent(self, agentId):
+        """If enabled, agents will be given a \"kick\", in a random direction for each agent, on the specified frame.
+        Useful if movement tends to start off too slowly, or too uniformly.
+        """
         return (self.kickOnNextFrame and agentId in self._kickstartAgents)
     
 ########
     def getKickstartVector(self):
+        """Returns Vector3 giving kickstart to apply to an agent.
+        """
         x = rand.uniform(self._kickstartMinValue.x, self._kickstartMaxValue.x)
         y = rand.uniform(self._kickstartMinValue.y, self._kickstartMaxValue.y)
         z = rand.uniform(self._kickstartMinValue.z, self._kickstartMaxValue.z)
@@ -225,27 +231,44 @@ class ClassicBoidAttributeGroup(ago.AttributeGroupObject):
 
 #####################         
     def _getSeparationIsMutuallyExclusive(self):
+        """The "weighting" is in relation to the Alignment and Cohesion forces also acting on the agent.
+        If Seperation is mutually exclusive, the force applied to each agent will be the same regardless of the
+        weighting of Alignment and Cohesion.
+        """
         return self._mutuallyExclusive.value
     separationIsMutuallyExclusive = property(_getSeparationIsMutuallyExclusive)
     
 ########
     def _getSeparationWeightingForBlob(self, dataBlob):
+        """Weighting of Separation force (i.e. agents close to each other - with the "near" perception region - will 
+        try to push apart) to be applied to each agent, in relation to the Alignment and Cohesion forces also acting on each agent.
+        """
         return self._separationWeighting_Random.valueForIntegerId(dataBlob.agentId)
 
 ########
     def _getAlignmentWeightingForBlob(self, dataBlob):
+        """Weighting of Alignment force (i.e. agents in proximity to each other - within the "neighbourhood" perception region - will tend towards 
+        moving in the same direction) to be applied to each agent, in relation to the Separation and Cohesion forces also acting on each agent.
+        """
         return self._alignmentDirectionThreshold_Random.valueForIntegerId(dataBlob.agentId)
     
 ########
     def _getAlignmentDirectionThresholdForBlob(self, dataBlob):
+        """Maximum amount, in degrees, that an agent will change direction on one frame due to Alignment force.
+        """
         return self._alignmentDirectionThreshold_Random.valueForIntegerId(dataBlob.agentId)
 
 ########
     def _getCohesionWeightingForBlob(self, dataBlob):
+        """Weighting of Cohesion force (i.e. agents in proximity to each other - within the "neighbourhood" perception region - will tend to move
+        closer together) to be applied to each agent, in relation to the Separation and Alignment forces also acting on each agent.
+        """
         return self._cohesionWeighting_Random.valueForIntegerId(dataBlob.agentId)
     
 ########        
     def _getCohesionPositionThresholdForBlob(self, dataBlob):
+        """The minimum distance between agents at which Cohesion force will continue to be applied to them. 
+        """
         return self._cohesionPositionThreshold_Random.valueForIntegerId(dataBlob.agentId)
 
 # END OF CLASS

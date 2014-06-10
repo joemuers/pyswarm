@@ -36,7 +36,7 @@ class PerceptionAttributesDataBlob(ago._DataBlobBaseObject):
                 (self.neighbourhoodSize, self.nearRegionSize, self.collisionRegionSize,
                  self.blindRegionAngle, self.forwardVisionAngle))
 
-# END OF CLASS - MovementAttributesDataBlob
+# END OF CLASS - PerceptionAttributesDataBlob
 ###########################################
 
 
