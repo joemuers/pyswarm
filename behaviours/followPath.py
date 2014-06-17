@@ -44,7 +44,7 @@ class FollowPath(BehaviourBaseObject):
     Operation: affected agents must query for the desiredAcceleration on each frame update.
     """
     
-    def __init__(self, followPathAttrbutes, normalBehaviorInstance, delegate):
+    def __init__(self, followPathAttrbutes, attributesGroupController, normalBehaviorInstance, delegate):
         """Arguments as follows:
         @param curve pymel.core.nodetypes.NurbsCurve: the curve path
         @param delegate BehaviourDelegate: *MUST* be BehaviourDelegate object (or None). Will be notified as agents
@@ -53,6 +53,8 @@ class FollowPath(BehaviourBaseObject):
         @param taperEndMult Float: multiplier determining curve width at end (width along the curve is interpolated start->end)
         """
         super(FollowPath, self).__init__(followPathAttrbutes, delegate)
+        
+        self._globalAttributesGroup = attributesGroupController.globalAttributeGroup
         
         self._startVector = v3.Vector3()
         self._endParam = 0
@@ -109,7 +111,7 @@ class FollowPath(BehaviourBaseObject):
         """
         desiredAcceleration = v3.Vector3()
         
-        if(self._pathCurve is not None and agent.isTouchingGround):  
+        if(self._pathCurve is not None and not agent.isInFreefall):  
             pymelLocationVector = sceneInterface.PymelPointFromVector3(agent.currentPosition)
             pymelClosestCurvePoint = self._pathCurve.closestPoint(pymelLocationVector, space='world')
             pyswarmCurveClosestPoint = sceneInterface.Vector3FromPymelPoint(pymelClosestCurvePoint)
