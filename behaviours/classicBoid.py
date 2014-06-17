@@ -65,14 +65,13 @@ class ClassicBoid(BehaviourBaseObject):
                                                    self._movementAttributeGroup.maxTurnRateChange,
                                                    movementAttributes.preferredTurnVelocity)
                 elif(self._avoidNearbyAgentsBehaviour(agent, desiredAcceleration)):
-                    if(self.attributeGroup.separationIsMutuallyExclusive):
-                        self._clampMovementIfNecessary(agent, 
-                                                       desiredAcceleration, 
-                                                       movementAttributes.maxAcceleration, 
-                                                       movementAttributes.maxVelocity, 
-                                                       movementAttributes.maxTurnRate,
-                                                       self._movementAttributeGroup.maxTurnRateChange,
-                                                       movementAttributes.preferredTurnVelocity)
+                    self._clampMovementIfNecessary(agent, 
+                                                   desiredAcceleration, 
+                                                   movementAttributes.maxAcceleration, 
+                                                   movementAttributes.maxVelocity, 
+                                                   movementAttributes.maxTurnRate,
+                                                   self._movementAttributeGroup.maxTurnRateChange,
+                                                   movementAttributes.preferredTurnVelocity)
                 else:
                     behaviourAttributes = agent.state.behaviourAttributes
                     tempVector = v3.Vector3()
