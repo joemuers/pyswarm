@@ -219,7 +219,7 @@ class WorldWarZ(BehaviourBaseObject):
         desiredAcceleration = v3.Vector3()
         agent.stickinessScale = 0 # reset on each frame, as may have been set on previous iteration
         
-        if(agent.isTouchingGround):
+        if(not agent.isInFreefall):
             if(self._overWallLipBehaviour(agent, desiredAcceleration)):
                 return desiredAcceleration
             elif(self._atWallLipBehaviour(agent, desiredAcceleration)):
@@ -538,8 +538,8 @@ class WorldWarZ(BehaviourBaseObject):
 
 #######################            
     def _setDebugColourForAgent(self, agent):
-        if(not agent.isTouchingGround):
-            agent.debugColour = colours.Normal_NotTouchingGround
+        if(agent.isInFreefall):
+            agent.debugColour = colours.Normal_IsInFreefall
         else:
             status = self._goalStatusForAgent(agent)
             

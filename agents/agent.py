@@ -135,9 +135,9 @@ class Agent(PyswarmObject):
         return self.state.isCollided
     isCollided = property(_getIsCollided)
     
-    def _getIsTouchingGround(self):
-        return self.state.isTouchingGround
-    isTouchingGround = property(_getIsTouchingGround)
+    def _getIsInFreefall(self):
+        return self.state.isInFreefall
+    isInFreefall = property(_getIsInFreefall)
     
     def _getBehaviourAttributes(self):
         return self.state.behaviourAttributes
@@ -165,7 +165,7 @@ class Agent(PyswarmObject):
 
 ##############################
     def _jump(self):
-        if(self.isTouchingGround):
+        if(not self.isInFreefall):
             self._desiredAcceleration.y += self.state.movementAttributes.jumpAcceleration
             self.state.notifyJump()
             self._needsBehaviourCommit = True

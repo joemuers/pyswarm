@@ -30,7 +30,7 @@ class AgentState(PyswarmObject):
     or "collided" (so close as to be considered to have collided with this agent).
     
     Potentially confusing member variables:
-        - "touchingGround" = True if agent is not jumping/falling, False otherwise.
+        - "inFreefall" = True if agent is jumping/falling, ie not under normal locomotion, False otherwise.
     """
     
     def __init__(self, particleId, attributeGroupsController):
@@ -39,7 +39,7 @@ class AgentState(PyswarmObject):
         self._velocity = v3.Vector3()
         self._acceleration = v3.Vector3()
         
-        self._isTouchingGround = False
+        self._isInFreefall = True
         
         self._nearbyList = []        # 
         self._crowdedList = []       #
@@ -65,11 +65,11 @@ class AgentState(PyswarmObject):
         
 ###################        
     def __str__(self):
-        return ("id=%d, pos=%s, vel:(hdgH=%d, hdgV=%d, spd=%.2f), acln:(hdgH=%d, hdgV=%d, spd=%.2f), TG=%s" % 
+        return ("id=%d, pos=%s, vel:(hdgH=%d, hdgV=%d, spd=%.2f), acln:(hdgH=%d, hdgV=%d, spd=%.2f), inFF=%s" % 
                 (self._agentId, self._position, 
                  self._velocity.degreeHeading(), self._velocity.degreeHeadingVertical(), self._velocity.magnitude(),
                  self._acceleration.degreeHeading(), self._acceleration.degreeHeadingVertical(), self._acceleration.magnitude(),
-                 "Y" if(self._isTouchingGround) else "N"))
+                 "Y" if(self._isInFreefall) else "N"))
     
 ################### 
     def _getDebugStr(self):
@@ -100,10 +100,10 @@ class AgentState(PyswarmObject):
         return self._acceleration
     acceleration = property(_getAcceleration)
     
-    def _getIsTouchingGround(self):
-        """True if agent is not jumping/falling, False otherwise."""
-        return self._isTouchingGround
-    isTouchingGround = property(_getIsTouchingGround)   
+    def _getIsInFreefall(self):
+        """True if agent is jumping/falling & not under own locomotion, False otherwise."""
+        return self._isInFreefall
+    isInFreefall = property(_getIsInFreefall)   
     
     def _getAvPosition(self):
         return self._avPosition
@@ -163,10 +163,12 @@ class AgentState(PyswarmObject):
         self._acceleration = velocity - self._velocity
         self._velocity.resetToVector(velocity)
         
-        if(self._acceleration.y < self._globalAttributeGroup.accelerationDueToGravity):
-            self._isTouchingGround = False
+        if(self._globalAttributeGroup.movementIsThreeDimensional):
+            self._isInFreefall = False
+        elif(self._acceleration.y >= self._globalAttributeGroup.accelerationDueToGravity):
+            self._isInFreefall = False
         else:
-            self._isTouchingGround = True
+            self._isInFreefall = True
         
         self._onFrameUpdated()
 
@@ -202,7 +204,7 @@ class AgentState(PyswarmObject):
 ##############################
     def notifyJump(self):
         """Should be called if agent is to be made to jump."""
-        self._isTouchingGround = False
+        self._isInFreefall = True
 
 ##############################    
     def _resetListsAndAverages(self):
@@ -321,7 +323,7 @@ class AgentState(PyswarmObject):
             otherAgentPosition = otherAgentState.position
             
             if(otherAgentParticleId != self._agentId and
-               otherAgentState.isTouchingGround and
+               not otherAgentState.isInFreefall and
                otherAgentParticleId not in self._reciprocalNearbyChecks and
                self.withinCrudeRadiusOfPoint(otherAgentPosition, neighbourhoodSize)):
                 
@@ -356,7 +358,7 @@ class AgentState(PyswarmObject):
                     directionToOtherAgent.invert()
                     otherAgentState._makeReciprocalCheck(parentAgent, distanceToOtherAgentSquared, directionToOtherAgent)
                     
-            elif(otherAgentParticleId != self._agentId and otherAgent.isTouchingGround):
+            elif(otherAgentParticleId != self._agentId and not otherAgent.isInFreefall):
                 otherAgentState._makeReciprocalCheck(parentAgent)
             # end - for loop
         

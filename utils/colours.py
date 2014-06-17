@@ -25,7 +25,7 @@ Tuples are RGB values.
 DefaultColour = (0, 0, 0)
 
 ##########################
-Normal_NotTouchingGround = (0.2, 0.2, 0.2)
+Normal_IsInFreefall = (0.2, 0.2, 0.2)
 
 Normal_IsCollided = (1, 0, 0)
 

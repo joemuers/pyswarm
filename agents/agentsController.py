@@ -59,7 +59,7 @@ class AgentsController(PyswarmObject):
     def _getZoneStr(self):
         return self._zoneGraph.__str__()
     zoneStr = property(_getZoneStr)
- 
+
 ########    
     def _getZoneDebugStr(self):
         return self._zoneGraph.debugStr

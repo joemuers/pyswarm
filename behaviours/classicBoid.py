@@ -35,6 +35,7 @@ def AttributesAreClassicBoid(attributeGroup):
 #######################################
 class ClassicBoid(BehaviourBaseObject):
     
+    
     def __init__(self, classicBoidAttributeGroup, attributeGroupsController):
         super(ClassicBoid, self).__init__(classicBoidAttributeGroup)
         
@@ -51,7 +52,7 @@ class ClassicBoid(BehaviourBaseObject):
             desiredAcceleration = v3.Vector3()
             self._doNotClampMovement = False
             
-            if(agent.isTouchingGround):
+            if(not agent.isInFreefall):
                 agent.state.updateRegionalStatsIfNecessary(agent, nearbyAgentsList)
                 movementAttributes = agent.state.movementAttributes
                 
@@ -141,10 +142,7 @@ class ClassicBoid(BehaviourBaseObject):
         Adds WEIGHTED result to desiredAcceleration, IF separation is not mutually exclusive (otherwise
         result is not weighted).
         """
-        if(self.attributeGroup.separationIsMutuallyExclusive): 
-            weighting = 1
-        else: 
-            weighting = agent.behaviourAttributes.separationWeighting
+        weighting = agent.behaviourAttributes.separationWeighting
 
         if(agent.isCollided and weighting > 0):  # Problem here - we're driving the velocity directly... should be done by Maya really
             ######### might not really need this if particle self-collisions are working properly... ??
@@ -259,8 +257,8 @@ class ClassicBoid(BehaviourBaseObject):
 
 ######################
     def _setDebugColoursForAgent(self, agent):
-        if(not agent.isTouchingGround):
-            agent.debugColour = colours.Normal_NotTouchingGround
+        if(agent.isInFreefall):
+            agent.debugColour = colours.Normal_IsInFreefall
         elif(agent.isCollided):
             agent.debugColour = colours.Normal_IsCollided
         elif(agent.isCrowded):

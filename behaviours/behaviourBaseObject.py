@@ -125,6 +125,15 @@ class BehaviourBaseObject(PyswarmObject):
 
 ########    
     def getCompoundDesiredAcceleration(self, agent, nearbyAgentsList):
+        """
+        Adds the behaviour calculations of "self" to the given agent, even if
+        the assigned behaviour for this agent is a different.
+        i.e. temporarily swaps this one in, calc's the acceleration and then
+        reinstates the original behaviour to the agent. 
+        
+        :param agent: agent to calculate behaviour for.
+        :param nearbyAgentsList: list of nearby other agents. 
+        """
         if(agent.currentBehaviour is not self):
             agentPrimaryBehaviour = agent.currentBehaviour
             agentPrimaryAttributes = agent.state.behaviourAttributes

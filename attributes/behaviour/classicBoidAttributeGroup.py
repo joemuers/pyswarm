@@ -66,10 +66,10 @@ class ClassicBoidAttributeGroup(ago.AttributeGroupObject):
         self._kickstartNowButton = None
         self.kickOnNextFrame = False
         
-        self._mutuallyExclusive = at.BoolAttribute("Mutually Exclusive", True, self)
         self._separationWeighting = at.FloatAttribute("Separation Weighting", 1.0, self, maximumValue=1.0)
         self._separationWeighting_Random = at.RandomizeController(self._separationWeighting)
         
+        self._alignmentIsHeadingOnly = at.BoolAttribute("Match Heading Only", True)
         self._alignmentWeighting = at.FloatAttribute("Alignment Weighting", 1.0, self, maximumValue=1.0)
         self._alignmentWeighting_Random = at.RandomizeController(self._alignmentWeighting)
         self._alignmentDirectionThreshold = at.IntAttribute("Alignment Threshold", 30, self, maximumValue=359)
@@ -80,7 +80,6 @@ class ClassicBoidAttributeGroup(ago.AttributeGroupObject):
         self._cohesionPositionThreshold = at.FloatAttribute("Cohesion Threshold", 1.9, self)
         self._cohesionPositionThreshold_Random = at.RandomizeController(self._cohesionPositionThreshold)
         
-        self.onValueChanged(self._mutuallyExclusive)
         self.onValueChanged(self._kickstartEnabled)
         
 #######################
@@ -128,13 +127,13 @@ class ClassicBoidAttributeGroup(ago.AttributeGroupObject):
         
         frameLayout = uib.MakeFrameLayout("Seperation")
         columnLayout = uib.MakeColumnLayout()
-        uib.MakeCheckboxGroup(self._mutuallyExclusive, annotation=self._getSeparationIsMutuallyExclusive.__doc__)
         uib.MakeSliderGroup(self._separationWeighting, annotation=self._getSeparationWeightingForBlob.__doc__)
         uib.MakeRandomizerFields(self._separationWeighting_Random)
         uib.SetAsChildLayout(columnLayout, frameLayout)
         
         frameLayout = uib.MakeFrameLayout("Alignment")
         columnLayout = uib.MakeColumnLayout()
+        uib.MakeCheckboxGroup(self._alignmentIsHeadingOnly, annotation=self._getMatchAlignmentHeadingOnly.__doc__)
         uib.MakeSliderGroup(self._alignmentWeighting, annotation=self._getAlignmentWeightingForBlob.__doc__)
         uib.MakeRandomizerFields(self._alignmentWeighting_Random)
         uib.MakeSeparator()
@@ -197,11 +196,7 @@ class ClassicBoidAttributeGroup(ago.AttributeGroupObject):
     def onValueChanged(self, changedAttribute):
         super(ClassicBoidAttributeGroup, self).onValueChanged(changedAttribute)
         
-        if(changedAttribute is self._mutuallyExclusive):
-            separationWeightingEnabled = not self._mutuallyExclusive.value
-            self._separationWeighting.setEnabled(separationWeightingEnabled)
-            self._separationWeighting_Random.setEnabled(separationWeightingEnabled)
-        elif(changedAttribute is self._kickstartEnabled):
+        if(changedAttribute is self._kickstartEnabled):
             enabled = self._kickstartEnabled.value
             self._kickstartFrameNumber.setEnabled(enabled)
             self._kickstartMinValue.setEnabled(enabled)
@@ -228,15 +223,6 @@ class ClassicBoidAttributeGroup(ago.AttributeGroupObject):
         z = rand.uniform(self._kickstartMinValue.z, self._kickstartMaxValue.z)
         
         return v3.Vector3(x, y, z)
-
-#####################         
-    def _getSeparationIsMutuallyExclusive(self):
-        """The "weighting" is in relation to the Alignment and Cohesion forces also acting on the agent.
-        If Seperation is mutually exclusive, the force applied to each agent will be the same regardless of the
-        weighting of Alignment and Cohesion.
-        """
-        return self._mutuallyExclusive.value
-    separationIsMutuallyExclusive = property(_getSeparationIsMutuallyExclusive)
     
 ########
     def _getSeparationWeightingForBlob(self, dataBlob):
@@ -244,6 +230,13 @@ class ClassicBoidAttributeGroup(ago.AttributeGroupObject):
         try to push apart) to be applied to each agent, in relation to the Alignment and Cohesion forces also acting on each agent.
         """
         return self._separationWeighting_Random.valueForIntegerId(dataBlob.agentId)
+
+########
+    def _getMatchAlignmentHeadingOnly(self):
+        """If checked, only the direction of neighbouring agents will be matched; if unchecking velocity (i.e. heading AND speed)
+        will be matched."""
+        return self._alignmentIsHeadingOnly.value
+    matchAlignmentHeadingOnly = property(_getMatchAlignmentHeadingOnly)
 
 ########
     def _getAlignmentWeightingForBlob(self, dataBlob):
