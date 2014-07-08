@@ -203,8 +203,8 @@ class AgentsController(PyswarmObject):
             # self._buildParticleList(True)
         
         if(numParticles > 0):
+            isFirstFrame = util.IsStartingFrame()
             positions = scene.ParticlePositionsListForParticleShape(self._particleShapeName)
-            velocities = scene.ParticleVelocitiesListForParticleShape(self._particleShapeName)
             
             if(len(positions) < numParticles * 3):
                 # repeated call here because of shitty Maya bug whereby sometimes only get first item in request for goalsU...
@@ -215,8 +215,7 @@ class AgentsController(PyswarmObject):
                 particleId = self._particleIdsOrdering[i]
                 agent = self._idToAgentLookup[particleId]
                 
-                agent.updateCurrentVectors(v3.Vector3(positions[j], positions[j + 1], positions[j + 2]),
-                                           v3.Vector3(velocities[j], velocities[j + 1], velocities[j + 2]))
+                agent.updateCurrentVectors(v3.Vector3(positions[j], positions[j + 1], positions[j + 2]), isFirstFrame)
                 self._zoneGraph.updateAgentPosition(agent)
                 
             if(queryExtraInfo):

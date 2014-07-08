@@ -144,9 +144,9 @@ class Agent(PyswarmObject):
     behaviourAttributes = property(_getBehaviourAttributes)
     
 ##################### 
-    def updateCurrentVectors(self, position, velocity):
+    def updateCurrentVectors(self, position, isFirstFrame=False):
         """Updates internal state from corresponding vectors."""
-        self.state.updateCurrentVectors(position, velocity)
+        self.state.updateCurrentVectors(position, isFirstFrame)
         self._needsBehaviourCalculation = True         
         self._needsBehaviourCommit = False
         

@@ -175,6 +175,12 @@ def GetCurrentSceneName():
 
 
 ######################################
+def IsStartingFrame():
+    """
+    Returns True if we are in first frame of playback, False otherwise.
+    """
+    return GetCurrentFrameNumber() <= int(pm.playbackOptions(minTime=True, q=True))
+    
 def GetCurrentFrameNumber():
     """
     Returns the current frame number of the Maya scene, as an integer.

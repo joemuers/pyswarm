@@ -157,11 +157,19 @@ class AgentState(PyswarmObject):
     perceptionAttributes = property(_getPerceptionAttributes)
     
 #####################           
-    def updateCurrentVectors(self, position, velocity):
+    def updateCurrentVectors(self, position, isFirstFrame=False):
         """Updates internal state from corresponding vectors."""
-        self._position.resetToVector(position)
-        self._acceleration = velocity - self._velocity
-        self._velocity.resetToVector(velocity)
+        # we measure velocity ourselves by deriving from position because Maya's built-in velocity
+        # query, like many things in Maya, is buggy & unreliable - thanks Autodesk.
+        if(not isFirstFrame and not self._position.isNull()):
+            velocity = position - self._position
+            self._acceleration = velocity - self._velocity
+            self._velocity.resetToVector(velocity)
+            self._position.resetToVector(position)
+        else:
+            self._position.resetToVector(position)
+            self._velocity.reset()
+            self._acceleration.reset()
         
 #         if(self._globalAttributeGroup.movementIsThreeDimensional):
 #             self._isInFreefall = False
