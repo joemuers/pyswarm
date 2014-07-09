@@ -170,13 +170,13 @@ class BehaviourBaseObject(PyswarmObject):
         potentialVelocity = currentVelocity + desiredAcceleration
         madeChanges = False
         
-        desiredTurnAngle = currentVelocity.angleTo(potentialVelocity)
+        desiredTurnAngle = currentVelocity.angleTo(potentialVelocity, True)
         
         # following block of code will smooth out sudden changes in direction by checking the
         # rateOfChange (i.e. acceleration) of *angular* velocity.
         if(maxAcceleration **2 > currentVelocity.magnitudeSquared()): # TODO - this first check is fairly arbitrary... 
             previousVelocity = currentVelocity - agent.currentAcceleration
-            previousTurnAngle = previousVelocity.angleTo(currentVelocity)
+            previousTurnAngle = previousVelocity.angleTo(currentVelocity, True)
             desiredRateOfChange = desiredTurnAngle - previousTurnAngle
              
             if(desiredRateOfChange > maxTurnAngleRateOfChange):

@@ -166,7 +166,7 @@ class WorldWarZ(BehaviourBaseObject):
         agentAttributes = agent.state.behaviourAttributes
         agentStatus = self._effectiveGoalStatusForAgent(agent)
         
-        if(abs(self._baseToFinalDirection.angleTo(baseToAgentVec)) < 90):
+        if(abs(self._baseToFinalDirection.angleTo(baseToAgentVec, True)) < 90):
             # agent has cleared the wall...
             if(self._baseToFinalDirection.magnitudeSquared(True) < baseToAgentVec.magnitudeSquared(True)):
                 # reached final goal
@@ -303,10 +303,10 @@ class WorldWarZ(BehaviourBaseObject):
                 # to have joined the pyramid and can start their 'climbing' behaviour) is not fixed. So to determine it, we
                 # look at other agents in the immediate vicinity and see if they themselves are in the pyramid.
                 if(self._goalStatusForAgent(nearbyAgent) == wwz.WorldWarZDataBlob.inBasePyramid and 
-                   (nearbyAgent.currentPosition.distanceSquaredFrom(agent.currentPosition) < joinPyramidDistanceSquared) and
+                   (nearbyAgent.currentPosition.distanceSquaredFrom(agent.currentPosition, True) < joinPyramidDistanceSquared) and
                    (nearbyAgent.currentVelocity.magnitudeSquared(True) < goalChaseSpeedSquared or # TODO - should comp-to nearbyAgent's *own* GC speed..
                     agent.currentVelocity.magnitudeSquared(True) < goalChaseSpeedSquared or 
-                    abs(nearbyAgent.currentVelocity.angleTo(agent.currentVelocity)) > 90) ):
+                    abs(nearbyAgent.currentVelocity.angleTo(agent.currentVelocity, True)) > 90) ):
                     # TODO - just expand the goal's radius here...
                     # play around with this algorithm if agents get added in a strange manner...
                     returnVal = self._goalChaseBehaviour(agent, desiredAcceleration) 
@@ -332,7 +332,7 @@ class WorldWarZ(BehaviourBaseObject):
             elif(behaviourAttributes.didArriveAtBasePyramid):
                 # Agents in a basePyramid sometimes get pushed to the corners and get
                 # stuck there, which is not desirable. This corrects that behaviour.
-                angle = abs(directionVec.angleTo(self._baseToFinalDirection))
+                angle = abs(directionVec.angleTo(self._baseToFinalDirection, True))
                 if(angle > 82):
                     desiredAcceleration.subtract(self._baseToFinalDirection, True)
                     
@@ -457,9 +457,9 @@ class WorldWarZ(BehaviourBaseObject):
             returnValue = self._leaderPositions[0]
         else:
             candidateLeaderPosition = None
-            minDistanceSquared = agent.currentPosition.distanceSquaredFrom(self.attributeGroup.basePyramidGoal)
+            minDistanceSquared = agent.currentPosition.distanceSquaredFrom(self.attributeGroup.basePyramidGoal, True)
             for leaderPosition in self._leaderPositions:
-                candidateDistanceSquared = agent.currentPosition.distanceSquaredFrom(leaderPosition)
+                candidateDistanceSquared = agent.currentPosition.distanceSquaredFrom(leaderPosition, True)
                 if(candidateDistanceSquared < minDistanceSquared):
                     minDistanceSquared = candidateDistanceSquared
                     candidateLeaderPosition = leaderPosition

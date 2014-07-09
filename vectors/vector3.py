@@ -510,7 +510,7 @@ class Vector3(PyswarmObject):
             return mth.degrees(mth.acos(vector1.dot(vector2)))
 
 #######################     
-    def distanceFrom(self, otherVector, ignoreVertical=True): 
+    def distanceFrom(self, otherVector, ignoreVertical=False): 
         """
         Returns scalar magnitude of distance to other vector.
         Prefer distanceSquaredFrom where possible for performance reasons.
@@ -521,7 +521,7 @@ class Vector3(PyswarmObject):
         return mth.sqrt(self.distanceSquaredFrom(otherVector, ignoreVertical))
         
 ########
-    def distanceSquaredFrom(self, otherVector, ignoreVertical=True):
+    def distanceSquaredFrom(self, otherVector, ignoreVertical=False):
         """
         Returns distance magnitude squared to other vector.
         Prefer to distanceFrom where possible for performance reasons.
@@ -570,7 +570,7 @@ class Vector3(PyswarmObject):
         self._z = (xTemp * sinTheta) + (self.z * cosTheta)
 
 ####################### 
-    def moveTowards(self, toVector, byAmount, ignoreVertical=True):
+    def moveTowards(self, toVector, byAmount, ignoreVertical=False):
         """
         Moves towards a given position by given scalar amount.
         
@@ -591,9 +591,9 @@ class Vector3(PyswarmObject):
             self.z += diffVec.v
 
 #######################                 
-    def jitter(self, maxAmount, ignoreVertical=True):
+    def jitter(self, maxAmount, ignoreVertical=False):
         """
-        Makes a random change to both U and V by given amount.
+        Makes a random change to x, y and z by given amount.
         
         :param maxAmount: float, +/- (i.e. absolute) maximum value of change.
         :param ignoreVertical: ignores y if True.

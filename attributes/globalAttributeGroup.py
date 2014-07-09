@@ -24,7 +24,7 @@ import pyswarm.attributes.attributeTypes as at
 
 _PREFERENCES_WINDOW_LEFT_COLUMN_WIDTH_ = 160
 _TOP_PANEL_LEFT_COLUMN_WIDTH_ = 150
-
+_CHECKBOX_PADDING_ = 75
 
 
 #######################################
@@ -281,6 +281,8 @@ class GlobalAttributeGroup(ago.AttributeGroupObject):
         self._progressBar = None
         self._statusNeedsReset = True
         
+        self._movementIsThreeDimensional = at.BoolAttribute("3D movement", False)
+        
         self._accelerationDueToGravity = at.FloatAttribute("Acceleration Due To Gravity:", -38.0, 
                                                            minimumValue=float("-inf"), maximumValue=0)
         self._listRebuildFrequency = at.IntAttribute("List Rebuild Frequency:", 5)
@@ -431,7 +433,12 @@ class GlobalAttributeGroup(ago.AttributeGroupObject):
         
         borderLayoutMid = uib.MakeBorderingLayout()
         columnLayoutBottom = uib.MakeColumnLayout()
+
+        rowLayout = uib.MakeRowLayout(2, leftColumnWidth=_TOP_PANEL_LEFT_COLUMN_WIDTH_ + _CHECKBOX_PADDING_, middleColumnWidth=_TOP_PANEL_LEFT_COLUMN_WIDTH_)
         uib.MakeCheckboxGroup(self._enabled, leftColumnWidth=_TOP_PANEL_LEFT_COLUMN_WIDTH_, annotation=self._getEnabled.__doc__) 
+        uib.MakeCheckboxGroup(self._movementIsThreeDimensional, leftColumnWidth=_CHECKBOX_PADDING_ - 20, annotation=self._getMovementIsThreeDimensional.__doc__)
+        uib.SetAsChildLayout(rowLayout)
+        
         uib.MakeLocationField(self._sceneBounds1, leftColumnWidth=_TOP_PANEL_LEFT_COLUMN_WIDTH_, annotation=self._getSceneBounds1.__doc__)
         uib.MakeLocationField(self._sceneBounds2, leftColumnWidth=_TOP_PANEL_LEFT_COLUMN_WIDTH_, annotation=self._getSceneBounds2.__doc__)
         uib.MakeCheckboxGroup(self._useDebugColours, "Enable", leftColumnWidth=_TOP_PANEL_LEFT_COLUMN_WIDTH_, annotation=self._getUseDebugColours.__doc__)
@@ -496,6 +503,12 @@ class GlobalAttributeGroup(ago.AttributeGroupObject):
     sceneBounds2 = property(_getSceneBounds2, _setSceneBounds2)
 
 #####################     
+    def _getMovementIsThreeDimensional(self):
+        """Enable if agents can move in all 3 dimensions (i.e. can "fly"), disabled => 2D horizontal movement only."""
+        return self._movementIsThreeDimensional.value
+    movementIsThreeDimensional = property(_getMovementIsThreeDimensional)
+    
+#####################    
     def _getAccelerationDueToGravity(self):
         """Rate of acceleration, per frame, due to gravity on PySwqrm agents in the scene.  This does *not* control anything,
         but is used for calibration and should reflect the corresponding setup in the Maya scene."""

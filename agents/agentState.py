@@ -171,10 +171,9 @@ class AgentState(PyswarmObject):
             self._velocity.reset()
             self._acceleration.reset()
         
-#         if(self._globalAttributeGroup.movementIsThreeDimensional):
-#             self._isInFreefall = False
-#         el
-        if(self._acceleration.y >= self._globalAttributeGroup.accelerationDueToGravity):
+        if(self._globalAttributeGroup.movementIsThreeDimensional):
+            self._isInFreefall = False
+        elif(self._acceleration.y >= self._globalAttributeGroup.accelerationDueToGravity):
             self._isInFreefall = False
         else:
             self._isInFreefall = True
@@ -194,7 +193,7 @@ class AgentState(PyswarmObject):
 
 #################################       
     def withinPreciseRadiusOfPoint(self, otherPosition, radius):
-        if(self._position.distanceSquaredFrom(otherPosition) > radius **2):
+        if(self._position.distanceSquaredFrom(otherPosition) > radius **2, True):
             return False
         else:
             return True
@@ -208,7 +207,7 @@ class AgentState(PyswarmObject):
     def angleToLocation(self, location):
         """Angle, in degrees, of given location with respect to current heading."""
         directionVec = location - self._position
-        return self._velocity.angleTo(directionVec)
+        return self._velocity.angleTo(directionVec, True)
        
 ##############################
     def notifyJump(self):

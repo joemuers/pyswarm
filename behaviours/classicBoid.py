@@ -11,6 +11,7 @@
 
 
 import random
+import math as mth
 
 from pyswarm.utils import colours
 import pyswarm.attributes.behaviour.classicBoidAttributeGroup as cb
@@ -18,6 +19,10 @@ import pyswarm.vectors.vector3 as v3
 
 from pyswarm.behaviours.behaviourBaseObject import BehaviourBaseObject
 
+
+
+_ROOT_TWO_ = mth.sqrt(2)
+_ROOT_THREE_ = mth.sqrt(3)
 
 
 ######################
@@ -130,6 +135,14 @@ class ClassicBoid(BehaviourBaseObject):
         elif(upperGridBounds.v < agent.currentPosition.z and -(movementAttributes.maxVelocity) < agent.currentVelocity.z):
             desiredAcceleration.z -= movementAttributes.maxAcceleration
             madeChanges = True
+            
+        if(self._globalAttributeGroup.movementIsThreeDimensional):
+            if(agent.currentPosition.y < lowerGridBounds.y and agent.currentVelocity.y < movementAttributes.maxVelocity):
+                desiredAcceleration.y += movementAttributes.maxAcceleration
+                madeChanges = True
+            elif(upperGridBounds.y < agent.currentPosition.y and -(movementAttributes.maxVelocity) < agent.currentVelocity.y):
+                desiredAcceleration.y -= movementAttributes.maxAcceleration
+                madeChanges = True
     
         return madeChanges
         
@@ -159,7 +172,7 @@ class ClassicBoid(BehaviourBaseObject):
         
         elif(agent.isCrowded and weighting > 0):   # note that we move AWAY from the avPos here
             differenceVector = agent.currentPosition - agent.state.avCrowdedPosition
-            desiredAcceleration.add(differenceVector)
+            desiredAcceleration.add(differenceVector, not self._globalAttributeGroup.movementIsThreeDimensional)
 
             return True
         else:
@@ -173,7 +186,6 @@ class ClassicBoid(BehaviourBaseObject):
         weighting = agent.behaviourAttributes.alignmentWeighting
         
         if(agent.hasNeighbours and weighting > 0):
-            
             if(self.attributeGroup.matchAlignmentHeadingOnly):
                 desiredRotationAngle = agent.currentVelocity.angleTo(agent.state.avVelocity)
                 desiredAngleMagnitude = abs(desiredRotationAngle)
@@ -182,12 +194,12 @@ class ClassicBoid(BehaviourBaseObject):
                     desiredVelocity = v3.Vector3(agent.currentVelocity)
                     desiredVelocity.rotateInHorizontal(desiredRotationAngle)
                     result = desiredVelocity - agent.currentVelocity
-    
-                    desiredAcceleration.add(result)
+                    result.normalise(agent.currentVelocity.magnitude())
+                    desiredAcceleration.add(result, not self._globalAttributeGroup.movementIsThreeDimensional)
                         
                     return True
             else:
-                desiredAcceleration.add(agent.state.avVelocity - agent.currentVelocity)
+                desiredAcceleration.add(agent.state.avVelocity - agent.currentVelocity, not self._globalAttributeGroup.movementIsThreeDimensional)
 
         return False
 
@@ -200,12 +212,14 @@ class ClassicBoid(BehaviourBaseObject):
         weighting = state.behaviourAttributes.cohesionWeighting
         
         if(agent.hasNeighbours and weighting > 0):
+            ignoreVertical = not self._globalAttributeGroup.movementIsThreeDimensional 
+            
             distanceFromSwarmAvrgSquared = agent.currentPosition.distanceSquaredFrom(state.avPosition)
             
             if(state.behaviourAttributes.cohesionPositionThreshold **2 < distanceFromSwarmAvrgSquared):
                 differenceVector = state.avPosition - agent.currentPosition
                 
-                desiredAcceleration.add(weighting * differenceVector)
+                desiredAcceleration.add(differenceVector, ignoreVertical)
                 
                 return True
 
@@ -221,13 +235,21 @@ class ClassicBoid(BehaviourBaseObject):
             movementAttributes = agent.state.movementAttributes
             
             if(agent.currentVelocity.isNull()):
-                desiredAcceleration.reset(movementAttributes.maxAcceleration, 0, 0)
-                rotation = random.uniform(-179, 179)
-                desiredAcceleration.rotateInHorizontal(rotation)
+                if(self._globalAttributeGroup.movementIsThreeDimensional):
+                    maxAccelPerDimension = movementAttributes.maxAcceleration / _ROOT_THREE_
+                    desiredAcceleration.jitter(maxAccelPerDimension)
+                else:
+                    maxAccelPerDimension = movementAttributes.maxAcceleration / _ROOT_TWO_
+                    desiredAcceleration.jitter(maxAccelPerDimension, True)
             else:
                 desiredRotationAngle = random.uniform(-movementAttributes.maxTurnRate, movementAttributes.maxTurnRate)
                 desiredDirection = v3.Vector3(agent.currentVelocity)
                 desiredDirection.rotateInHorizontal(desiredRotationAngle)
+                if(self._globalAttributeGroup.movementIsThreeDimensional):
+                    maxAccelPerDimension = movementAttributes.maxAcceleration / 3
+                    desiredDirection.y += random.uniform(-maxAccelPerDimension, maxAccelPerDimension)
+                
+                
                 desiredAcceleration.resetToVector(agent.currentVelocity - desiredDirection)         
             
             return True

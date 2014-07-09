@@ -117,6 +117,7 @@ class FollowPath(BehaviourBaseObject):
             pyswarmCurveClosestPoint = sceneInterface.Vector3FromPymelPoint(pymelClosestCurvePoint)
             behaviourAttributes = agent.state.behaviourAttributes
             movementAttributes = agent.state.movementAttributes
+            ignoreVertical = not self._globalAttributesGroup.movementIsThreeDimensional
             
             if(pyswarmCurveClosestPoint.distanceSquaredFrom(self._endVector) < behaviourAttributes.goalDistanceThreshold **2):
                 self.endCurveBehaviourForAgent(agent)
@@ -130,13 +131,13 @@ class FollowPath(BehaviourBaseObject):
                 finalWidth = fromStartWidth + fromEndWidth
                 
                 if(pyswarmCurveClosestPoint.distanceSquaredFrom(agent.currentPosition) > finalWidth **2):
-                    desiredAcceleration += (pyswarmCurveClosestPoint - agent.currentPosition)
+                    desiredAcceleration.add(pyswarmCurveClosestPoint - agent.currentPosition, ignoreVertical)
                     desiredAcceleration.normalise(movementAttributes.maxAcceleration)
                 else:
                     tangent = self._pathCurve.tangent(currentParamValue, space='world')
                     pyswarmTangentVector = sceneInterface.Vector3FromPymelVector(tangent)
                     
-                    desiredAcceleration += pyswarmTangentVector
+                    desiredAcceleration.add(pyswarmTangentVector, ignoreVertical)
                     desiredAcceleration.normalise(self.attributeGroup.pathInfluenceMagnitude)
             
             if(self.attributeGroup.pathInfluenceMagnitude < 1.0):
@@ -144,7 +145,7 @@ class FollowPath(BehaviourBaseObject):
                 normalBehaviourInfluence = 1 - self.attributeGroup.pathInfluenceMagnitude
                 normalDesiredAcceleration *= normalBehaviourInfluence
                 desiredAcceleration *= self.attributeGroup.pathInfluenceMagnitude
-                desiredAcceleration.add(normalDesiredAcceleration)
+                desiredAcceleration.add(normalDesiredAcceleration, ignoreVertical)
             
             self._matchPreferredVelocityIfNecessary(agent, desiredAcceleration)
             self._clampDesiredAccelerationIfNecessary(agent, 
