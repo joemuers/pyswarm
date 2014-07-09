@@ -247,7 +247,7 @@ class ClassicBoidAttributeGroup(ago.AttributeGroupObject):
     
 ########
     def _getAlignmentDirectionThresholdForBlob(self, dataBlob):
-        """Minimum difference in heading, in degress, above which an agent will attempt to align with the heading of it's neighbours. 
+        """Minimum difference in heading, in degrees, above which an agent will attempt to align with the heading of it's neighbours. 
         """
         return self._alignmentDirectionThreshold_Random.valueForIntegerId(dataBlob.agentId)
 
