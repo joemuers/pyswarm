@@ -243,11 +243,11 @@ class ClassicBoidAttributeGroup(ago.AttributeGroupObject):
         """Weighting of Alignment force (i.e. agents in proximity to each other - within the "neighbourhood" perception region - will tend towards 
         moving in the same direction) to be applied to each agent, in relation to the Separation and Cohesion forces also acting on each agent.
         """
-        return self._alignmentDirectionThreshold_Random.valueForIntegerId(dataBlob.agentId)
+        return self._alignmentWeighting_Random.valueForIntegerId(dataBlob.agentId)
     
 ########
     def _getAlignmentDirectionThresholdForBlob(self, dataBlob):
-        """Maximum amount, in degrees, that an agent will change direction on one frame due to Alignment force.
+        """Minimum difference in heading, in degress, above which an agent will attempt to align with the heading of it's neighbours. 
         """
         return self._alignmentDirectionThreshold_Random.valueForIntegerId(dataBlob.agentId)
 
